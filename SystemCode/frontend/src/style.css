@@ -1,0 +1,9 @@
+:root { font-family: system-ui, sans-serif; color: #1c2430; background: #f6f7f9; }
+body { margin: 0; }
+.layout { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+aside { background: #10233f; color: #fff; padding: 1rem; display: flex; flex-direction: column; gap: .25rem; }
+aside h1 { font-size: 1.25rem; margin: 0 0 1rem; }
+aside a { color: #c9d6ea; text-decoration: none; padding: .4rem .5rem; border-radius: 6px; }
+aside a.router-link-exact-active { background: #24426e; color: #fff; }
+main { padding: 1.5rem 2rem; }
+.todo { border: 1px dashed #9aa7b8; border-radius: 8px; padding: 1rem; color: #5b6778; }

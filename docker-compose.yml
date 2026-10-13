@@ -1,0 +1,27 @@
+# Local dev stack. The LLM is NOT included: point LLM_BASE_URL in .env at Ollama / OpenAI / any compatible API.
+services:
+  neo4j:
+    image: neo4j:5.26-community
+    ports: ["7474:7474", "7687:7687"]
+    environment:
+      NEO4J_AUTH: neo4j/${NEO4J_PASSWORD:-anchorai-dev}
+      NEO4J_PLUGINS: '["apoc"]'
+    volumes: [neo4j-data:/data]
+
+  api:
+    build: ./SystemCode/backend
+    env_file: .env
+    environment:
+      NEO4J_URI: bolt://neo4j:7687
+      ANCHORAI_DATA_DIR: /data
+    volumes: [./SystemCode/data:/data]
+    ports: ["8000:8000"]
+    depends_on: [neo4j]
+
+  web:
+    build: ./SystemCode/frontend
+    ports: ["5173:80"]
+    depends_on: [api]
+
+volumes:
+  neo4j-data:

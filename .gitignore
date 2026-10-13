@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# Node
+node_modules/
+dist/
+
+# Env / secrets
+.env
+*.local
+
+# Data & artefacts (regenerate with the simulator; commit only small fixtures)
+SystemCode/data/raw/*
+SystemCode/data/generated/*
+!SystemCode/data/**/.gitkeep
+*.joblib
+*.pkl
+
+# Video files are large: upload to YouTube, link in README
+Video/*.mp4
+Video/*.mov
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/

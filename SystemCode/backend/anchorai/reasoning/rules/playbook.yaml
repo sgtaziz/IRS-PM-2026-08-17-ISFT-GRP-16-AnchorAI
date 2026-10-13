@@ -1,0 +1,35 @@
+# Example rule format. Conditions are evaluated against working-memory facts.
+# salience: higher fires first. kind: derive | playbook | guardrail.
+# source: where the knowledge came from (interview / publication / team assumption). Keep this honest.
+
+- id: D01_falling_regular
+  kind: derive
+  salience: 50
+  description: A historically regular member whose recent visits dropped by half or more
+  when:
+    - "visits_prev_12w_per_week >= 2"
+    - "visit_trend_ratio <= 0.5"
+  then:
+    assert: { engagement_pattern: falling_regular }
+  source: team assumption, to validate with club manager interview
+
+- id: P01_new_member_onboarding
+  kind: playbook
+  salience: 40
+  description: New members in the first-90-day cliff who are slipping get a trainer onboarding call
+  when:
+    - "tenure_days <= 90"
+    - "visit_trend_ratio < 0.7"
+  then:
+    propose: { offer_id: free_pt_session, channel: call }
+  source: HFA 2025 benchmarking report (first-90-day attrition)
+
+- id: G01_contact_fatigue
+  kind: guardrail
+  salience: 100
+  description: Never contact a member more than once in 30 days
+  when:
+    - "days_since_last_contact < 30"
+  then:
+    block: all
+  source: team policy (hard constraint in proposal)
