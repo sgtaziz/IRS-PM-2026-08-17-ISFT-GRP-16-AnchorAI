@@ -29,3 +29,7 @@ Video/*.mov
 .DS_Store
 .idea/
 .vscode/
+
+# SQLite
+*.db
+*.db-journal

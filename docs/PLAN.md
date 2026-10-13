@@ -238,7 +238,7 @@ The loads are sized to be roughly equal.
 | B4 | CBR offer reasoner: case base from scenario interventions, scaled weighted kNN retrieve, kNN-uplift reuse, shrinkage revise, weekly retain | uplift + neighbour list per (member, offer) | Sun 18 |
 | B5 | Baseline policies (contact-all, risk-top-k, greedy-uplift) + **policy evaluator** that scores any plan against the scenario's ground-truth uplift | one function evaluates any plan | Mon 19 |
 | B6 | Pipeline orchestration: `MemberScore` → rules → CBR → optimiser → `Plan` + `Explanation` | `POST /api/plan` works end to end | Tue 20 |
-| B7 | Web: **W14 Plan builder, W15 Review and overrides, W16 Assignment, W17 Scenarios, W20 My contacts, W21 Outcome logging** + `/api/plan`, `/api/assignments`, `/api/outcomes` | full weekly workflow (§8.2) runs end to end | Wed 21 |
+| B7 | Web: **W14 Plan builder, W15 Review and overrides, W16 Assignment, W17 Scenarios, W20 My contacts, W21 Outcome logging, W45 Settings and health** + `/api/plan`, `/api/assignments`, `/api/outcomes` | full weekly workflow (§8.2) runs end to end | Wed 21 |
 
 - **Experiments:** E3, E4 (headline), E5.
 - **Report:**
@@ -257,8 +257,8 @@ The loads are sized to be roughly equal.
 | C2 | Rule base: ~15–25 rules (derive / playbook / guardrail), each with `source`; run 1–2 interviews (script in `Miscellaneous/interviews/`) | rules reviewed against interview notes | Sun 18 |
 | C3 | Neo4j KG: schema, loader from the data tables, Cypher queries for cohort signals (`lost_anchor_instructor`, `cohort_at_risk`, `class_cancelled`) → facts into the rule engine; spillover weights for B | `events` → facts → rule firings | Sun 18 |
 | C4 | Assistant: intent set + ~10 example utterances each, embedding classifier, slot filling, tool layer (plan, explanation, Cypher templates, what-if budget), grounded prompt, configurable LLM, optional native tool calling | answers the 6 intents with cited evidence | Tue 20 |
-| C5 | Web: **W01 auth and roles, W04 app database** | login works; other streams use the role dependency and DB session | Thu 15 |
-| C6 | Web: **W18 Graph explorer, W22 Message drafts, W30 Assistant, W40 Rules admin, W43 Users, W44 Audit log, W45 Settings and health** + `/api/rules`, `/api/graph`, `/api/assistant`, `/api/admin/*` | pages work on live data, for each role | Wed 21 |
+| C5 | Web: **W01 auth and roles, W04 app database, migrations and seeds** | a fresh clone reaches a seeded, logged-in app with the commands in §8.5; other streams use the role dependency and DB session | Thu 15 |
+| C6 | Web: **W18 Graph explorer, W22 Message drafts, W30 Assistant, W40 Rules admin, W43 Users, W44 Audit log** + `/api/rules`, `/api/graph`, `/api/assistant`, `/api/admin/*` | pages work on live data, for each role | Wed 21 |
 
 - **Experiments:** E6, E7, E8.
 - **Report:**
@@ -316,7 +316,7 @@ Size: S ≈ ½ day, M ≈ 1 day, L ≈ 2 days (web + endpoint work only).
 | W01 | **Login, auth and role guards** | Password login; JWT; bcrypt-hashed passwords; role dependency on all routers; route guards; seeded demo users; logout | **C** | M |
 | W02 | **App shell** | Role-aware sidebar; global member search (Ctrl+K); toasts; loading, empty and error states on every page; responsive down to tablet width | **A** | M |
 | W03 | **Shared UI components** | `KpiTile`, `RiskBadge` (text label, not colour alone), `DataTable` wrapper (sort, filter, CSV export), `ConfirmDialog`, `ChartCard` | **A** | S |
-| W04 | **App database** | SQLite via SQLModel: users, plans, plan_items, assignments, outcomes, rule_versions, audit_log, assistant_feedback; seed script; a reset-demo command | **C** | S |
+| W04 | **App database, migrations and seeds** | SQLite via SQLModel: users, plans, plan_items, assignments, outcomes, rule_versions, audit_log, assistant_feedback. Alembic migrations, deterministic seeds and `db` CLI commands, as set out in §8.5 | **C** | M |
 
 #### Manager
 
@@ -355,17 +355,17 @@ Size: S ≈ ½ day, M ≈ 1 day, L ≈ 2 days (web + endpoint work only).
 | W42 | **Data and models** | Upload Kaggle CSV; regenerate the scenario layer (seed); retrain segmentation and churn; rebuild KG (calls C's endpoint); model card with current F1, PR-AUC, Brier, silhouette, fairness gaps and training date | **A** | M |
 | W43 | **Users** | User CRUD, role assignment, password reset | **C** | S |
 | W44 | **Audit log** | Every write (rule edit, plan approve / override, assignment, outcome, user change): who, when, what, before / after; filterable | **C** | S |
-| W45 | **Settings and health** | Active LLM endpoint and model (read from `.env`, key masked), "test connection", Neo4j status, model versions, data freshness | **C** | S |
+| W45 | **Settings and health** | Active LLM endpoint and model (read from `.env`, key masked), "test connection", Neo4j status, model versions, data freshness, current DB migration revision | **B** | S |
 
 #### Load check (S = 1, M = 2, L = 3)
 
 | Stream | Web features | Web points |
 |---|---|---|
 | A | W02, W03, W10, W11, W12, W13, W41, W42 | 13 |
-| B | W14, W15, W16, W17, W20, W21 | 12 |
-| C | W01, W04, W18, W22, W30, W40, W43, W44, W45 | 15 |
+| B | W14, W15, W16, W17, W20, W21, W45 | 13 |
+| C | W01, W04, W18, W22, W30, W40, W43, W44 | 16 |
 
-C's total is higher, but five of its features are small CRUD or status pages.
+C's total is higher, but four of its features are small CRUD pages, and W04 unblocks everyone early.
 
 ### 8.4 Non-functional requirements
 
@@ -397,6 +397,49 @@ C's total is higher, but five of its features are small CRUD or status pages.
   - Cytoscape.js for graphs
   - Pinia for auth and session state
   - No other UI libraries.
+
+### 8.5 Database, migrations and seeds
+
+The goal is that every member, the graders, and a fresh clone get **the same database from the same commands**. No one ever shares a `.db` file or edits the database by hand.
+
+**Storage:**
+- SQLite file at `SystemCode/data/app.db`, with the path set by `ANCHORAI_DB_URL`. The file is git-ignored.
+- SQLModel models live in `anchorai/db/models.py`.
+
+**Migrations (Alembic):**
+- Migrations live in `SystemCode/backend/migrations/`.
+- `render_as_batch=True` must be set, because SQLite cannot `ALTER` most column changes without it.
+- **Every model change ships with its migration in the same PR.** Generate it with `alembic revision --autogenerate -m "<what>"`, then read and fix the generated file before committing.
+- Migrations are append-only once merged to `main`. Never edit a merged migration; add a new one.
+- **Parallel work creates multiple heads.** The PR author whose migration lands second rebases and runs `alembic merge heads`.
+- A test asserts that there is a single head and that `upgrade head` → `downgrade base` → `upgrade head` runs cleanly on an empty DB.
+
+**Seeds:** idempotent (safe to run twice), deterministic (`ANCHORAI_SEED`), and layered:
+
+| Layer | Contents | Needs |
+|---|---|---|
+| `base` | Demo users (`admin`, `manager`, `staff1`, `staff2`) with known demo passwords; offer catalogue; staff roster with hours and skills; default budget and fatigue caps; current `rules/*.yaml` imported as rule version 1 | nothing |
+| `demo` | One approved past week (plan, assignments, logged outcomes, audit entries), so dashboards, the CBR retain loop and the audit log are not empty | `base` + data tables from Stream A |
+
+- Seed data is defined in code or in versioned YAML under `anchorai/db/seeds/`, never as a binary dump.
+- Each stream adds the seed rows for its own features: A offers and constraints, B the past week, C users and rules.
+
+**Commands:** one CLI, `uv run anchorai <cmd>`:
+
+| Command | Does |
+|---|---|
+| `db upgrade` | Apply migrations to head |
+| `db seed [--demo]` | Load the `base` seeds, plus `demo` if the flag is given |
+| `db reset` | Delete `app.db`, upgrade and seed with `--demo` (the pre-demo / pre-video reset) |
+| `data build` | Regenerate the parquet tables and model artefacts from `data/raw/` (Stream A) |
+| `kg load` | Load the knowledge graph into Neo4j from the parquet tables (Stream C) |
+| `setup` | `data build` → `db reset` → `kg load`: **one command from a fresh clone to a working demo** |
+
+**Docker:** the `api` container runs `db upgrade` on start. `anchorai setup` is documented in the README and the installation guide.
+
+**Fresh-clone test:**
+- Sat 24 (§10): another member runs `anchorai setup` on a clean clone.
+- Run it again after any migration or seed change.
 
 ---
 

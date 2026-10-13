@@ -20,6 +20,7 @@ class Settings(BaseSettings):
 
     anchorai_data_dir: Path = Path("SystemCode/data")
     anchorai_seed: int = 42
+    anchorai_db_url: str = "sqlite:///SystemCode/data/app.db"
 
 
 @lru_cache
