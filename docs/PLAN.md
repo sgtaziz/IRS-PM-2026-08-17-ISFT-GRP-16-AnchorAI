@@ -136,7 +136,7 @@ Where they disagree, the decision taken is noted below. Each change is something
     - Native tool calling is behind a flag.
     - The endpoint is configurable (Ollama / OpenAI / any OpenAI-compatible API).
     - This maps onto the CGS D1 NLU pipeline.
-15. **Experiments widened beyond F1 and silhouette.** The headline business result is policy comparison: members retained per dollar for contact-all, risk-top-k, greedy-uplift, GA and exact (§8).
+15. **Experiments widened beyond F1 and silhouette.** The headline business result is policy comparison: members retained per dollar for contact-all, risk-top-k, greedy-uplift, GA and exact (§9).
 
 ---
 
@@ -162,8 +162,8 @@ Where they disagree, the decision taken is noted below. Each change is something
 ```
 
 **Stack:**
-- **Backend:** Python 3.12 (uv), FastAPI, pandas, scikit-learn, imbalanced-learn, LightGBM, SHAP, DEAP, OR-Tools, neo4j driver, openai client, sentence-transformers.
-- **Frontend:** Vue 3 + Vite + TypeScript, ECharts.
+- **Backend:** Python 3.12 (uv), FastAPI, SQLModel + SQLite (app data), PyJWT + bcrypt (auth), pandas, scikit-learn, imbalanced-learn, LightGBM, SHAP, DEAP, OR-Tools, neo4j driver, openai client, sentence-transformers.
+- **Frontend:** Vue 3 + Vite + TypeScript, PrimeVue, Pinia, ECharts, Cytoscape.js.
 - **Infrastructure:** Neo4j in docker-compose. The LLM endpoint is external and configurable.
 
 ---
@@ -214,7 +214,8 @@ The loads are sized to be roughly equal.
 | A4 | Churn ensemble (LR + LightGBM) in an imblearn pipeline with SMOTE-NC inside CV, calibration, class-weight comparison, SHAP drivers, fairness by age / gender | `MemberScore` for all members; F1 / PR-AUC / Brier on the real test set | Sun 18 |
 | A5 | Scenario v1: intervention history whose outcomes follow a documented ground-truth uplift function (heterogeneous by segment × offer), instructor / class events | ground truth in the appendix; sanity plots | Sat 17 |
 | A6 | T-learner uplift baseline (input to E3) | uplift per offer per member | Mon 19 |
-| A7 | `/api/members` router + **Dashboard, Segments, Member detail** pages (charts) | pages render live data | Wed 21 |
+| A7 | Web: **W02 shell, W03 shared components** (§8) | other streams build pages inside the shell | Thu 15 |
+| A8 | Web: **W10 Dashboard, W11 Segments, W12 Members, W13 Member 360, W41 Offers and constraints, W42 Data and models** + `/api/members`, `/api/admin/data`, `/api/admin/offers` | pages work on live data, for each role | Wed 21 |
 
 - **Experiments:** E1, E2 (and data for E3).
 - **Report:**
@@ -237,7 +238,7 @@ The loads are sized to be roughly equal.
 | B4 | CBR offer reasoner: case base from scenario interventions, scaled weighted kNN retrieve, kNN-uplift reuse, shrinkage revise, weekly retain | uplift + neighbour list per (member, offer) | Sun 18 |
 | B5 | Baseline policies (contact-all, risk-top-k, greedy-uplift) + **policy evaluator** that scores any plan against the scenario's ground-truth uplift | one function evaluates any plan | Mon 19 |
 | B6 | Pipeline orchestration: `MemberScore` → rules → CBR → optimiser → `Plan` + `Explanation` | `POST /api/plan` works end to end | Tue 20 |
-| B7 | `/api/plan` router + **Weekly plan** (with "why" drawer) and **Scenarios** (budget / staff sliders, policy comparison, GA convergence) pages | pages render live data | Wed 21 |
+| B7 | Web: **W14 Plan builder, W15 Review and overrides, W16 Assignment, W17 Scenarios, W20 My contacts, W21 Outcome logging** + `/api/plan`, `/api/assignments`, `/api/outcomes` | full weekly workflow (§8.2) runs end to end | Wed 21 |
 
 - **Experiments:** E3, E4 (headline), E5.
 - **Report:**
@@ -256,7 +257,8 @@ The loads are sized to be roughly equal.
 | C2 | Rule base: ~15–25 rules (derive / playbook / guardrail), each with `source`; run 1–2 interviews (script in `Miscellaneous/interviews/`) | rules reviewed against interview notes | Sun 18 |
 | C3 | Neo4j KG: schema, loader from the data tables, Cypher queries for cohort signals (`lost_anchor_instructor`, `cohort_at_risk`, `class_cancelled`) → facts into the rule engine; spillover weights for B | `events` → facts → rule firings | Sun 18 |
 | C4 | Assistant: intent set + ~10 example utterances each, embedding classifier, slot filling, tool layer (plan, explanation, Cypher templates, what-if budget), grounded prompt, configurable LLM, optional native tool calling | answers the 6 intents with cited evidence | Tue 20 |
-| C5 | `/api/rules`, `/api/assistant` routers + **Rules editor**, **Assistant** pages + graph panel on Member detail | pages render live data | Wed 21 |
+| C5 | Web: **W01 auth and roles, W04 app database** | login works; other streams use the role dependency and DB session | Thu 15 |
+| C6 | Web: **W18 Graph explorer, W22 Message drafts, W30 Assistant, W40 Rules admin, W43 Users, W44 Audit log, W45 Settings and health** + `/api/rules`, `/api/graph`, `/api/assistant`, `/api/admin/*` | pages work on live data, for each role | Wed 21 |
 
 - **Experiments:** E6, E7, E8.
 - **Report:**
@@ -276,9 +278,129 @@ The loads are sized to be roughly equal.
 - One page each of individual reflection plus peer review.
 - Each member records their own narration.
 
+## 8. Web application
+
+The web app is the product. It is what a club actually uses for the weekly retention cycle, and it is the stage for both videos. It is graded directly under *system implementation (functionality and usability)* and *value-adds (intuitive UI)*. Every feature below has **one owning stream**. The owner builds both the page and its API endpoints. Panels that show another stream's output call that stream's endpoint.
+
+### 8.1 Roles
+
+| Role | Who | Access |
+|---|---|---|
+| **Staff** | Front desk, trainers | Their own contact list, outcome logging, read-only Member 360, message drafts, assistant |
+| **Manager** | Club manager | Everything Staff has, plus: dashboard, segments, members, plan builder / review / approval / assignment, scenarios, graph explorer |
+| **Admin** | Operator / owner | Everything, plus: rules, offers and constraints, data and models, users, audit log, settings |
+
+- Access is enforced **server-side**: a FastAPI dependency checks the role on every endpoint.
+- The UI hides what a role cannot use (router `meta.roles`).
+- Demo users are seeded: `admin`, `manager`, `staff1`, `staff2`.
+
+### 8.2 The weekly workflow (core use case = demo script)
+
+1. **Admin** keeps rules, offers and constraints current. They test a rule change on a real member before saving it.
+2. **Manager** opens the Dashboard and sees members at risk, revenue at risk and last week's outcomes.
+3. **Manager** generates this week's plan for a given budget and staff hours. They review it, open "why" on any member, and override with a reason; guardrails are re-checked live.
+4. **Manager** approves the plan and auto-assigns calls to staff by available hours.
+5. **Staff** open *My contacts* on a tablet. For each member they see the offer, talking points and an editable message draft. They log the outcome in two taps.
+6. Outcomes flow back into the CBR case base (the *retain* step) and the Dashboard.
+7. **Anyone** can ask the assistant at any point, e.g. "Why is member 1043 on the list but not 2210?"
+8. **Event:** "Instructor Sam leaves" is triggered in the graph explorer. The affected members surface, and re-running the plan picks them up.
+
+### 8.3 Features
+
+Size: S ≈ ½ day, M ≈ 1 day, L ≈ 2 days (web + endpoint work only).
+
+#### Platform
+
+| ID | Feature | Must include | Stream | Size |
+|---|---|---|---|---|
+| W01 | **Login, auth and role guards** | Password login; JWT; bcrypt-hashed passwords; role dependency on all routers; route guards; seeded demo users; logout | **C** | M |
+| W02 | **App shell** | Role-aware sidebar; global member search (Ctrl+K); toasts; loading, empty and error states on every page; responsive down to tablet width | **A** | M |
+| W03 | **Shared UI components** | `KpiTile`, `RiskBadge` (text label, not colour alone), `DataTable` wrapper (sort, filter, CSV export), `ConfirmDialog`, `ChartCard` | **A** | S |
+| W04 | **App database** | SQLite via SQLModel: users, plans, plan_items, assignments, outcomes, rule_versions, audit_log, assistant_feedback; seed script; a reset-demo command | **C** | S |
+
+#### Manager
+
+| ID | Feature | Must include | Stream | Size |
+|---|---|---|---|---|
+| W10 | **Dashboard** | KPIs: members at risk, monthly revenue at risk, plan coverage, contacted / reached / retained this week. Risk distribution, segment mix, outcome trend by week | **A** | M |
+| W11 | **Segments** | One card per segment: name, size, churn rate, profile chart; click through to the filtered member list | **A** | S |
+| W12 | **Members list** | Server-side paged table; filter by segment, risk band, tenure, club; sort by risk or value; CSV export | **A** | S |
+| W13 | **Member 360** | Profile; churn probability + SHAP driver chart (A); segment; rule trace (C endpoint); similar past cases (B endpoint); ego graph (C component); contact and outcome history (B endpoint); "Ask the assistant about this member" button | **A** | L |
+| W14 | **Plan builder** | Week, budget, staff hours and solver inputs; runs as a background job with a progress bar; results table (member, offer, channel, expected value, one-line reason); "why" drawer showing the full `Explanation`; plan totals vs limits | **B** | M |
+| W15 | **Plan review and overrides** | Remove, add or swap an offer, with a mandatory reason; live guardrail check (C rules endpoint) with violations shown inline; re-optimise remaining budget; approve (locks the plan, writes audit); compare with last week | **B** | L |
+| W16 | **Assignment and call sheets** | Auto-assign approved items to staff by weekly hours and skills (e.g. PT offers go to trainers); drag or manual reassign; printable PDF / CSV call sheet per staff member | **B** | M |
+| W17 | **Scenarios** | Budget and staff-hour sliders; compare contact-all, risk-top-k, greedy-uplift, GA and exact on expected retained members, cost and retained-per-dollar; GA convergence chart; save and name scenarios | **B** | M |
+| W18 | **Knowledge graph explorer** | Search a member, class or instructor; Cytoscape neighbourhood view; highlight at-risk cohorts; "simulate event" (instructor leaves, class cancelled) lists affected members and the rules they trigger. Also exported as the reusable ego-graph component for W13 | **C** | M |
+
+#### Staff
+
+| ID | Feature | Must include | Stream | Size |
+|---|---|---|---|---|
+| W20 | **My contacts** | Today's assigned members in priority order; card per member showing offer, channel, talking points (from drivers + rule trace) and a link to Member 360; tablet-first layout | **B** | M |
+| W21 | **Outcome logging** | Outcomes: reached / no answer / accepted / declined / follow-up, plus a note, in two taps. Writes to outcomes, appends to the CBR case base, updates dashboard counters | **B** | S |
+| W22 | **Message drafts** | The LLM drafts an SMS or email from the `Explanation` and offer in the gym's tone. Staff edit before copying. **Never auto-sent.** Falls back to a template if the LLM is unavailable | **C** | S |
+
+#### Assistant
+
+| ID | Feature | Must include | Stream | Size |
+|---|---|---|---|---|
+| W30 | **Assistant (page + floating widget)** | Available on every page; aware of context (current member or plan); streams answers; shows the detected intent, the tool used and **evidence chips** linking to the member, rule or case; thumbs up/down logged (feeds E8); shows "I don't know" when nothing grounds the answer | **C** | L |
+
+#### Admin
+
+| ID | Feature | Must include | Stream | Size |
+|---|---|---|---|---|
+| W40 | **Rules admin** | Rules listed by kind and salience; enable / disable; form-based condition builder over known facts plus a raw YAML tab; mandatory `source`; validation (unknown facts, contradictions, unreachable rules); "test on member" shows the firing trace; version history with diff and rollback | **C** | L |
+| W41 | **Offers and constraints** | Offer catalogue CRUD (cost, staff minutes, channels, weekly inventory, eligibility); default budget; staff roster with weekly hours and skills; contact-fatigue caps | **A** | M |
+| W42 | **Data and models** | Upload Kaggle CSV; regenerate the scenario layer (seed); retrain segmentation and churn; rebuild KG (calls C's endpoint); model card with current F1, PR-AUC, Brier, silhouette, fairness gaps and training date | **A** | M |
+| W43 | **Users** | User CRUD, role assignment, password reset | **C** | S |
+| W44 | **Audit log** | Every write (rule edit, plan approve / override, assignment, outcome, user change): who, when, what, before / after; filterable | **C** | S |
+| W45 | **Settings and health** | Active LLM endpoint and model (read from `.env`, key masked), "test connection", Neo4j status, model versions, data freshness | **C** | S |
+
+#### Load check (S = 1, M = 2, L = 3)
+
+| Stream | Web features | Web points |
+|---|---|---|
+| A | W02, W03, W10, W11, W12, W13, W41, W42 | 13 |
+| B | W14, W15, W16, W17, W20, W21 | 12 |
+| C | W01, W04, W18, W22, W30, W40, W43, W44, W45 | 15 |
+
+C's total is higher, but five of its features are small CRUD or status pages.
+
+### 8.4 Non-functional requirements
+
+- **Explainable in one click:** every recommendation opens its `Explanation`, covering drivers, rule trace, similar cases and graph signals.
+- **Human in the loop:**
+  - Nothing is sent to members automatically.
+  - Plans need manager approval.
+  - Overrides need a reason.
+  - All writes are audited.
+- **Graceful degradation:**
+  - LLM down: assistant and drafts show "unavailable" and templates are used.
+  - Neo4j down: graph panels are hidden and cached KG facts are used.
+  - Neither failure breaks the plan.
+- **Performance:**
+  - Plan generation for 4,000 members takes ≤ 60 s, as a background job with progress.
+  - Pages load in < 2 s on demo data.
+- **Responsive:** staff pages (W20–W22) work on a tablet. Manager and admin pages target desktop.
+- **Accessibility basics:**
+  - labelled inputs
+  - keyboard navigation
+  - risk shown with text and colour, not colour alone
+- **Demo-ready seed:**
+  - seeded users
+  - one past approved week with logged outcomes, so dashboards and the CBR retain loop are not empty
+  - a `make demo`-style reset command
+- **Consistent UI:**
+  - PrimeVue components
+  - ECharts for charts
+  - Cytoscape.js for graphs
+  - Pinia for auth and session state
+  - No other UI libraries.
+
 ---
 
-## 8. Experiments (the quantitative evidence)
+## 9. Experiments (the quantitative evidence)
 
 | ID | Question | Method / metric | Baseline | Owner |
 |---|---|---|---|---|
@@ -293,24 +415,25 @@ The loads are sized to be roughly equal.
 
 ---
 
-## 9. Timeline
+## 10. Timeline
 
 | Date | Milestone |
 |---|---|
 | **Tue 13** | Kick-off: pick streams, push repo, review contracts (§6), create fixture |
 | Wed 14 | **Data tables v0 land** (Kaggle + scenario v0); B1, C1 underway |
-| Thu 15 – Sat 17 | Core build (A2–A4, B2–B3, C1–C3) |
+| Thu 15 | **App shell (A7) + auth and app DB (C5) land**, so pages can start inside a working app |
+| Thu 15 – Sat 17 | Core build (A2–A5, B2–B3, C1–C3); pages built against fixtures / mock responses |
 | **Sun 18** | **M1: every component runs standalone on the real tables**; scenario layer frozen (regenerating after this means re-running everyone's experiments) |
-| Mon 19 – Tue 20 | Integration: `/api/plan` end to end, assistant on real tools |
+| Mon 19 – Tue 20 | Integration: pages wired to live endpoints; the §8.2 workflow runs end to end for all three roles |
 | **Wed 21** | **M2: feature freeze.** All pages wired. Run all experiments on frozen data |
-| Thu 22 | Figures and tables; UI polish; bug fixes only; report sections drafted |
+| Thu 22 | Figures and tables; **cross-stream usability pass** (each member runs the §8.2 demo script on another stream's pages and files issues); bug fixes only; report sections drafted |
 | Fri 23 | Record both videos; assemble report |
 | Sat 24 | User guide, README, reflections, peer review; **fresh-clone install test** on another member's machine |
 | **Sun 25** | Buffer. Zip and submit by noon |
 
 ---
 
-## 10. Risks
+## 11. Risks
 
 | Risk | Mitigation |
 |---|---|

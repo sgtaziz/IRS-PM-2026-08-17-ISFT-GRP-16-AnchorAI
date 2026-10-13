@@ -28,7 +28,7 @@ SystemCode/
       api/              FastAPI app; one router per stream
     tests/
   frontend/             Vue 3 + Vite + TypeScript
-  notebooks/            experiments E1–E8 (see PLAN.md §8)
+  notebooks/            experiments E1–E8 (see PLAN.md §9)
   data/                 raw/ and generated/ (git-ignored)
 ProjectReport/          report PDF + sources
 Video/                  video links (files are not committed)
@@ -100,6 +100,7 @@ npm run build                                # type-check + build
 
 - Type hints on public functions. Use pydantic models for anything that crosses a stream boundary.
 - Keep logic in plain functions or modules. **API routers stay thin**: parse the request, call the package, return a schema.
+- App state (users, plans, outcomes, rule versions, audit) lives in SQLite via SQLModel. Every write endpoint records an audit entry and requires a role dependency.
 - Make code deterministic: every random process takes a seed, defaulting to `settings.anchorai_seed`.
 - Read paths and settings through `anchorai.config.get_settings()`. Never hard-code absolute paths.
 - Use pandas / numpy vectorised operations over Python loops on member-sized data.
@@ -109,8 +110,9 @@ npm run build                                # type-check + build
 
 - Use Vue 3 `<script setup lang="ts">` and the composition API.
 - Call the backend only through `src/api/client.ts`. Keep TypeScript types in step with `schemas.py`.
-- Use ECharts (`vue-echarts`) for charts. Don't add another UI or chart library without agreement.
-- Pages are owned by a stream (see `docs/PLAN.md` §7). Put shared components in `src/components/`.
+- UI kit: PrimeVue. Charts: ECharts (`vue-echarts`). Graphs: Cytoscape.js. State: Pinia. Don't add other UI libraries without agreement.
+- Every page handles loading, empty and error states. Role access is declared in `router.ts` `meta.roles` and enforced again server-side.
+- Every page and feature has an ID and an owning stream (`docs/PLAN.md` §8.3). Put shared components in `src/components/`.
 
 ## Contracts
 

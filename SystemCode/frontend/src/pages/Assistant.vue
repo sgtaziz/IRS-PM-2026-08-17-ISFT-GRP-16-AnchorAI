@@ -1,4 +1,4 @@
 <template>
   <h2>Assistant</h2>
-  <div class="todo">Stream C: Chat with the staff assistant; show detected intent, tool used and cited evidence under each answer.</div>
+  <div class="todo">W30 · Stream C · see docs/PLAN.md §8.3</div>
 </template>

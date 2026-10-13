@@ -1,4 +1,4 @@
 <template>
   <h2>Dashboard</h2>
-  <div class="todo">Stream A: KPIs (members at risk, expected revenue at risk), churn-risk distribution, segment mix, trend over weeks.</div>
+  <div class="todo">W10 · Stream A · see docs/PLAN.md §8.3</div>
 </template>
