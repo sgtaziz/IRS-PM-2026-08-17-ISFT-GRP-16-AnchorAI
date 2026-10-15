@@ -7,3 +7,10 @@ aside a { color: #c9d6ea; text-decoration: none; padding: .4rem .5rem; border-ra
 aside a.router-link-exact-active { background: #24426e; color: #fff; }
 main { padding: 1.5rem 2rem; }
 .todo { border: 1px dashed #9aa7b8; border-radius: 8px; padding: 1rem; color: #5b6778; }
+.layout.public { grid-template-columns: 1fr; place-items: center; }
+.session { margin-top: auto; display: flex; flex-direction: column; gap: .35rem; padding-top: 1rem; border-top: 1px solid #24426e; }
+.session small { color: #c9d6ea; text-transform: capitalize; }
+.login-card { display: flex; flex-direction: column; gap: .5rem; width: min(360px, 100%); background: #fff; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 24px rgba(16, 35, 63, .08); }
+.login-card h2 { margin: 0 0 .5rem; }
+.login-card label { font-size: .9rem; font-weight: 600; margin-top: .25rem; }
+.login-card .hint { color: #5b6778; margin-top: .5rem; }

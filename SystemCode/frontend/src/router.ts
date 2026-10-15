@@ -1,6 +1,16 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
+import type { Role } from './api/types'
+import { useAuthStore } from './stores/auth'
 
-export type Role = 'staff' | 'manager' | 'admin'
+export type { Role }
+
+declare module 'vue-router' {
+  interface RouteMeta {
+    public?: boolean
+    hidden?: boolean
+    roles?: Role[]
+  }
+}
 
 export const routes: RouteRecordRaw[] = [
   { path: '/login', name: 'Login', component: () => import('./pages/Login.vue'), meta: { public: true, hidden: true } },
@@ -22,3 +32,20 @@ export const routes: RouteRecordRaw[] = [
 ]
 
 export const router = createRouter({ history: createWebHistory(), routes })
+
+router.beforeEach(async (to) => {
+  const auth = useAuthStore()
+  if (auth.token && !auth.user) {
+    try {
+      await auth.fetchMe()
+    } catch {
+      auth.logout()
+    }
+  }
+  if (to.meta.public) {
+    return auth.isAuthenticated && to.name === 'Login' ? auth.homeRoute : true
+  }
+  if (!auth.isAuthenticated) return { name: 'Login', query: { redirect: to.fullPath } }
+  if (to.meta.roles && !auth.hasRole(to.meta.roles)) return auth.homeRoute
+  return true
+})
