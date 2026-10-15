@@ -24,12 +24,22 @@ async function complete(e: { query: string }) {
   }
 }
 
-function select(e: AutoCompleteOptionSelectEvent) {
-  const hit = e.value as MemberHit
+function go(memberId: string) {
   open.value = false
   text.value = ''
-  router.push(`/members/${hit.member_id}`)
+  router.push(`/members/${memberId}`)
 }
+
+function select(e: AutoCompleteOptionSelectEvent) {
+  go((e.value as MemberHit).member_id)
+}
+
+function submitTyped() {
+  const typed = typeof text.value === 'string' ? text.value.trim().toUpperCase() : ''
+  const exact = hits.value.find((h) => h.member_id === typed)
+  if (exact) go(exact.member_id)
+}
+
 
 function onKey(e: KeyboardEvent) {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
@@ -50,7 +60,12 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
     severity="secondary"
     @click="open = true"
   />
-  <Dialog v-model:visible="open" header="Find a member" modal :style="{ width: 'min(520px, 92vw)' }">
+  <Dialog
+    v-model:visible="open"
+    header="Find a member"
+    modal
+    :style="{ width: 'min(520px, 92vw)' }"
+  >
     <label for="member-search" class="sr-only">Member ID</label>
     <AutoComplete
       v-model="text"
@@ -63,6 +78,8 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
       :delay="200"
       @complete="complete"
       @option-select="select"
+      :pt="{ pcInputText: { root: { autofocus: true } } }"
+      @keydown.enter="submitTyped"
     >
       <template #option="{ option }">
         <div class="hit">
