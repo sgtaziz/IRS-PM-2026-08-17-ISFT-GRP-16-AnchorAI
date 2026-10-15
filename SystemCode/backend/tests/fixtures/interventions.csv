@@ -1,0 +1,13 @@
+intervention_id,member_id,week_start,offer_id,channel,treated,stayed
+V0001,M0001,2026-08-31,free_pt_session,call,True,True
+V0002,M0003,2026-08-31,,,False,True
+V0003,M0008,2026-08-31,discount_1m,email,True,False
+V0004,M0009,2026-09-07,checkin_message,sms,True,True
+V0005,M0011,2026-09-07,,,False,False
+V0006,M0010,2026-09-14,class_pass,sms,True,True
+V0007,M0012,2026-09-14,,,False,False
+V0008,M0005,2026-09-21,discount_1m,call,True,True
+V0009,M0007,2026-09-21,,,False,True
+V0010,M0002,2026-09-28,checkin_message,email,True,True
+V0011,M0006,2026-09-28,free_pt_session,in_person,True,True
+V0012,M0004,2026-10-05,,,False,True

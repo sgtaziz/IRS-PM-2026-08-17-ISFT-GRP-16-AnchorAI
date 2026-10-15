@@ -1,0 +1,5 @@
+offer_id,name,cost,staff_minutes,inventory,channels
+checkin_message,Personal check-in message,0.0,5,,sms|email
+free_pt_session,Free personal training session,40.0,60,10,call|in_person
+class_pass,Bring-a-friend class pass,15.0,10,30,sms|email|call
+discount_1m,One month at 20% off,12.0,15,,email|call
