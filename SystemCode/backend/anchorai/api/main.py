@@ -4,7 +4,16 @@ from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from anchorai.api.deps import ANY_ROLE, require_role
-from anchorai.api.routers import assistant, auth, health, members, plan, rules
+from anchorai.api.routers import (
+    admin_data,
+    admin_offers,
+    assistant,
+    auth,
+    health,
+    members,
+    plan,
+    rules,
+)
 from anchorai.config import INSECURE_JWT_SECRETS, get_settings
 
 if get_settings().anchorai_jwt_secret in INSECURE_JWT_SECRETS:
@@ -23,6 +32,7 @@ app.add_middleware(
 
 any_role = [Depends(require_role(*ANY_ROLE))]
 manager_up = [Depends(require_role("manager", "admin"))]
+admin_only = [Depends(require_role("admin"))]
 
 app.include_router(health.router)
 app.include_router(auth.router, prefix="/api/auth", tags=["auth (Stream C)"])
@@ -37,4 +47,16 @@ app.include_router(
 )
 app.include_router(
     assistant.router, prefix="/api/assistant", tags=["assistant (Stream C)"], dependencies=any_role
+)
+app.include_router(
+    admin_data.router,
+    prefix="/api/admin/data",
+    tags=["admin data (Stream A)"],
+    dependencies=admin_only,
+)
+app.include_router(
+    admin_offers.router,
+    prefix="/api/admin/offers",
+    tags=["admin offers (Stream A)"],
+    dependencies=admin_only,
 )
