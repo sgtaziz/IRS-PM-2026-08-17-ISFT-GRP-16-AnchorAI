@@ -32,6 +32,11 @@ class MemberPage(BaseModel):
     page_size: int
 
 
+class Facets(BaseModel):
+    clubs: list[str]
+    segments: list[str]
+
+
 class MemberHit(BaseModel):
     member_id: str
     segment: str

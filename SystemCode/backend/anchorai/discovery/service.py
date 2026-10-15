@@ -15,6 +15,7 @@ from anchorai.discovery.scores import load_features, load_scores, to_member_scor
 from anchorai.discovery.views import (
     AttendanceRow,
     Dashboard,
+    Facets,
     InterventionRow,
     Kpis,
     MemberDetail,
@@ -148,6 +149,14 @@ def export_csv(sort: str, order: str, **filters) -> str:
     buffer = io.StringIO()
     frame.reset_index()[list(MemberRow.model_fields)].to_csv(buffer, index=False)
     return buffer.getvalue()
+
+
+def facets() -> Facets:
+    data = get_data()
+    return Facets(
+        clubs=sorted(data.table["club_id"].unique()),
+        segments=list(data.segments.sort_values("segment_id")["name"]),
+    )
 
 
 def search(q: str, limit: int = 10) -> list[MemberHit]:

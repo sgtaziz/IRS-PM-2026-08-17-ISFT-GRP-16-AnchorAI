@@ -6,9 +6,12 @@ from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
+import pandas as pd
+
 from anchorai import pipeline
 from anchorai.config import get_settings
 from anchorai.scenario.build import load_kaggle
+from anchorai.scenario.tables import SchemaError
 
 RAW_NAME = "gym_churn_us.csv"
 
@@ -63,7 +66,12 @@ def replace_raw(content: bytes) -> int:
     with tempfile.NamedTemporaryFile(suffix=".csv") as tmp:
         tmp.write(content)
         tmp.flush()
-        rows = len(load_kaggle(Path(tmp.name)))
+        try:
+            rows = len(load_kaggle(Path(tmp.name)))
+        except SchemaError as e:
+            raise ValueError(str(e).replace(Path(tmp.name).name, "Uploaded CSV")) from None
+        except (pd.errors.ParserError, UnicodeDecodeError, ValueError):
+            raise ValueError("Uploaded file is not a readable CSV") from None
     if rows < 100:
         raise ValueError(f"Expected the full member table, got {rows} rows")
     directory = raw_dir()

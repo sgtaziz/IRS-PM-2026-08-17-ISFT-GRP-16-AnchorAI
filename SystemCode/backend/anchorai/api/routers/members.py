@@ -7,6 +7,7 @@ from anchorai.api.deps import SessionDep, require_role
 from anchorai.discovery import service
 from anchorai.discovery.views import (
     Dashboard,
+    Facets,
     MemberDetail,
     MemberHit,
     MemberPage,
@@ -63,6 +64,11 @@ def export_members(f: Filters, sort: str = "churn_prob", order: Order = "desc"):
     csv = _data_or_503(service.export_csv, sort, order, **f)
     headers = {"Content-Disposition": 'attachment; filename="members.csv"'}
     return PlainTextResponse(csv, media_type="text/csv", headers=headers)
+
+
+@router.get("/facets", response_model=Facets, dependencies=manager_up)
+def facets():
+    return _data_or_503(service.facets)
 
 
 @router.get("/search", response_model=list[MemberHit])
