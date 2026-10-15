@@ -17,6 +17,7 @@ class Offer(BaseModel):
     cost: float
     staff_minutes: int = 0
     inventory: int | None = None
+    channels: list[Channel] = []
 
 
 class MemberScore(BaseModel):
