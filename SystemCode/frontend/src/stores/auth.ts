@@ -16,6 +16,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function login(username: string, password: string) {
+    logout()
     const res = await api<TokenResponse>('/auth/login', {
       method: 'POST',
       body: JSON.stringify({ username, password }),

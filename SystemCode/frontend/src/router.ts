@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
+import { ApiError } from './api/client'
 import type { Role } from './api/types'
 import { useAuthStore } from './stores/auth'
 
@@ -38,8 +39,9 @@ router.beforeEach(async (to) => {
   if (auth.token && !auth.user) {
     try {
       await auth.fetchMe()
-    } catch {
-      auth.logout()
+    } catch (e) {
+      // Keep the token through a network blip or a 5xx; only a rejected token ends the session.
+      if (e instanceof ApiError && e.status === 401) auth.logout()
     }
   }
   if (to.meta.public) {
