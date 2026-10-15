@@ -104,9 +104,10 @@ def build_attendance(
     goers = members[members["group_visits"] == 1]
     n_classes = rng.integers(1, 4, size=len(goers))
     rows = goers.loc[goers.index.repeat(n_classes), ["member_id", "club_id"]]
-    by_club = classes.groupby("club_id")["class_id"].apply(list)
-    pick = rng.integers(0, len(classes) // len(CLUBS), size=len(rows))
-    rows["class_id"] = [by_club[c][i] for c, i in zip(rows["club_id"], pick, strict=True)]
+    club_classes = np.stack(classes.groupby("club_id")["class_id"].apply(np.array)[list(CLUBS)])
+    club_index = rows["club_id"].map({c: i for i, c in enumerate(CLUBS)}).to_numpy()
+    pick = rng.integers(0, club_classes.shape[1], size=len(rows))
+    rows["class_id"] = club_classes[club_index, pick]
     rows["weight"] = rng.random(len(rows))
     rows = rows.groupby(["member_id", "class_id"], as_index=False)["weight"].sum()
     rows["weight"] /= rows.groupby("member_id")["weight"].transform("sum")
@@ -140,10 +141,11 @@ def build_interventions(
     history["treated"] = rng.random(n) < 0.6
     offer = pd.Series(rng.choice(OFFERS["offer_id"], size=n)).where(history["treated"])
     history["offer_id"] = offer
-    channels = OFFERS.set_index("offer_id")["channels"].str.split("|")
-    history["channel"] = [
-        rng.choice(channels[o]) if isinstance(o, str) else None for o in history["offer_id"]
-    ]
+    options = OFFERS.assign(channel=OFFERS["channels"].str.split("|")).explode("channel")
+    options["k"] = options.groupby("offer_id").cumcount()
+    n_options = history["offer_id"].map(options.groupby("offer_id").size()).fillna(1)
+    history["k"] = (rng.random(n) * n_options).astype(int)
+    history = history.merge(options[["offer_id", "k", "channel"]], on=["offer_id", "k"], how="left")
     effect = history.merge(true_uplift, on=["member_id", "offer_id"], how="left")["uplift"]
     p_stay = np.where(history["churn"] == 1, 0.3, 0.9) + effect.fillna(0).to_numpy()
     history["stayed"] = rng.random(n) < np.clip(p_stay, 0, 1)
