@@ -1,0 +1,3 @@
+event_id,event_type,entity_id,week_start
+E001,instructor_left,I01,2026-10-05
+E002,class_cancelled,K04,2026-10-05

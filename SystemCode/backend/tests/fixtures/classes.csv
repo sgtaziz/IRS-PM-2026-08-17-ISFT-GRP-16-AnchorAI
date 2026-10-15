@@ -1,0 +1,5 @@
+class_id,name,club_id,instructor_id
+K01,Spin 7am,C1,I01
+K02,HIIT 6pm,C1,I01
+K03,Yoga Sat,C1,I02
+K04,Pilates 12pm,C2,I03
