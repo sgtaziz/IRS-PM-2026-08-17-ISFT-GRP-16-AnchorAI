@@ -148,6 +148,14 @@ npm run build                                # type-check + build
 - Cypher queries are parameterised templates; never string-format user input into queries. Use a read-only path for assistant queries.
 - The pipeline must still run, degraded, when the LLM or Neo4j is unavailable.
 
+## Notebook first for AI work
+
+Any AI or ML setup or testing starts in a notebook in `SystemCode/notebooks/` before it goes into `SystemCode/backend/`. This covers LLM prompts and endpoints, embeddings and intent classifiers, model training and tuning, KG queries and rule thresholds.
+
+1. **Prototype in a notebook.** Name it `<stream>_<topic>.ipynb`, e.g. `c_intent_classifier.ipynb`.
+2. **Test it live with the owner.** The owner runs the cells and inspects the outputs. AI agents guide them cell by cell (what to run, what to look for, what to tweak) rather than writing the whole thing unseen.
+3. **Move the final version into the package.** Once the behaviour is agreed, put the logic in `anchorai/`, add tests where they guard a real regression, and change the notebook to import it.
+
 ## Secrets and data
 
 - Secrets live only in `.env`, which is git-ignored. Never hard-code keys.
