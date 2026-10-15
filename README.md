@@ -39,11 +39,13 @@ git clone <repo-url> && cd AnchorAI
 cp .env.example .env            # set LLM_BASE_URL / LLM_API_KEY / LLM_MODEL (Ollama, OpenAI or compatible)
 docker compose up -d neo4j
 
-cd SystemCode/backend && uv sync && uv run uvicorn anchorai.api.main:app --reload
+cd SystemCode/backend && uv sync
+uv run anchorai setup           # data tables, migrated + seeded app DB, knowledge graph
+uv run uvicorn anchorai.api.main:app --reload
 cd SystemCode/frontend && npm install && npm run dev
 ```
 
-Open http://localhost:5173. Alternatively, run `docker compose up --build` to start the full stack.
+Open http://localhost:5173 and log in as `admin`, `manager`, `staff1` or `staff2` with password `anchorai` (set by `ANCHORAI_DEMO_PASSWORD`). Set `ANCHORAI_JWT_SECRET` in `.env` before deploying anywhere shared. Run `uv run anchorai db reset` for a clean demo database. Alternatively, run `docker compose up --build` to start the full stack.
 
 ---
 
