@@ -1,8 +1,8 @@
-"""Scenario v0: real Kaggle members plus a crude synthetic gym around them.
+"""Scenario layer: real Kaggle members plus a synthetic gym around them (docs/SCENARIO.md).
 
-Only `members` (minus club_id and monthly_value) is real. Everything else is synthetic and
-deterministic in the seed. The intervention history and true uplift here are placeholders
-until scenario v1 (PLAN.md A5) documents the ground-truth effect function.
+Only `members` (minus club_id, monthly_value and split) is real. Everything else is synthetic
+and deterministic in the seed. The intervention history follows a documented ground-truth
+effect function so uplift estimators and plans can be scored against it.
 """
 
 from datetime import date, timedelta
@@ -12,8 +12,8 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
-from anchorai.config import get_settings
-from anchorai.scenario.tables import KAGGLE_COLUMNS, SchemaError, write_tables
+from anchorai.features import build_features
+from anchorai.scenario.tables import KAGGLE_COLUMNS, SchemaError
 
 KAGGLE_URL = "https://www.kaggle.com/datasets/adrianvinueza/gym-customers-features-and-churn"
 AS_OF = date(2026, 10, 12)
@@ -41,12 +41,8 @@ OFFERS = pd.DataFrame(
     ],
     columns=["offer_id", "name", "cost", "staff_minutes", "inventory", "channels"],
 )
-OFFER_BASE_UPLIFT = {
-    "checkin_message": 0.02,
-    "free_pt_session": 0.08,
-    "class_pass": 0.05,
-    "discount_1m": 0.04,
-}
+HISTORY_SHARE = 0.6
+TREATED_SHARE = 0.6
 
 
 def find_raw_csv(raw_dir: Path) -> Path:
@@ -116,29 +112,74 @@ def build_attendance(
     return rows
 
 
-def build_true_uplift(members: pd.DataFrame) -> pd.DataFrame:
-    """Crude v0 effect: larger for churners, with a few offer-specific modifiers."""
-    grid = members.merge(OFFERS[["offer_id"]], how="cross")
-    risk = np.where(grid["churn"] == 1, 1.0, 0.3)
-    uplift = grid["offer_id"].map(OFFER_BASE_UPLIFT) * risk
-    uplift += np.where((grid["offer_id"] == "free_pt_session") & (grid["lifetime"] <= 3), 0.05, 0)
-    uplift += np.where((grid["offer_id"] == "class_pass") & (grid["group_visits"] == 1), 0.03, 0)
-    uplift += np.where(
-        (grid["offer_id"] == "discount_1m") & (grid["contract_period"] == 1), 0.03, 0
+def sigmoid(z: np.ndarray) -> np.ndarray:
+    return 1 / (1 + np.exp(-z))
+
+
+def base_churn(f: pd.DataFrame) -> pd.Series:
+    """Synthetic no-contact churn hazard over the next month, from features only."""
+    z = (
+        -1.4
+        + 1.3 * (f["lifetime"] <= 2)
+        + 1.1 * (f["trend_ratio"] < 0.7)
+        - 0.9 * (f["contract_period"] == 12)
+        - 0.4 * f["group_visits"]
+        - 0.5 * (f["avg_class_frequency_total"] - 1.9)
     )
-    grid["uplift"] = uplift.round(4)
-    return grid[["member_id", "offer_id", "uplift"]]
+    return pd.Series(sigmoid(z.to_numpy()), index=f.index, name="base_churn")
+
+
+def offer_effects(f: pd.DataFrame) -> pd.DataFrame:
+    """Raw treatment effect on next-month retention, one column per offer (before saturation).
+
+    Effects are heterogeneous on purpose: PT sessions work for new members, class passes for
+    class-goers, discounts for price-sensitive monthly members and backfire on annual ones.
+    """
+    falling = (f["trend_ratio"] < 0.85).astype(float)
+    new = (f["lifetime"] <= 3).astype(float)
+    price_sensitive = (f["contract_period"] == 1) & (f["avg_additional_charges_total"] < 120)
+    effects = pd.DataFrame(
+        {
+            "checkin_message": 0.02 + 0.04 * falling,
+            "free_pt_session": 0.02 + 0.14 * new + 0.04 * falling,
+            "class_pass": 0.01 + 0.10 * f["group_visits"] + 0.04 * f["promo_friends"],
+            "discount_1m": 0.01
+            + 0.12 * price_sensitive.astype(float)
+            - 0.06 * (f["contract_period"] == 12),
+        },
+        index=f.index,
+    )
+    # Persuasion matters more for members who are at risk in the first place.
+    return effects.mul(0.6 + base_churn(f), axis=0)
+
+
+def build_true_uplift(features: pd.DataFrame) -> pd.DataFrame:
+    """Realised uplift in stay probability, after saturating at certain retention."""
+    stay = 1 - base_churn(features)
+    treated_stay = (offer_effects(features).add(stay, axis=0)).clip(0, 1)
+    uplift = treated_stay.sub(stay, axis=0)
+    long = (
+        uplift.rename_axis("member_id")
+        .reset_index()
+        .melt(id_vars="member_id", var_name="offer_id", value_name="uplift")
+    )
+    return long.sort_values(["member_id", "offer_id"], ignore_index=True)
 
 
 def build_interventions(
-    members: pd.DataFrame, true_uplift: pd.DataFrame, rng: np.random.Generator
+    members: pd.DataFrame,
+    features: pd.DataFrame,
+    true_uplift: pd.DataFrame,
+    rng: np.random.Generator,
 ) -> pd.DataFrame:
-    history = members.sample(frac=0.3, random_state=rng.integers(2**31)).reset_index(drop=True)
+    """Randomised past contacts: a random share of members, a random offer, a random week."""
+    history = members.sample(frac=HISTORY_SHARE, random_state=rng.integers(2**31))
+    history = history.reset_index(drop=True)
     n = len(history)
     history["week_start"] = pd.to_datetime(AS_OF) - pd.to_timedelta(
         7 * rng.integers(1, HISTORY_WEEKS + 1, size=n), unit="D"
     )
-    history["treated"] = rng.random(n) < 0.6
+    history["treated"] = rng.random(n) < TREATED_SHARE
     offer = pd.Series(rng.choice(OFFERS["offer_id"], size=n)).where(history["treated"])
     history["offer_id"] = offer
     options = OFFERS.assign(channel=OFFERS["channels"].str.split("|")).explode("channel")
@@ -147,20 +188,25 @@ def build_interventions(
     history["k"] = (rng.random(n) * n_options).astype(int)
     history = history.merge(options[["offer_id", "k", "channel"]], on=["offer_id", "k"], how="left")
     effect = history.merge(true_uplift, on=["member_id", "offer_id"], how="left")["uplift"]
-    p_stay = np.where(history["churn"] == 1, 0.3, 0.9) + effect.fillna(0).to_numpy()
-    history["stayed"] = rng.random(n) < np.clip(p_stay, 0, 1)
+    stay = 1 - history["member_id"].map(base_churn(features))
+    history["stayed"] = rng.random(n) < (stay + effect.fillna(0)).clip(0, 1).to_numpy()
     history = history.sort_values(["week_start", "member_id"], ignore_index=True)
     history["intervention_id"] = [f"V{i:05d}" for i in range(1, n + 1)]
     return history
 
 
-def build_events(instructors: pd.DataFrame, classes: pd.DataFrame) -> pd.DataFrame:
+def build_events(classes: pd.DataFrame, attendance: pd.DataFrame) -> pd.DataFrame:
+    """The busiest instructor leaves; the busiest class at another club is cancelled."""
     week = pd.Timestamp(AS_OF - timedelta(days=7))
+    load = attendance.merge(classes, on="class_id").groupby(["club_id", "instructor_id"]).size()
+    club, instructor = load.sort_values(ascending=False, kind="stable").index[0]
+    others = attendance.merge(classes[classes["club_id"] != club], on="class_id")
+    cancelled = others.groupby("class_id").size().sort_values(ascending=False, kind="stable")
     return pd.DataFrame(
         {
             "event_id": ["E001", "E002"],
             "event_type": ["instructor_left", "class_cancelled"],
-            "entity_id": [instructors["instructor_id"].iloc[0], classes["class_id"].iloc[-1]],
+            "entity_id": [instructor, cancelled.index[0]],
             "week_start": [week, week],
         }
     )
@@ -170,24 +216,16 @@ def build_tables(raw: pd.DataFrame, seed: int) -> dict[str, pd.DataFrame]:
     rng = np.random.default_rng(seed)
     members = build_members(raw, rng, seed)
     instructors, classes = build_staff_and_classes()
-    true_uplift = build_true_uplift(members)
+    attendance = build_attendance(members, classes, rng)
+    features = build_features(members)
+    true_uplift = build_true_uplift(features)
     return {
         "members": members,
         "instructors": instructors,
         "classes": classes,
-        "attendance": build_attendance(members, classes, rng),
+        "attendance": attendance,
         "offers": OFFERS,
-        "interventions": build_interventions(members, true_uplift, rng),
+        "interventions": build_interventions(members, features, true_uplift, rng),
         "true_uplift": true_uplift,
-        "events": build_events(instructors, classes),
+        "events": build_events(classes, attendance),
     }
-
-
-def build(seed: int | None = None) -> Path:
-    """Regenerate every data table from data/raw/ into data/generated/."""
-    settings = get_settings()
-    seed = settings.anchorai_seed if seed is None else seed
-    raw = load_kaggle(find_raw_csv(settings.anchorai_data_dir / "raw"))
-    out = settings.anchorai_data_dir / "generated"
-    write_tables(build_tables(raw, seed), out)
-    return out
