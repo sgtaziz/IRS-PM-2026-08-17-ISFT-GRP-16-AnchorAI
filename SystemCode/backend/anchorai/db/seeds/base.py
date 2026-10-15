@@ -1,4 +1,4 @@
-"""Base seed layer: demo users and the rule base as version 1.
+"""Base seed layer: demo users, the rule base as version 1, offers, roster and constraints.
 
 bcrypt salts are random by design, so hashes differ between runs; idempotency comes from
 upserting by username, and ANCHORAI_SEED governs everything else.
@@ -10,6 +10,7 @@ from pathlib import Path
 from sqlmodel import Session, select
 
 import anchorai.reasoning
+from anchorai import catalog
 from anchorai.auth.security import hash_password
 from anchorai.config import get_settings
 from anchorai.db.models import RuleVersion, User
@@ -46,3 +47,6 @@ def seed(session: Session, rng: random.Random) -> None:
         session.add(
             RuleVersion(version=1, yaml_text=rules_yaml(), note="Seeded rule base", is_active=True)
         )
+
+    session.flush()
+    catalog.seed(session, rng)

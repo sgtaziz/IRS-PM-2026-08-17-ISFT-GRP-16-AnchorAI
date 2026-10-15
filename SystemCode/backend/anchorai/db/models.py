@@ -116,3 +116,36 @@ class AssistantFeedback(SQLModel, table=True):
     tool: str | None = None
     rating: int
     comment: str | None = None
+
+
+class OfferCatalog(SQLModel, table=True):
+    __tablename__ = "offer_catalog"
+
+    offer_id: str = Field(primary_key=True)
+    name: str
+    cost: float
+    staff_minutes: int = 0
+    # Weekly units available; None means unlimited.
+    inventory: int | None = None
+    channels: list[str] = Field(default_factory=list, sa_column=Column(JSON, nullable=False))
+    eligibility: str = ""
+    # Staff skill needed to deliver it, e.g. PT offers go to trainers; empty means anyone.
+    required_skill: str = ""
+    active: bool = True
+    updated_at: datetime = Field(default_factory=utcnow)
+
+
+class StaffProfile(SQLModel, table=True):
+    __tablename__ = "staff_profiles"
+
+    user_id: int = Field(foreign_key="users.id", primary_key=True)
+    weekly_hours: float = 0.0
+    skills: list[str] = Field(default_factory=list, sa_column=Column(JSON, nullable=False))
+
+
+class AppSetting(SQLModel, table=True):
+    __tablename__ = "app_settings"
+
+    key: str = Field(primary_key=True)
+    value: Any = Field(sa_column=Column(JSON, nullable=False))
+    updated_at: datetime = Field(default_factory=utcnow)
