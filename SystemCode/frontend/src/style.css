@@ -1,16 +1,59 @@
-:root { font-family: system-ui, sans-serif; color: #1c2430; background: #f6f7f9; }
-body { margin: 0; }
-.layout { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
-aside { background: #10233f; color: #fff; padding: 1rem; display: flex; flex-direction: column; gap: .25rem; }
-aside h1 { font-size: 1.25rem; margin: 0 0 1rem; }
-aside a { color: #c9d6ea; text-decoration: none; padding: .4rem .5rem; border-radius: 6px; }
-aside a.router-link-exact-active { background: #24426e; color: #fff; }
-main { padding: 1.5rem 2rem; }
-.todo { border: 1px dashed #9aa7b8; border-radius: 8px; padding: 1rem; color: #5b6778; }
+:root {
+  --bg: #f6f7f9;
+  --surface: #fff;
+  --border: #dde3ea;
+  --text: #1c2430;
+  --muted: #5b6778;
+  --accent: #2f6fb5;
+  --nav: #10233f;
+  --nav-active: #24426e;
+  --nav-text: #c9d6ea;
+  font-family: system-ui, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
+body { margin: 0; background: var(--bg); }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.layout { display: grid; grid-template-columns: 230px 1fr; min-height: 100vh; }
 .layout.public { grid-template-columns: 1fr; place-items: center; }
-.session { margin-top: auto; display: flex; flex-direction: column; gap: .35rem; padding-top: 1rem; border-top: 1px solid #24426e; }
-.session small { color: #c9d6ea; text-transform: capitalize; }
-.login-card { display: flex; flex-direction: column; gap: .5rem; width: min(360px, 100%); background: #fff; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 24px rgba(16, 35, 63, .08); }
+aside { background: var(--nav); color: #fff; padding: 1rem; display: flex; flex-direction: column; gap: .5rem; position: sticky; top: 0; height: 100vh; box-sizing: border-box; overflow-y: auto; }
+aside h1 { font-size: 1.25rem; margin: 0 0 .5rem; }
+aside nav { display: flex; flex-direction: column; gap: .15rem; }
+aside a { color: var(--nav-text); text-decoration: none; padding: .4rem .5rem; border-radius: 6px; }
+aside a:focus-visible { outline: 2px solid #fff; }
+aside a.router-link-exact-active { background: var(--nav-active); color: #fff; }
+main { padding: 1.5rem 2rem; min-width: 0; }
+.todo { border: 1px dashed #9aa7b8; border-radius: 8px; padding: 1rem; color: var(--muted); }
+.topbar { display: none; }
+.session { margin-top: auto; display: flex; flex-direction: column; gap: .35rem; padding-top: 1rem; border-top: 1px solid var(--nav-active); }
+.session small { color: var(--nav-text); text-transform: capitalize; }
+.login-card { display: flex; flex-direction: column; gap: .5rem; width: min(360px, 100%); background: var(--surface); padding: 2rem; border-radius: 12px; box-shadow: 0 4px 24px rgba(16, 35, 63, .08); }
 .login-card h2 { margin: 0 0 .5rem; }
 .login-card label { font-size: .9rem; font-weight: 600; margin-top: .25rem; }
-.login-card .hint { color: #5b6778; margin-top: .5rem; }
+.login-card .hint { color: var(--muted); margin-top: .5rem; }
+
+.page-head { display: flex; flex-wrap: wrap; gap: .75rem; align-items: baseline; justify-content: space-between; margin-bottom: 1rem; }
+.page-head h2 { margin: 0; }
+.page-head .sub { color: var(--muted); }
+.grid { display: grid; gap: 1rem; }
+.kpis { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); margin-bottom: 1rem; }
+.cols-2 { grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); }
+.cols-3 { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+.toolbar { display: flex; flex-wrap: wrap; gap: .5rem; align-items: end; margin-bottom: 1rem; }
+.field { display: flex; flex-direction: column; gap: .25rem; font-size: .85rem; }
+.field > span { color: var(--muted); font-weight: 600; }
+.muted { color: var(--muted); }
+.kv { display: grid; grid-template-columns: max-content 1fr; gap: .3rem 1rem; margin: 0; }
+.kv dt { color: var(--muted); }
+.kv dd { margin: 0; }
+table.plain { border-collapse: collapse; width: 100%; font-size: .9rem; }
+table.plain th, table.plain td { text-align: left; padding: .4rem .5rem; border-bottom: 1px solid var(--border); }
+table.plain th { color: var(--muted); font-weight: 600; }
+
+@media (max-width: 960px) {
+  .layout { grid-template-columns: 1fr; }
+  .topbar { display: flex; align-items: center; gap: .75rem; padding: .5rem 1rem; background: var(--nav); color: #fff; position: sticky; top: 0; z-index: 20; }
+  aside { display: none; position: fixed; z-index: 30; top: 3rem; left: 0; width: 260px; height: calc(100vh - 3rem); }
+  .layout.menu-open aside { display: flex; }
+  main { padding: 1rem; }
+}

@@ -20,7 +20,7 @@ export function setUnauthorizedHandler(handler: () => void) {
   onUnauthorized = handler
 }
 
-export async function api<T>(path: string, init?: RequestInit): Promise<T> {
+async function request(path: string, init?: RequestInit): Promise<Response> {
   const token = getToken()
   const headers = new Headers(init?.headers)
   if (init?.body && !headers.has('Content-Type')) headers.set('Content-Type', 'application/json')
@@ -36,6 +36,31 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
     }
     throw new ApiError(res.status, message)
   }
+  return res
+}
+
+export async function api<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await request(path, init)
   if (res.status === 204) return undefined as T
   return res.json() as Promise<T>
+}
+
+export async function apiText(path: string, init?: RequestInit): Promise<string> {
+  return (await request(path, init)).text()
+}
+
+export function query(params: Record<string, string | number | null | undefined>): string {
+  const q = new URLSearchParams()
+  for (const [k, v] of Object.entries(params)) if (v !== null && v !== undefined && v !== '') q.set(k, String(v))
+  const s = q.toString()
+  return s ? `?${s}` : ''
+}
+
+export function downloadText(filename: string, text: string, type = 'text/csv') {
+  const url = URL.createObjectURL(new Blob([text], { type }))
+  const a = document.createElement('a')
+  a.href = url
+  a.download = filename
+  a.click()
+  URL.revokeObjectURL(url)
 }
