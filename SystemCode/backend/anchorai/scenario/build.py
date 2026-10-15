@@ -13,6 +13,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 
 from anchorai.features import build_features
+from anchorai.scenario.offers import OFFER_CATALOG
 from anchorai.scenario.tables import KAGGLE_COLUMNS, SchemaError
 
 KAGGLE_URL = "https://www.kaggle.com/datasets/adrianvinueza/gym-customers-features-and-churn"
@@ -32,15 +33,9 @@ CLASS_NAMES = [
     "Zumba", "Core", "Stretch", "Bootcamp", "Barre", "Step",
     "Kettlebell", "Aqua", "Mobility", "TRX", "Dance", "Power",
 ]  # fmt: skip
-OFFERS = pd.DataFrame(
-    [
-        ("checkin_message", "Personal check-in message", 0.0, 5, None, "sms|email"),
-        ("free_pt_session", "Free personal training session", 40.0, 60, 40, "call|in_person"),
-        ("class_pass", "Bring-a-friend class pass", 15.0, 10, 100, "sms|email|call"),
-        ("discount_1m", "One month at 20% off", 12.0, 15, None, "email|call"),
-    ],
-    columns=["offer_id", "name", "cost", "staff_minutes", "inventory", "channels"],
-)
+OFFERS = pd.DataFrame(OFFER_CATALOG)[
+    ["offer_id", "name", "cost", "staff_minutes", "inventory", "channels"]
+].assign(channels=lambda d: d["channels"].str.join("|"))
 HISTORY_SHARE = 0.6
 TREATED_SHARE = 0.6
 
