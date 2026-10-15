@@ -173,4 +173,5 @@ Any AI or ML setup or testing starts in a notebook in `SystemCode/notebooks/` be
 
 - Works end to end from the API (and its page, if it has one) on the current data.
 - Lint, tests and build pass, and the change has been reviewed by another stream.
+- If it changes how to install, configure or run the system (new command, env var, service or seed), the README quick start and the "Setup and commands" section above are updated in the same change, and the user-guide notes for the report when a user-facing step changes.
 - Experiment results, if any, are saved as figures and tables under `SystemCode/notebooks/` and referenced in the report.
