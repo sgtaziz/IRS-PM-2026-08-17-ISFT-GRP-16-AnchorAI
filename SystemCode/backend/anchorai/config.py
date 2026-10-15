@@ -16,6 +16,9 @@ def _find_repo_root() -> Path:
 
 REPO_ROOT = _find_repo_root()
 _SQLITE_PREFIX = "sqlite:///"
+_DEV_JWT_SECRET = "dev-only-insecure-secret-set-ANCHORAI_JWT_SECRET"
+# Published defaults (code and .env.example); anyone could forge tokens with them.
+INSECURE_JWT_SECRETS = {_DEV_JWT_SECRET, "change-me-to-a-random-32-byte-hex-string"}
 
 
 class Settings(BaseSettings):
@@ -37,7 +40,7 @@ class Settings(BaseSettings):
     # Empty means <anchorai_data_dir>/app.db.
     anchorai_db_url: str = ""
 
-    anchorai_jwt_secret: str = "dev-only-insecure-secret-set-ANCHORAI_JWT_SECRET"
+    anchorai_jwt_secret: str = _DEV_JWT_SECRET
     anchorai_jwt_ttl_minutes: int = 720
     anchorai_demo_password: str = "anchorai"
 

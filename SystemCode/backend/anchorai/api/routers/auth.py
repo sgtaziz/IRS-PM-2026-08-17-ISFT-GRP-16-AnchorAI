@@ -3,7 +3,7 @@ from sqlmodel import select
 
 from anchorai.api.deps import CurrentUser, SessionDep
 from anchorai.auth.schemas import LoginRequest, TokenResponse, UserOut
-from anchorai.auth.security import create_access_token, verify_password
+from anchorai.auth.security import burn_password_check, create_access_token, verify_password
 from anchorai.db.audit import record_audit
 from anchorai.db.models import User
 
@@ -13,7 +13,10 @@ router = APIRouter()
 @router.post("/login", response_model=TokenResponse)
 def login(req: LoginRequest, session: SessionDep) -> TokenResponse:
     user = session.exec(select(User).where(User.username == req.username)).first()
-    if user is None or not user.is_active or not verify_password(req.password, user.password_hash):
+    if user is None or not user.is_active:
+        burn_password_check(req.password)
+        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid username or password")
+    if not verify_password(req.password, user.password_hash):
         raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid username or password")
     record_audit(session, user, "login", "user", str(user.id))
     session.commit()

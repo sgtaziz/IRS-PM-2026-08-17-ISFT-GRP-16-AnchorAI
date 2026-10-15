@@ -1,4 +1,5 @@
 from datetime import UTC, datetime, timedelta
+from functools import lru_cache
 from typing import Any
 
 import bcrypt
@@ -12,6 +13,16 @@ ALGORITHM = "HS256"
 
 def hash_password(password: str) -> str:
     return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+
+
+@lru_cache
+def _dummy_hash() -> str:
+    return hash_password("timing-equaliser")
+
+
+def burn_password_check(password: str) -> None:
+    """Spend the same bcrypt time as a real check, so unknown usernames aren't revealed."""
+    verify_password(password, _dummy_hash())
 
 
 def verify_password(password: str, password_hash: str) -> bool:
@@ -34,4 +45,9 @@ def create_access_token(user: User) -> str:
 
 
 def decode_access_token(token: str) -> dict[str, Any]:
-    return jwt.decode(token, get_settings().anchorai_jwt_secret, algorithms=[ALGORITHM])
+    return jwt.decode(
+        token,
+        get_settings().anchorai_jwt_secret,
+        algorithms=[ALGORITHM],
+        options={"require": ["exp", "sub", "uid"]},
+    )

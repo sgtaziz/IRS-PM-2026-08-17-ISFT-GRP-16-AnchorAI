@@ -1,8 +1,17 @@
+import logging
+
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from anchorai.api.deps import ANY_ROLE, require_role
 from anchorai.api.routers import assistant, auth, health, members, plan, rules
+from anchorai.config import INSECURE_JWT_SECRETS, get_settings
+
+if get_settings().anchorai_jwt_secret in INSECURE_JWT_SECRETS:
+    logging.getLogger("uvicorn.error").warning(
+        "ANCHORAI_JWT_SECRET is a published default; set a random one in .env "
+        "(openssl rand -hex 32) before sharing this server."
+    )
 
 app = FastAPI(title="AnchorAI", version="0.1.0")
 app.add_middleware(

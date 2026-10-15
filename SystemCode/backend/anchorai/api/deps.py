@@ -34,7 +34,8 @@ def get_current_user(
     except jwt.PyJWTError:
         raise _unauthorized("Invalid or expired token") from None
     # Load the row so deactivation and role changes apply before the token expires.
-    user = session.get(User, claims.get("uid"))
+    uid = claims["uid"]
+    user = session.get(User, uid) if isinstance(uid, int) else None
     if user is None or not user.is_active:
         raise _unauthorized("User not found or inactive")
     return user
