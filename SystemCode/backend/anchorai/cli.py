@@ -7,6 +7,7 @@ from anchorai.config import get_settings
 from anchorai.db import migrate
 from anchorai.db.seeds import run_seeds
 from anchorai.db.session import get_engine, reset_engine
+from anchorai.scenario import build
 
 app = typer.Typer(help="AnchorAI command line.", no_args_is_help=True)
 db_app = typer.Typer(help="App database: migrations and seeds.", no_args_is_help=True)
@@ -54,7 +55,12 @@ def db_reset() -> None:
 @data_app.command("build")
 def data_build() -> None:
     """Regenerate the parquet tables and model artefacts from data/raw/."""
-    typer.echo("data build: not implemented yet (Stream A)")
+    try:
+        out = build.build()
+    except FileNotFoundError as e:
+        typer.echo(str(e), err=True)
+        raise typer.Exit(1) from None
+    typer.echo(f"Wrote data tables to {out}")
 
 
 @kg_app.command("load")
