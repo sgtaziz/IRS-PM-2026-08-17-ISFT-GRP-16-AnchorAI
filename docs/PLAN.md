@@ -176,8 +176,8 @@ Defined in `SystemCode/backend/anchorai/schemas.py`:
 - `PlanRequest` / `Plan` / `PlanItem` (B → API)
 - `Explanation` (B + C → API / assistant)
 
-The data tables are the other contract (A → everyone). They are saved as parquet in `SystemCode/data/generated/`:
-- `members`: Kaggle rows + `member_id`, synthetic `club_id`, `monthly_value`
+The data tables are the other contract (A → everyone). They are saved as parquet in `SystemCode/data/generated/`. Exact columns and dtypes are fixed in `anchorai/scenario/tables.py`; `tests/fixtures/` holds a small synthetic copy:
+- `members`: Kaggle rows (lower-cased column names) + `member_id`, synthetic `club_id`, `monthly_value`, `split` (train / test)
 - `classes`
 - `instructors`
 - `attendance`: member → class, visits

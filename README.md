@@ -38,6 +38,8 @@ Techniques: K-means segmentation, a calibrated churn ensemble, a forward-chainin
 git clone <repo-url> && cd AnchorAI
 cp .env.example .env            # set LLM_* (Ollama, OpenAI or compatible) and ANCHORAI_JWT_SECRET (openssl rand -hex 32)
 docker compose up -d neo4j
+# download gym_churn_us.csv from https://www.kaggle.com/datasets/adrianvinueza/gym-customers-features-and-churn
+# (CC BY-NC-SA 4.0, not redistributed here) into SystemCode/data/raw/
 
 cd SystemCode/backend && uv sync
 uv run anchorai setup           # data tables, migrated + seeded app DB, knowledge graph
