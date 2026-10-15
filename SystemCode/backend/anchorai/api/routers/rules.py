@@ -1,4 +1,6 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
+
+from anchorai.api.deps import require_role
 
 router = APIRouter()
 
@@ -8,7 +10,7 @@ def list_rules():
     raise HTTPException(501, "TODO Stream C: load reasoning/rules/*.yaml")
 
 
-@router.put("/{rule_id}")
+@router.put("/{rule_id}", dependencies=[Depends(require_role("admin"))])
 def update_rule(rule_id: str, rule: dict):
     raise HTTPException(501, "TODO Stream C: validate + save rule, return conflicts found")
 
