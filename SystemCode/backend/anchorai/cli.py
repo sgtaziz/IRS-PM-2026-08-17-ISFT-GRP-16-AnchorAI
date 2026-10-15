@@ -3,11 +3,11 @@ from pathlib import Path
 import typer
 from sqlmodel import Session
 
+from anchorai import pipeline
 from anchorai.config import get_settings
 from anchorai.db import migrate
 from anchorai.db.seeds import run_seeds
 from anchorai.db.session import get_engine, reset_engine
-from anchorai.scenario import build
 
 app = typer.Typer(help="AnchorAI command line.", no_args_is_help=True)
 db_app = typer.Typer(help="App database: migrations and seeds.", no_args_is_help=True)
@@ -56,7 +56,7 @@ def db_reset() -> None:
 def data_build() -> None:
     """Regenerate the parquet tables and model artefacts from data/raw/."""
     try:
-        out = build.build()
+        out = pipeline.run()
     except FileNotFoundError as e:
         typer.echo(str(e), err=True)
         raise typer.Exit(1) from None
