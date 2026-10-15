@@ -12,7 +12,7 @@ import KpiTile from '../components/KpiTile.vue'
 import PageState from '../components/PageState.vue'
 import RiskBadge from '../components/RiskBadge.vue'
 import { useAsync } from '../composables/useAsync'
-import { date, money, num, pct } from '../format'
+import { date, money, num, pct, probability } from '../format'
 import { useAuthStore } from '../stores/auth'
 
 const route = useRoute()
@@ -55,7 +55,7 @@ const driverOption = computed<EChartsOption | null>(() => {
       valueFormatter: (v) => `${Number(v) > 0 ? '+' : ''}${Number(v).toFixed(2)} log-odds`,
     },
     grid: { left: 210, right: 24, top: 8, bottom: 32 },
-    xAxis: { type: 'value', name: '← keeps them · pushes towards churn →', nameLocation: 'middle', nameGap: 22 },
+    xAxis: { type: 'value', name: '← keeps · churn →', nameLocation: 'middle', nameGap: 22 },
     yAxis: { type: 'category', data: rows.map(([k]) => label(k)) },
     series: [
       {
@@ -115,7 +115,7 @@ function ask() {
       </div>
 
       <section class="grid kpis">
-        <KpiTile label="Churn probability" :value="pct(d.score.churn_prob, 1)" :tone="d.risk_band === 'high' ? 'warn' : 'default'" hint="Calibrated, next month" />
+        <KpiTile label="Churn probability" :value="probability(d.score.churn_prob, 1)" :tone="d.risk_band === 'high' ? 'warn' : 'default'" hint="Calibrated, next month" />
         <KpiTile label="Monthly value" :value="money(d.score.monthly_value)" />
         <KpiTile label="Months as member" :value="d.profile.lifetime ?? '—'" />
         <KpiTile label="Visit trend" :value="`${num(d.profile.trend_ratio)}×`" hint="This month vs lifetime average" />
