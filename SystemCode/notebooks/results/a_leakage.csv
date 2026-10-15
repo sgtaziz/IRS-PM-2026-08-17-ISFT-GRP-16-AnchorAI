@@ -1,0 +1,3 @@
+,features,cv_f1,cv_pr_auc,cv_brier,test_f1,test_pr_auc,test_brier
+with_suspect,17.0,0.907,0.972,0.039,0.908,0.974,0.034
+without_suspect,12.0,0.814,0.897,0.078,0.817,0.9,0.069

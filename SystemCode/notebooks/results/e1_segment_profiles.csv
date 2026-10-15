@@ -1,0 +1,5 @@
+name,size,churn_rate,lifetime,avg_class_frequency_total,trend_ratio,contract_period,avg_additional_charges_total,age,group_visits
+New and slipping,728,0.946,0.934,1.293,0.477,1.775,111.815,26.418,0.231
+Established solo trainers,1365,0.174,4.191,1.989,1.022,2.491,150.283,29.73,0.0
+Established class-goers,961,0.126,4.208,2.019,0.996,2.79,151.96,29.827,1.0
+Annual-contract loyalists,946,0.014,4.708,2.029,1.012,12.0,164.063,29.872,0.55
