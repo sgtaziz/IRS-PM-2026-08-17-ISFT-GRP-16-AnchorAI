@@ -73,7 +73,9 @@ def list_offers(session: Session, active_only: bool = False) -> list[OfferIn]:
 
 
 def list_staff(session: Session) -> list[StaffRow]:
-    users = session.exec(select(User).where(User.role == "staff").order_by(User.username))
+    users = session.exec(
+        select(User).where(User.role == "staff", User.is_active).order_by(User.username)
+    )
     rows = []
     for user in users:
         profile = session.get(StaffProfile, user.id) or StaffProfile(user_id=user.id)
@@ -132,7 +134,7 @@ def delete_offer(session: Session, user: User, offer_id: str) -> bool:
 
 def update_staff(session: Session, user: User, staff_id: int, change: StaffIn) -> StaffRow | None:
     member = session.get(User, staff_id)
-    if member is None or member.role != "staff":
+    if member is None or member.role != "staff" or not member.is_active:
         return None
     profile = session.get(StaffProfile, staff_id) or StaffProfile(user_id=staff_id)
     before = {"weekly_hours": profile.weekly_hours, "skills": profile.skills}
@@ -157,9 +159,13 @@ def update_constraints(session: Session, user: User, change: Constraints) -> Con
 
 
 def seed(session: Session, rng: random.Random) -> None:
-    """Offer catalogue, staff roster and default constraints; inserts only what is missing."""
-    for offer in OFFER_CATALOG:
-        if session.get(OfferCatalog, offer["offer_id"]) is None:
+    """Offer catalogue, staff roster and default constraints; inserts only what is missing.
+
+    Offers are seeded only into an empty catalogue: the API container seeds on every start, and
+    re-inserting a seeded offer would undo an admin's (audited) deletion.
+    """
+    if session.exec(select(OfferCatalog.offer_id)).first() is None:
+        for offer in OFFER_CATALOG:
             session.add(OfferCatalog(**offer))
     for username, (hours, skills) in DEFAULT_ROSTER.items():
         user = session.exec(select(User).where(User.username == username)).first()

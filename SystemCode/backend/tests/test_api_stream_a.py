@@ -63,3 +63,40 @@ def test_offer_writes_are_admin_only_and_audited(client, login, engine):
     with Session(engine) as session:
         actions = set(session.exec(select(AuditLog.action)))
     assert {"offer.create", "offer.delete", "staff.update"} <= actions
+
+
+def test_reseeding_keeps_admin_offer_deletions(engine):
+    from anchorai.db.models import OfferCatalog
+    from anchorai.db.seeds import run_seeds
+
+    with Session(engine) as session:
+        assert session.get(OfferCatalog, "discount_1m") is not None
+        session.delete(session.get(OfferCatalog, "discount_1m"))
+        session.commit()
+        run_seeds(session, ("base", "demo"))
+        assert session.get(OfferCatalog, "discount_1m") is None
+        assert session.get(OfferCatalog, "checkin_message") is not None
+
+
+def test_deactivated_staff_leave_the_roster(client, login, engine):
+    from anchorai.db.models import User
+
+    admin = login("admin")
+    with Session(engine) as session:
+        staff2 = session.exec(select(User).where(User.username == "staff2")).one()
+        staff2.is_active = False
+        session.add(staff2)
+        session.commit()
+        staff_id = staff2.id
+    try:
+        roster = client.get("/api/admin/offers", headers=admin).json()["staff"]
+        assert "staff2" not in {r["username"] for r in roster} and roster
+        change = {"weekly_hours": 10, "skills": []}
+        r = client.put(f"/api/admin/offers/staff/{staff_id}", json=change, headers=admin)
+        assert r.status_code == 404
+    finally:
+        with Session(engine) as session:
+            staff2 = session.get(User, staff_id)
+            staff2.is_active = True
+            session.add(staff2)
+            session.commit()
