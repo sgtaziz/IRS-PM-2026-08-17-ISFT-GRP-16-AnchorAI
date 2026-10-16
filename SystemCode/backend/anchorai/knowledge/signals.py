@@ -14,7 +14,6 @@ from anchorai.scenario.tables import generated_dir
 KG_FACTS_FILE = "kg_facts.parquet"
 # Chosen in notebooks/c_kg.ipynb.
 ANCHOR_SHARE_THRESHOLD = 0.5
-COHORT_RISK_THRESHOLD = 0.5
 KG_COLUMNS = ["anchor_instructor_share", "lost_anchor_instructor", "class_cancelled", "cohort_risk"]
 
 
@@ -69,7 +68,6 @@ def graph_signals(facts: dict[str, Any]) -> list[str]:
         signals.append(f"{share:.0%} of their class visits were with an instructor who has left")
     if facts.get("class_cancelled"):
         signals.append("A class they attend has been cancelled")
-    cohort = facts.get("cohort_risk")
-    if cohort is not None and cohort >= COHORT_RISK_THRESHOLD:
-        signals.append(f"Their class cohort's average churn risk is {cohort:.0%}")
+    # cohort_risk stays a fact for E7 but isn't shown: on real data it sits at 0.15-0.21 for
+    # everyone, so it says nothing about one member (c_kg.ipynb).
     return signals
