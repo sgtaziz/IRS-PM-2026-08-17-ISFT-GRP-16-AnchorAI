@@ -489,3 +489,12 @@ export interface MessageDraft {
   source: 'llm' | 'template'
   evidence: string[]
 }
+
+// Events of POST /assistant/chat/stream (assistant/service.py stream_answer).
+export type AssistantStreamMeta = Omit<AssistantReply, 'answer' | 'grounded' | 'llm_used'>
+
+export interface AssistantStreamDone {
+  grounded: boolean
+  llm_used: boolean
+  answer: string
+}
