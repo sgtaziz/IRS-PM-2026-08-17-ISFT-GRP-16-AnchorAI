@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 import { api, clearToken, getToken, setToken } from '../api/client'
 import type { Role, TokenResponse, UserOut } from '../api/types'
+import { useAssistantStore } from './assistant'
 
 export const useAuthStore = defineStore('auth', () => {
   const token = ref<string | null>(getToken())
@@ -34,6 +35,8 @@ export const useAuthStore = defineStore('auth', () => {
     clearToken()
     token.value = null
     user.value = null
+    // The next person to log in on this browser shouldn't see this chat.
+    useAssistantStore().reset()
   }
 
   return { token, user, isAuthenticated, role, homeRoute, hasRole, login, fetchMe, logout }

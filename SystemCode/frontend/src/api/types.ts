@@ -313,6 +313,14 @@ export interface AssistantReply {
   answer: string
   grounded: boolean
   llm_used: boolean
+  follow_up: boolean
+}
+
+export interface HistoryTurn {
+  question: string
+  answer: string
+  intent: string
+  slots: Slots
 }
 
 // Mirrors anchorai/knowledge/simulate.py.

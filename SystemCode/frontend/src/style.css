@@ -22,7 +22,7 @@ aside nav { display: flex; flex-direction: column; gap: .15rem; }
 aside a { color: var(--nav-text); text-decoration: none; padding: .4rem .5rem; border-radius: 6px; }
 aside a:focus-visible { outline: 2px solid #fff; }
 aside a.router-link-exact-active { background: var(--nav-active); color: #fff; }
-main { padding: 1.5rem 2rem; min-width: 0; }
+main { padding: 1.5rem 2rem 5rem; min-width: 0; }
 .todo { border: 1px dashed #9aa7b8; border-radius: 8px; padding: 1rem; color: var(--muted); }
 .topbar { display: none; }
 .session { margin-top: auto; display: flex; flex-direction: column; gap: .35rem; padding-top: 1rem; border-top: 1px solid var(--nav-active); }
@@ -58,5 +58,10 @@ table.plain th { color: var(--muted); font-weight: 600; }
   main { padding: 1rem; }
 }
 
-.assistant-fab { position: fixed; right: 1.25rem; bottom: 1.25rem; z-index: 50; box-shadow: 0 4px 16px rgba(16, 35, 63, .2); }
+.assistant-fab { position: fixed; right: 1.25rem; bottom: 1.25rem; z-index: 50; display: inline-flex; align-items: center; gap: .5rem; padding: .7rem 1.1rem; border: 0; border-radius: 999px; background: var(--accent); color: #fff; font: 600 .9rem system-ui, sans-serif; cursor: pointer; box-shadow: 0 6px 20px rgba(16, 35, 63, .25); }
+.assistant-fab:hover { filter: brightness(1.08); }
+.assistant-fab:focus-visible { outline: 3px solid color-mix(in srgb, var(--accent) 40%, transparent); outline-offset: 2px; }
+.assistant-fab svg { width: 1.1rem; height: 1.1rem; fill: none; stroke: currentColor; stroke-width: 2; stroke-linejoin: round; }
 .assistant-drawer { width: min(480px, 100vw) !important; }
+.assistant-drawer .p-drawer-content { display: flex; flex-direction: column; min-height: 0; padding-bottom: .75rem; }
+@media (max-width: 600px) { .assistant-fab span { display: none; } .assistant-fab { padding: .8rem; } }

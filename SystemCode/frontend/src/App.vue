@@ -26,7 +26,11 @@ const nav = computed(() =>
 
 watch(
   () => route.fullPath,
-  () => (menuOpen.value = false),
+  () => {
+    // A link clicked in the assistant drawer should show its page, not stay hidden behind it.
+    menuOpen.value = false
+    assistantOpen.value = false
+  },
 )
 
 function logout() {
@@ -65,7 +69,10 @@ function logout() {
     <main><RouterView /></main>
   </div>
   <template v-if="showAssistant">
-    <Button class="assistant-fab" label="Ask the assistant" aria-haspopup="dialog" @click="assistantOpen = true" />
+    <button v-show="!assistantOpen" type="button" class="assistant-fab" aria-haspopup="dialog" @click="assistantOpen = true">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v11H8l-4 4V5Z" /></svg>
+      <span>Ask the assistant</span>
+    </button>
     <Drawer v-model:visible="assistantOpen" header="Assistant" position="right" class="assistant-drawer">
       <AssistantChat :member-id="pageMember" />
     </Drawer>
