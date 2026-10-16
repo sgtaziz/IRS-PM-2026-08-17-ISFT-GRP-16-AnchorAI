@@ -6,7 +6,7 @@ import { onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { api } from '../api/client'
 import type { SegmentCard } from '../api/types'
-import { CHART_THEME } from '../charts'
+import { useChartTheme } from '../charts'
 import PageHeader from '../components/PageHeader.vue'
 import PageState from '../components/PageState.vue'
 import { useAsync } from '../composables/useAsync'
@@ -23,6 +23,7 @@ const PROFILE_LABELS: Record<string, string> = {
 }
 
 const router = useRouter()
+const chartTheme = useChartTheme()
 const { data, loading, error, run } = useAsync(() => api<SegmentCard[]>('/members/segments'))
 onMounted(run)
 
@@ -36,7 +37,7 @@ function profileOption(s: SegmentCard, all: SegmentCard[]): EChartsOption {
   const keys = Object.keys(PROFILE_LABELS).filter((k) => k in s.profile)
   const mean = (k: string) => all.reduce((acc, x) => acc + x.profile[k] * x.size, 0) / all.reduce((a, x) => a + x.size, 0)
   return {
-    color: ['#1f60ea', '#cbd2de'],
+    color: ['#1f60ea', '#98a2b6'],
     tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
     legend: { bottom: 0 },
     grid: { left: 20, right: 12, top: 4, bottom: 32, containLabel: true },
@@ -50,7 +51,7 @@ function profileOption(s: SegmentCard, all: SegmentCard[]): EChartsOption {
 }
 
 const churnTone = (rate: number) =>
-  rate >= 0.4 ? 'bg-danger-soft text-[#b4183a]' : rate >= 0.2 ? 'bg-warn-soft text-[#9a5c00]' : 'bg-success-soft text-[#0b7a53]'
+  rate >= 0.4 ? 'bg-danger-soft text-danger-ink' : rate >= 0.2 ? 'bg-warn-soft text-warn-ink' : 'bg-success-soft text-success-ink'
 
 function open(s: SegmentCard) {
   router.push({ path: '/members', query: { segment: s.name } })
@@ -88,7 +89,7 @@ function open(s: SegmentCard) {
             <div><dt>Monthly revenue</dt><dd>{{ money(s.monthly_revenue) }}</dd></div>
           </dl>
           <p class="m-0 text-xs font-semibold tracking-wider text-ink-500 uppercase">Profile vs all members</p>
-          <VChart :option="profileOption(s, data)" :theme="CHART_THEME" autoresize style="height: 250px" />
+          <VChart :option="profileOption(s, data)" :theme="chartTheme" autoresize style="height: 250px" />
           <span class="mt-auto inline-flex items-center gap-1.5 text-sm font-semibold text-brand-700">
             View {{ s.size.toLocaleString() }} members
             <ArrowRight :size="16" class="transition group-hover:translate-x-0.5" aria-hidden="true" />
@@ -105,7 +106,7 @@ function open(s: SegmentCard) {
   flex-direction: column;
   gap: 1rem;
   padding: 1.25rem;
-  background: #fff;
+  background: var(--color-card);
   border: 1px solid var(--color-ink-200);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);
