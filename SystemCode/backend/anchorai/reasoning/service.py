@@ -23,6 +23,10 @@ class RuleSet(BaseModel):
     issues: list[Issue]
 
 
+class InvalidRuleBase(RuntimeError):
+    pass
+
+
 _lock = threading.Lock()
 _facts: tuple[Any, dict[str, dict[str, Any]]] | None = None
 
@@ -34,7 +38,10 @@ def active_rules(session: Session) -> tuple[int | None, list[Rule]]:
     ).first()
     if version is None:
         return None, load_rule_files()
-    return version.version, load_rules(version.yaml_text)
+    try:
+        return version.version, load_rules(version.yaml_text)
+    except (ValueError, TypeError) as e:
+        raise InvalidRuleBase(f"Active rule version {version.version} is invalid: {e}") from e
 
 
 def check(session: Session, rules: list[Rule]) -> list[Issue]:
