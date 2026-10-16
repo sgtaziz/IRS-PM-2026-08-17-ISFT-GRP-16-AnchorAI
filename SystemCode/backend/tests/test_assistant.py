@@ -1,0 +1,127 @@
+import numpy as np
+import pytest
+from openai import APIConnectionError
+from sqlmodel import Session
+
+from anchorai.assistant import service
+from anchorai.assistant.classifier import IntentClassifier, IntentSpec, load_intents
+from anchorai.assistant.prompt import DONT_KNOW
+from anchorai.assistant.service import answer
+from anchorai.assistant.slots import extract_slots
+
+INSTRUCTORS = {"Maya Chen": "I04", "Sam Rivera": "I01"}
+CLASSES = {"HIIT": "K02", "Core": "K08"}
+
+
+@pytest.mark.parametrize(
+    ("text", "members", "amount"),
+    [
+        ("what happens if the budget drops to 1000", [], 1000.0),
+        ("Is it worth spending $4000 instead of $2000?", [], 4000.0),
+        ("Run the plan with a $3k budget", [], 3000.0),
+        ("What does a 1500 dollar budget buy us?", [], 1500.0),
+        ("Why was 1043 picked over 2210?", ["M1043", "M2210"], None),
+        ("compare member 155 with M0155", ["M0155"], None),
+        ("what's 2 plus 2", [], None),
+    ],
+)
+def test_money_never_becomes_a_member(text, members, amount):
+    slots, _ = extract_slots(text, INSTRUCTORS, CLASSES)
+    assert slots.member_ids == members and slots.amount == amount
+
+
+def test_names_and_common_word_classes():
+    slots, text = extract_slots("who goes to Maya's hiit class", INSTRUCTORS, CLASSES)
+    assert slots.instructor_ids == ["I04"] and slots.class_ids == ["K02"]
+    assert "INSTRUCTOR" in text and "CLASS" in text
+    # "core" in ordinary lower-case text is not the Core class.
+    assert extract_slots("our core problem is churn", INSTRUCTORS, CLASSES)[0].class_ids == []
+
+
+def bag_of_words(texts):
+    vocab = ["risk", "offer", "compare", "budget", "plan", "affected", "member"]
+    rows = np.array([[t.lower().count(w) for w in vocab] for t in texts], dtype=float) + 1e-9
+    return rows / np.linalg.norm(rows, axis=1, keepdims=True)
+
+
+@pytest.fixture
+def classifier():
+    specs = [
+        IntentSpec("member_risk", "", ["MEMBER risk"], (1, 1)),
+        IntentSpec("compare_members", "", ["compare MEMBER MEMBER risk"], (2, 9)),
+        IntentSpec("plan_summary", "", ["plan"]),
+    ]
+    return IntentClassifier(bag_of_words, specs, 0.5, INSTRUCTORS, CLASSES)
+
+
+def test_slot_rule_and_threshold(classifier):
+    assert classifier.classify("compare risk for M0001").intent == "member_risk"
+    assert classifier.classify("compare risk M0001 vs M0002").intent == "compare_members"
+    assert classifier.classify("why the risk?", context_member_id="M0003").slots.member_ids == [
+        "M0003"
+    ]
+    assert classifier.classify("weather tomorrow").intent == "unknown"
+
+
+def test_shipped_intents_load():
+    specs, threshold = load_intents()
+    assert {s.name for s in specs} == {
+        "member_risk",
+        "member_actions",
+        "compare_members",
+        "graph_impact",
+        "plan_summary",
+        "what_if_budget",
+    }
+    assert 0 < threshold < 1 and all(len(s.examples) >= 10 for s in specs)
+
+
+def test_answer_is_grounded_and_degrades(built, engine, classifier):
+    with Session(engine) as session:
+        prompts = []
+        reply = answer(
+            session,
+            "M0001 risk",
+            classifier=classifier,
+            chat=lambda m: prompts.append(m) or "ok [E1]",
+        )
+        assert reply.intent == "member_risk" and reply.grounded and reply.llm_used
+        assert reply.evidence[0].id == "E1" and reply.evidence[0].ref == "M0001"
+        assert "[E1] M0001: churn probability" in prompts[0][1]["content"]
+
+        def down(_):
+            raise APIConnectionError(request=None)
+
+        fallback = answer(session, "M0001 risk", classifier=classifier, chat=down)
+        assert fallback.grounded and not fallback.llm_used and "[E1]" in fallback.answer
+
+        never = lambda _: pytest.fail("LLM must not be called")
+        assert answer(session, "weather", classifier=classifier, chat=never).answer == DONT_KNOW
+        missing = answer(session, "M9999 risk", classifier=classifier, chat=never)
+        assert missing.answer == "I couldn't find member M9999." and not missing.grounded
+        assert answer(session, "plan", classifier=classifier, chat=never).answer.startswith(
+            "No weekly plan"
+        )
+
+
+def test_chat_and_feedback_endpoints(client, login, built, monkeypatch, classifier):
+    monkeypatch.setattr(service, "get_classifier", lambda: classifier)
+    monkeypatch.setattr(service.llm, "chat", lambda m: "answer [E1]")
+    staff = login("staff1")
+    assert client.post("/api/assistant/chat", json={"message": "x"}).status_code == 401
+    r = client.post(
+        "/api/assistant/chat", json={"message": "why the risk", "member_id": "M0002"}, headers=staff
+    )
+    assert r.status_code == 200
+    body = r.json()
+    assert (
+        body["intent"] == "member_risk"
+        and body["evidence"]
+        and body["slots"]["member_ids"] == ["M0002"]
+    )
+    fb = {"message": "why the risk", "answer": body["answer"], "intent": "member_risk", "rating": 1}
+    assert client.post("/api/assistant/feedback", json=fb, headers=staff).status_code == 200
+    assert (
+        client.post("/api/assistant/feedback", json=fb | {"rating": 5}, headers=staff).status_code
+        == 422
+    )
