@@ -145,7 +145,8 @@ async function cite(id: string) {
   border: 1px solid color-mix(in srgb, var(--c) 30%, transparent); border-radius: 999px;
   cursor: pointer; transition: background 0.15s, color 0.15s;
 }
-.cite:hover, .cite:focus-visible { background: var(--c); color: #fff; outline: none; }
+.cite:hover, .cite:focus-visible { background: var(--c); color: #fff; }
+.cite:focus-visible { outline: 2px solid var(--c); outline-offset: 1px; }
 .cite.static { cursor: default; vertical-align: baseline; flex: none; }
 .k-member { --c: #1f60ea; }
 .k-rule { --c: #6d4ae8; }

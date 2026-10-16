@@ -192,14 +192,15 @@ watch(
   border: 1px solid var(--color-ink-200); border-radius: 0.75rem; background: #fff; color: var(--color-ink-700);
   font: 500 0.875rem/1.35 var(--font-sans); cursor: pointer; transition: border-color 0.15s, box-shadow 0.15s, transform 0.15s;
 }
-.starter:hover, .starter:focus-visible { border-color: var(--color-brand-300); box-shadow: var(--shadow-raised); transform: translateY(-1px); outline: none; }
+.starter:hover, .starter:focus-visible { border-color: var(--color-brand-300); box-shadow: var(--shadow-raised); transform: translateY(-1px); }
+.starter:focus-visible, .chip:focus-visible { outline: 2px solid var(--color-brand-500); outline-offset: 2px; }
 .chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
 .chips.next { padding-left: 0; }
 .chip {
   font: 500 0.8125rem/1 var(--font-sans); padding: 0.5rem 0.8rem; border-radius: 999px; cursor: pointer;
   border: 1px solid var(--color-brand-200); background: var(--color-brand-50); color: var(--color-brand-800);
 }
-.chip:hover, .chip:focus-visible { background: var(--color-brand-100); border-color: var(--color-brand-300); outline: none; }
+.chip:hover, .chip:focus-visible { background: var(--color-brand-100); border-color: var(--color-brand-300); }
 .row { display: flex; gap: 0.6rem; align-items: flex-start; }
 .row.user { justify-content: flex-end; }
 .avatar { flex: none; display: none; place-items: center; width: 2rem; height: 2rem; border-radius: 0.6rem; color: #fff; background: linear-gradient(135deg, var(--color-brand-500), var(--color-brand-800)); }
