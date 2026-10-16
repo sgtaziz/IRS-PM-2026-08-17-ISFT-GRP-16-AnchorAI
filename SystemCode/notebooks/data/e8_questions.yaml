@@ -1,0 +1,319 @@
+note: 'E8 labelled questions. `questions` were written by an AI (Claude) from the intent descriptions, and differ from the examples in anchorai/assistant/intents.yaml; the same author wrote the examples,
+  so accuracy here is still optimistic. Streams A and B owe ~10 each (docs/HANDOFFS.md #14, #15): append them to the matching list with author set to the writer. Fields: question, intent, optional context_member_id,
+  notes.'
+questions:
+- id: q01
+  question: Is M0412 in danger of quitting?
+  intent: member_risk
+  author: ai
+- id: q02
+  question: whats the chance that member 77 cancels their membership
+  intent: member_risk
+  author: ai
+  notes: typo, no capital
+- id: q03
+  question: M0231 churn risk breakdown please
+  intent: member_risk
+  author: ai
+  notes: terse
+- id: q04
+  question: What is behind the high score for M3105?
+  intent: member_risk
+  author: ai
+- id: q05
+  question: why is this member flagged as risky?
+  intent: member_risk
+  author: ai
+  context_member_id: M0008
+  notes: relies on page context
+- id: q06
+  question: how worried should we be about 1288?
+  intent: member_risk
+  author: ai
+  notes: bare number, vague wording
+- id: q07
+  question: M0890 - segment and risk?
+  intent: member_risk
+  author: ai
+  notes: two things in one
+- id: q08
+  question: Which signals suggest member 2999 is slipping away?
+  intent: member_risk
+  author: ai
+  notes: avoids the word churn
+- id: q09
+  question: Tell me why M0014 is scored so high
+  intent: member_risk
+  author: ai
+- id: q10
+  question: What's the best way to win back M1175?
+  intent: member_actions
+  author: ai
+  notes: win back, not offer
+- id: q11
+  question: can we send M0066 a discount?
+  intent: member_actions
+  author: ai
+  notes: asks about a specific offer
+- id: q12
+  question: What did the rules decide for member 2040?
+  intent: member_actions
+  author: ai
+  notes: rule trace phrasing
+- id: q13
+  question: Which offers are off the table for M0507 and why?
+  intent: member_actions
+  author: ai
+  notes: blocked offers
+- id: q14
+  question: wat should we do about M3333
+  intent: member_actions
+  author: ai
+  notes: typo
+- id: q15
+  question: Is it OK to contact M0120 again so soon?
+  intent: member_actions
+  author: ai
+  notes: contact-fatigue question
+- id: q16
+  question: what should we do for this member?
+  intent: member_actions
+  author: ai
+  context_member_id: M0012
+  notes: page context
+- id: q17
+  question: Show the playbook for 1999
+  intent: member_actions
+  author: ai
+- id: q18
+  question: Recommended next step for M0742?
+  intent: member_actions
+  author: ai
+- id: q19
+  question: Why is M0100 ahead of M0200 in the queue?
+  intent: compare_members
+  author: ai
+- id: q20
+  question: M0050 or M0051 - who needs us more?
+  intent: compare_members
+  author: ai
+- id: q21
+  question: What separates 3010 from 3011?
+  intent: compare_members
+  author: ai
+  notes: bare numbers
+- id: q22
+  question: why did M0600 get contacted and not M0601
+  intent: compare_members
+  author: ai
+  notes: no punctuation
+- id: q23
+  question: Put M0021 side by side with M0022
+  intent: compare_members
+  author: ai
+- id: q24
+  question: Why not M0008 instead of M0012 this week?
+  intent: compare_members
+  author: ai
+  notes: phrased as a plan decision
+- id: q25
+  question: compare with M0014
+  intent: compare_members
+  author: ai
+  context_member_id: M0008
+  notes: second member comes from page context
+- id: q26
+  question: How many members are hit if Tom Becker is gone?
+  intent: graph_impact
+  author: ai
+  notes: instructor, new phrasing
+- id: q27
+  question: who loses out when Ana Costa stops teaching
+  intent: graph_impact
+  author: ai
+  notes: no punctuation
+- id: q28
+  question: Members affected by the Zumba cancellation?
+  intent: graph_impact
+  author: ai
+- id: q29
+  question: if Barre is dropped from the timetable, whose routine breaks?
+  intent: graph_impact
+  author: ai
+  notes: class named without the word class
+- id: q30
+  question: Which members relied on Ken Sato?
+  intent: graph_impact
+  author: ai
+- id: q31
+  question: anyone hurt by the recent staff departure?
+  intent: graph_impact
+  author: ai
+  notes: no entity named
+- id: q32
+  question: whos affected by nora ali leaving
+  intent: graph_impact
+  author: ai
+  notes: lowercase name, typo
+- id: q33
+  question: Which classes were cancelled and who went to them?
+  intent: graph_impact
+  author: ai
+- id: q34
+  question: Who are our most at-risk people right now?
+  intent: list_members
+  author: ai
+  notes: people not members
+- id: q35
+  question: give me the 8 members most likely to cancel
+  intent: list_members
+  author: ai
+- id: q36
+  question: list high risk members at C3
+  intent: list_members
+  author: ai
+  notes: club slot
+- id: q37
+  question: Which new joiners look like they are drifting?
+  intent: list_members
+  author: ai
+  notes: new-members filter
+- id: q38
+  question: top 5 churn risks in club C1
+  intent: list_members
+  author: ai
+- id: q39
+  question: Show me everyone in the medium risk band
+  intent: list_members
+  author: ai
+  notes: risk band filter
+- id: q40
+  question: Which members need a call first?
+  intent: list_members
+  author: ai
+  notes: close to plan_summary; boundary case
+- id: q41
+  question: Rank members by how likely they are to leave
+  intent: list_members
+  author: ai
+- id: q42
+  question: What does the plan for this week look like?
+  intent: plan_summary
+  author: ai
+- id: q43
+  question: how much are we spending this week
+  intent: plan_summary
+  author: ai
+- id: q44
+  question: Has this week's plan been signed off?
+  intent: plan_summary
+  author: ai
+  notes: approval status
+- id: q45
+  question: Which members are we ringing this week?
+  intent: plan_summary
+  author: ai
+  notes: boundary with list_members; plan call list
+- id: q46
+  question: give me a quick rundown of the current plan
+  intent: plan_summary
+  author: ai
+- id: q47
+  question: How many staff minutes does the plan take up?
+  intent: plan_summary
+  author: ai
+- id: q48
+  question: What if we only had $800 to spend?
+  intent: what_if_budget
+  author: ai
+- id: q49
+  question: how many extra members would 2k more buy us
+  intent: what_if_budget
+  author: ai
+  notes: k suffix, no $
+- id: q50
+  question: Could we retain more with a 6000 budget?
+  intent: what_if_budget
+  author: ai
+- id: q51
+  question: Simulate the plan at half the current spend
+  intent: what_if_budget
+  author: ai
+  notes: relative amount, no number
+- id: q52
+  question: if budget drops to 1000 what do we lose?
+  intent: what_if_budget
+  author: ai
+  notes: budget amount without currency sign
+- id: q53
+  question: Is another $1,500 worth it?
+  intent: what_if_budget
+  author: ai
+- id: q54
+  question: Tell me a joke about squats
+  intent: unknown
+  author: ai
+  notes: off-topic
+- id: q55
+  question: What time does the pool close on Sundays?
+  intent: unknown
+  author: ai
+  notes: gym FAQ, out of scope
+- id: q56
+  question: What does churn mean?
+  intent: unknown
+  author: ai
+  notes: near-domain, definition question; no tool for it
+- id: q57
+  question: Delete member M0012
+  intent: unknown
+  author: ai
+  notes: action request, out of scope; contains a member id
+- id: q58
+  question: thanks, that helps
+  intent: unknown
+  author: ai
+  notes: conversation filler
+- id: q59
+  question: How do I add a new instructor?
+  intent: unknown
+  author: ai
+  notes: app how-to, no tool
+- id: q60
+  question: What is the capital of France?
+  intent: unknown
+  author: ai
+- id: q61
+  question: Which machine should I use for legs?
+  intent: unknown
+  author: ai
+  notes: fitness advice, out of scope
+- id: q62
+  question: hello
+  intent: unknown
+  author: ai
+stream_a_questions: []
+stream_b_questions: []
+faithfulness_cases:
+- id: f01
+  description: Unsupported reason plus a wrong claim of missing data (seen in the live assistant)
+  question: Why can't we offer M0507 a discount?
+  evidence:
+  - '[E1] M0507 profile: 6-month contract, 9 months as a member, 1.8 visits/week this month vs 2.1 usual, attends group classes'
+  - '[E2] M0507 blocked: Discounted month (guardrail G03)'
+  - '[E3] M0507 allowed offer: Free PT session by call (rule P06)'
+  bad_answer: The discounted month is blocked by G03 because it needs month-to-month terms, which the data doesn't show [E2].
+  good_answer: The discounted month is blocked for M0507 by guardrail G03 [E2]. M0507 is on a 6-month contract [E1]. A free PT session by call is allowed instead [E3].
+  expect_bad: '''needs month-to-month terms'' is not in the evidence (unsupported); ''the data doesn''t show'' contradicts E1, which shows the contract'
+- id: f02
+  description: Unsupported inference about ordering (seen in the live assistant)
+  question: What should we do for M0066?
+  evidence:
+  - '[E1] M0066 profile: month-to-month contract, 2 months as a member, 0.7 visits/week this month vs 1.9 usual, no group classes'
+  - '[E2] M0066 rule P01: New and slipping members get a trainer onboarding session; proposes Free PT session by call'
+  - '[E3] M0066 rule P03: Members whose class routine was disrupted get a personal check-in about alternatives; proposes Check-in message by SMS'
+  - '[E4] M0066 allowed offer: Check-in message by SMS (rule P03)'
+  - '[E5] M0066 allowed offer: Free PT session by call (rule P01)'
+  bad_answer: Start with the check-in message by SMS to rebuild trust, then offer the PT session once they reply [E4][E5].
+  good_answer: 'Two offers are allowed for M0066: a check-in message by SMS [E4] and a free PT session by call [E5].'
+  expect_bad: '''Start with'', ''to rebuild trust'' and ''once they reply'' are not in the evidence; the rules give no order between the offers'
