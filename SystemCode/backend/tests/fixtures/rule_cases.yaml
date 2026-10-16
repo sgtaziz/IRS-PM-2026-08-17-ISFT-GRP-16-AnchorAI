@@ -1,0 +1,193 @@
+# Hand-built member fact sets with the rule outcome we expect from the shipped rules (E6).
+# Each case starts from `base` (a steady, low-risk, never-contacted member), applies `facts`,
+# and removes the keys in `drop`. `allowed` is in proposal order; `blocked` is exact.
+base:
+  contract_period: 12
+  lifetime: 12
+  avg_class_frequency_total: 2.0
+  avg_class_frequency_current_month: 2.0
+  trend_ratio: 1.0
+  promo_friends: 0
+  group_visits: 1
+  monthly_value: 40
+  risk_band: low
+  churn_prob: 0.05
+  offers_last_90d: 0
+  lost_anchor_instructor: false
+  class_cancelled: false
+base_drop: [days_since_last_contact]
+
+cases:
+  - id: steady_low_risk
+    title: Steady, low-risk member needs nothing
+    expect:
+      fires: [G03_discount_eligibility, G04_low_risk_no_paid_offers]
+      silent: [D01_falling_regular, D02_new_member, D03_disengaged]
+      allowed: []
+      blocked: {discount_1m: G03_discount_eligibility, free_pt_session: G04_low_risk_no_paid_offers, class_pass: G04_low_risk_no_paid_offers}
+
+  - id: new_and_slipping_medium
+    title: New member whose visits are falling, medium risk, month-to-month
+    facts: {lifetime: 1, trend_ratio: 0.5, avg_class_frequency_total: 1.0, avg_class_frequency_current_month: 0.6, contract_period: 1, risk_band: medium}
+    expect:
+      fires: [D02_new_member, P01_new_member_onboarding, P08_medium_risk_checkin]
+      silent: [D01_falling_regular, D03_disengaged, G03_discount_eligibility]
+      allowed: [free_pt_session, checkin_message]
+      blocked: {}
+
+  - id: high_value_at_risk
+    title: High-value member at high risk gets a PT session; discount is blocked on a 6-month contract
+    facts: {risk_band: high, monthly_value: 60, contract_period: 6, lifetime: 10}
+    expect:
+      fires: [D05_high_value_at_risk, P06_high_value_pt, G03_discount_eligibility]
+      silent: [P05_month_to_month_discount]
+      allowed: [free_pt_session]
+      blocked: {discount_1m: G03_discount_eligibility}
+
+  - id: month_to_month_high_risk
+    title: Month-to-month member at high risk, below the high-value fee, gets the discounted month
+    facts: {risk_band: high, monthly_value: 50, contract_period: 1}
+    expect:
+      fires: [P05_month_to_month_discount]
+      silent: [D05_high_value_at_risk, P06_high_value_pt, G03_discount_eligibility]
+      allowed: [discount_1m]
+      blocked: {}
+
+  - id: discount_never_proposed_off_month_to_month
+    title: High risk on a 6-month contract below the high-value fee; no playbook applies
+    facts: {risk_band: high, monthly_value: 45, contract_period: 6}
+    expect:
+      fires: [G03_discount_eligibility]
+      silent: [P05_month_to_month_discount, P06_high_value_pt]
+      allowed: []
+      blocked: {discount_1m: G03_discount_eligibility}
+
+  - id: recently_contacted
+    title: A playbook proposes but the contact-fatigue guardrail blocks everything
+    facts: {risk_band: high, monthly_value: 60, contract_period: 6, days_since_last_contact: 10, offers_last_90d: 1}
+    expect:
+      fires: [P06_high_value_pt, G01_contact_fatigue]
+      allowed: []
+      blocked: {all: G01_contact_fatigue, discount_1m: G03_discount_eligibility}
+
+  - id: contact_30_days_ago
+    title: Exactly 30 days since the last contact is allowed again
+    facts: {risk_band: high, monthly_value: 60, contract_period: 6, days_since_last_contact: 30, offers_last_90d: 1}
+    expect:
+      silent: [G01_contact_fatigue, G02_offer_cap]
+      allowed: [free_pt_session]
+
+  - id: offer_cap_reached
+    title: Two offers in 90 days blocks everything even when the last contact is old
+    facts: {risk_band: high, monthly_value: 60, contract_period: 6, days_since_last_contact: 45, offers_last_90d: 2}
+    expect:
+      fires: [G02_offer_cap]
+      silent: [G01_contact_fatigue]
+      allowed: []
+      blocked: {all: G02_offer_cap, discount_1m: G03_discount_eligibility}
+
+  - id: never_contacted
+    title: A never-contacted member has no contact facts, so fatigue cannot block
+    facts: {risk_band: high, monthly_value: 60, contract_period: 6}
+    expect:
+      silent: [G01_contact_fatigue, G02_offer_cap]
+      allowed: [free_pt_session]
+
+  - id: lost_anchor_instructor
+    title: Low-risk member whose instructor left still gets a check-in (cheap offers are not blocked)
+    facts: {lost_anchor_instructor: true}
+    expect:
+      fires: [D07_lost_instructor, P03_disrupted_checkin]
+      allowed: [checkin_message]
+      blocked: {discount_1m: G03_discount_eligibility, free_pt_session: G04_low_risk_no_paid_offers, class_pass: G04_low_risk_no_paid_offers}
+
+  - id: class_cancelled_medium
+    title: Class cancelled at medium risk; the SMS check-in outranks the email one and is the only check-in kept
+    facts: {class_cancelled: true, risk_band: medium}
+    expect:
+      fires: [D08_class_cancelled, P03_disrupted_checkin, P08_medium_risk_checkin]
+      allowed: [checkin_message]
+
+  - id: lost_instructor_recently_contacted
+    title: A disrupted routine does not override contact fatigue
+    facts: {lost_anchor_instructor: true, days_since_last_contact: 5, offers_last_90d: 1}
+    expect:
+      fires: [P03_disrupted_checkin, G01_contact_fatigue]
+      allowed: []
+      blocked: {all: G01_contact_fatigue, discount_1m: G03_discount_eligibility, free_pt_session: G04_low_risk_no_paid_offers, class_pass: G04_low_risk_no_paid_offers}
+
+  - id: kg_facts_absent
+    title: Without KG facts the disruption rules stay silent
+    facts: {risk_band: medium}
+    drop: [lost_anchor_instructor, class_cancelled]
+    expect:
+      silent: [D07_lost_instructor, D08_class_cancelled, P03_disrupted_checkin]
+      allowed: [checkin_message]
+
+  - id: social_medium
+    title: Social member at medium risk gets a class pass, then a check-in
+    facts: {promo_friends: 1, risk_band: medium}
+    expect:
+      fires: [D06_social_member, P04_social_class_pass, P08_medium_risk_checkin]
+      allowed: [class_pass, checkin_message]
+
+  - id: social_low_risk
+    title: Social member at low risk gets nothing
+    facts: {promo_friends: 1}
+    expect:
+      fires: [D06_social_member]
+      silent: [P04_social_class_pass]
+      allowed: []
+
+  - id: disengaged_medium
+    title: Disengaged at medium risk; the disengaged check-in (SMS) outranks the generic one
+    facts: {avg_class_frequency_current_month: 0.2, risk_band: medium}
+    expect:
+      fires: [D03_disengaged, P07_disengaged_checkin, P08_medium_risk_checkin]
+      allowed: [checkin_message]
+
+  - id: disengaged_low_risk
+    title: Disengaged at low risk is derived but not acted on
+    facts: {avg_class_frequency_current_month: 0.2}
+    expect:
+      fires: [D03_disengaged]
+      silent: [P07_disengaged_checkin]
+      allowed: []
+
+  - id: falling_regular_low_risk
+    title: The low-risk guardrail removes the PT session a falling regular would get
+    facts: {trend_ratio: 0.6}
+    expect:
+      fires: [D01_falling_regular, P02_falling_regular_pt, G04_low_risk_no_paid_offers]
+      allowed: []
+      blocked: {discount_1m: G03_discount_eligibility, free_pt_session: G04_low_risk_no_paid_offers, class_pass: G04_low_risk_no_paid_offers}
+
+  - id: falling_regular_medium
+    title: Falling regular at medium risk gets the in-person PT session
+    facts: {trend_ratio: 0.6, risk_band: medium}
+    expect:
+      fires: [D01_falling_regular, P02_falling_regular_pt, P08_medium_risk_checkin]
+      allowed: [free_pt_session, checkin_message]
+
+  - id: new_member_not_slipping
+    title: A new member with steady visits triggers no onboarding
+    facts: {lifetime: 0}
+    expect:
+      fires: [D02_new_member]
+      silent: [P01_new_member_onboarding]
+      allowed: []
+
+  - id: new_and_slipping_low_risk
+    title: New and slipping but low risk; the low-risk guardrail removes the onboarding session
+    facts: {lifetime: 1, trend_ratio: 0.5, avg_class_frequency_total: 1.0}
+    expect:
+      fires: [P01_new_member_onboarding, G04_low_risk_no_paid_offers]
+      allowed: []
+
+  - id: everything_at_once
+    title: New, slipping, high-value, month-to-month, high risk; duplicate PT proposals collapse to the first
+    facts: {lifetime: 1, trend_ratio: 0.5, avg_class_frequency_total: 1.0, risk_band: high, monthly_value: 60, contract_period: 1}
+    expect:
+      fires: [D02_new_member, D05_high_value_at_risk, P01_new_member_onboarding, P05_month_to_month_discount, P06_high_value_pt]
+      allowed: [free_pt_session, discount_1m]
+      blocked: {}
