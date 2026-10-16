@@ -40,6 +40,9 @@ function submitTyped() {
   if (exact) go(exact.member_id)
 }
 
+const isMac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent)
+const shortcut = isMac ? '⌘ K' : 'Ctrl K'
+
 function onKey(e: KeyboardEvent) {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
     e.preventDefault()
@@ -55,12 +58,12 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
   <button
     type="button"
     class="flex h-10 w-full items-center gap-2.5 rounded-lg border border-ink-200 bg-ink-50 px-3 text-left text-sm text-ink-500 transition hover:border-ink-300 hover:bg-white"
-    aria-keyshortcuts="Control+K"
+    :aria-keyshortcuts="isMac ? 'Meta+K' : 'Control+K'"
     @click="open = true"
   >
     <Search :size="16" class="shrink-0" aria-hidden="true" />
     <span class="flex-1 truncate">Search members…</span>
-    <kbd class="hidden rounded-md border border-ink-200 bg-white px-1.5 py-0.5 font-sans text-[0.6875rem] font-semibold text-ink-500 sm:inline">Ctrl K</kbd>
+    <kbd class="hidden rounded-md border border-ink-200 bg-white px-1.5 py-0.5 font-sans text-[0.6875rem] font-semibold text-ink-500 sm:inline">{{ shortcut }}</kbd>
   </button>
   <Dialog
     v-model:visible="open"
