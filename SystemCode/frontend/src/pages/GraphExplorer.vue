@@ -16,6 +16,7 @@ import EmptyState from '../components/EmptyState.vue'
 import KpiTile from '../components/KpiTile.vue'
 import PageHeader from '../components/PageHeader.vue'
 import PageState from '../components/PageState.vue'
+import RosterPanel from '../components/RosterPanel.vue'
 import RiskBadge from '../components/RiskBadge.vue'
 import SectionCard from '../components/SectionCard.vue'
 import { useAsync } from '../composables/useAsync'
@@ -69,6 +70,12 @@ function showMember(id: string) {
 
 function offers(m: AffectedMember) {
   return m.allowed.map((p) => glossary.offer(p.offer_id)).join(', ') || '—'
+}
+
+function onRosterChanged() {
+  entities.run()
+  if (target.value) simulate()
+  if (shown.value) ego.run(shown.value)
 }
 
 function onSelect(type: string, id: string) {
@@ -180,6 +187,7 @@ function onSelect(type: string, id: string) {
         </PageState>
       </SectionCard>
     </div>
+    <RosterPanel class="mt-5" @changed="onRosterChanged" />
   </div>
 </template>
 

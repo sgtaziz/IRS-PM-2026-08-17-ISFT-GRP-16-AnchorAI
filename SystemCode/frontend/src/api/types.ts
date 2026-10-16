@@ -409,6 +409,53 @@ export interface Simulation {
   members: AffectedMember[]
 }
 
+// Mirrors anchorai/knowledge/roster.py and reload.py.
+export interface RosterEvent {
+  event_id: string
+  week_start: string
+  note: string
+  source: 'generated' | 'added'
+}
+
+export interface RosterInstructor {
+  id: string
+  name: string
+  club_id: string
+  source: 'generated' | 'added'
+  status: 'active' | 'left'
+  classes: number
+  event: RosterEvent | null
+}
+
+export interface RosterClass {
+  id: string
+  name: string
+  club_id: string
+  instructor_id: string
+  instructor_name: string
+  source: 'generated' | 'added'
+  status: 'active' | 'cancelled'
+  event: RosterEvent | null
+}
+
+export interface Roster {
+  clubs: string[]
+  instructors: RosterInstructor[]
+  classes: RosterClass[]
+}
+
+export interface KgStatus {
+  stale: boolean
+  last_reloaded_at: string | null
+  error: string | null
+  counts: Record<string, number> | null
+}
+
+export interface RosterEdit {
+  id: string | null
+  kg: KgStatus
+}
+
 // Mirrors anchorai/db/audit.py.
 export interface AuditRow {
   id: number
