@@ -35,7 +35,9 @@ def test_role_enforcement(client, login):
         client.patch("/api/rules/x", json={"enabled": False}, headers=login("manager")).status_code
         == 403
     )
-    assert client.get("/api/health").status_code == 200
+    assert client.get("/api/health").json() == {"status": "ok"}
+    assert client.get("/api/health/details").status_code == 401
+    assert client.get("/api/health/details", headers=login("manager")).status_code == 403
 
 
 def test_login_is_audited(client, engine):
