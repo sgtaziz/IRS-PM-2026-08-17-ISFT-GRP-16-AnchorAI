@@ -9,6 +9,7 @@ from sqlmodel import Session, select
 from anchorai import catalog
 from anchorai.db.models import RuleVersion
 from anchorai.discovery import service as member_data
+from anchorai.knowledge.signals import kg_facts_path, load_kg_facts
 from anchorai.reasoning.engine import load_rule_files, load_rules, run
 from anchorai.reasoning.facts import KNOWN_FACTS, build_facts
 from anchorai.reasoning.models import Rule, RuleOutcome
@@ -47,13 +48,16 @@ def rule_set(session: Session) -> RuleSet:
 
 
 def all_facts() -> dict[str, dict[str, Any]]:
-    """Facts for every member, rebuilt when Stream A's data is rebuilt."""
+    """Facts for every member, rebuilt when Stream A's data or the KG facts change."""
     global _facts
     data = member_data.get_data()
-    key = data.stamp
+    kg_path = kg_facts_path()
+    key = (data.stamp, kg_path.stat().st_mtime if kg_path.exists() else None)
     with _lock:
         if _facts is None or _facts[0] != key:
-            facts = build_facts(data.table, data.features, data.tables["interventions"])
+            facts = build_facts(
+                data.table, data.features, data.tables["interventions"], load_kg_facts()
+            )
             _facts = (key, facts)
         return _facts[1]
 
