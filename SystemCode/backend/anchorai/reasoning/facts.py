@@ -79,6 +79,11 @@ def build_facts(
         for col in ("lost_anchor_instructor", "class_cancelled"):
             kg[col] = kg[col].fillna(False).astype(bool)
         frame = frame.join(kg)
+    # Counts and 0/1 flags read better in traces as 1 than 1.0.
+    for col in frame.select_dtypes("number").columns:
+        values = frame[col].dropna()
+        if frame[col].dtype != bool and (values == values.round()).all():
+            frame[col] = frame[col].astype("Int64")
     # to_json gives plain Python types (no numpy scalars) and NaN -> None, which we drop.
     records = json.loads(frame.to_json(orient="index"))
     return {m: {k: v for k, v in r.items() if v is not None} for m, r in records.items()}
