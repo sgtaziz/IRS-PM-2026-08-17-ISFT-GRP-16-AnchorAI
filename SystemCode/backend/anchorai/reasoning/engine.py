@@ -1,5 +1,6 @@
 """Forward-chaining rule engine: match, resolve conflicts, fire, repeat until quiescent."""
 
+from collections import Counter
 from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
@@ -16,7 +17,11 @@ def load_rules(yaml_text: str) -> list[Rule]:
     data = yaml.safe_load(yaml_text) or []
     if not isinstance(data, list):
         raise TypeError("A rule file must be a YAML list of rules")
-    return [Rule.model_validate(r) for r in data]
+    rules = [Rule.model_validate(r) for r in data]
+    duplicates = sorted(i for i, n in Counter(r.id for r in rules).items() if n > 1)
+    if duplicates:
+        raise ValueError(f"Duplicate rule ids: {', '.join(duplicates)}")
+    return rules
 
 
 def rule_files_text(directory: Path = RULES_DIR) -> str:
@@ -40,8 +45,13 @@ def _fire(
 ) -> str:
     then = rule.then
     if then.assert_ is not None:
-        memory.update(then.assert_)
-        return "assert " + ", ".join(f"{k}={v}" for k, v in then.assert_.items())
+        # First assertion wins: rules fire in priority order, so a fact is set by the
+        # highest-priority rule that derives it and never changes after something read it.
+        new = {k: v for k, v in then.assert_.items() if k not in memory}
+        memory.update(new)
+        kept = sorted(set(then.assert_) - set(new))
+        effect = "assert " + ", ".join(f"{k}={v}" for k, v in new.items()) if new else "assert"
+        return effect + (f" (kept existing {', '.join(kept)})" if kept else "")
     if then.propose is not None:
         proposals.append(then.propose.model_copy(update={"rule_id": rule.id}))
         return f"propose {then.propose.offer_id} via {then.propose.channel}"

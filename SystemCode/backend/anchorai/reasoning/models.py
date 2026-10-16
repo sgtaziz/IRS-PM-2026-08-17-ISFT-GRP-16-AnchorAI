@@ -25,6 +25,10 @@ class Then(BaseModel):
     def _exactly_one(self) -> "Then":
         if sum(x is not None for x in (self.assert_, self.propose, self.block)) != 1:
             raise ValueError("then: needs exactly one of assert, propose or block")
+        if isinstance(self.block, list) and (not self.block or "all" in self.block):
+            raise ValueError("block: needs offer ids, or the word all on its own")
+        if self.assert_ is not None and not self.assert_:
+            raise ValueError("assert: needs at least one fact")
         return self
 
 
