@@ -54,11 +54,14 @@ def test_names_and_common_word_classes():
         ("which solo trainers are at risk", None, {"segment": "solo trainers"}),
         ("show the 30 riskiest", 30, {}),
         ("which members should we call this week", None, {}),
+        ("what if budget $2000 top 15 members", 15, {}),
+        ("who is at risk in the next 3 weeks", None, {}),
     ],
 )
 def test_list_slots(text, limit, filters):
     slots, normalised = extract_slots(text, INSTRUCTORS, CLASSES)
     assert slots.limit == limit and slots.member_ids == []
+    assert slots.amount == (2000.0 if "$2000" in text else None)
     for field, value in filters.items():
         assert getattr(slots, field) == value
     assert limit is None or "COUNT" in normalised
@@ -90,6 +93,12 @@ def test_slot_rule_and_threshold(classifier):
     # On M0003's page, naming one more member makes a comparison of the two.
     paired = classifier.classify("compare risk vs M0002", context_member_id="M0003")
     assert paired.intent == "compare_members" and paired.slots.member_ids == ["M0003", "M0002"]
+
+
+def test_write_requests_are_unknown(classifier):
+    for text in ("Delete member M0012", "please remove M0001 from the plan", "update M0003 risk"):
+        assert classifier.classify(text).intent == "unknown"
+    assert classifier.classify("why is M0001 at risk and not deleted").intent == "member_risk"
 
 
 def test_shipped_intents_load():
@@ -246,6 +255,9 @@ def test_chat_stream_endpoint(client, login, built, monkeypatch, classifier):
     events = sse(client.post("/api/assistant/chat/stream", json=body, headers=staff))
     done = events[-1][1]
     assert not done["llm_used"] and done["grounded"] and "[E1]" in done["answer"]
+    # The template replaces the partial text through `done`; it is never appended as a delta.
+    assert [e for e, _ in events] == ["meta", "delta", "done"]
+    assert events[1][1] == {"text": "partial "}
 
     monkeypatch.setattr(service.llm, "chat_stream", lambda m: pytest.fail("no LLM"))
     unknown = sse(

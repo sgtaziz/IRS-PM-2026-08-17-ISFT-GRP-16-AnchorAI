@@ -11,7 +11,12 @@ from pydantic import BaseModel, Field, field_validator
 from sqlmodel import Session
 
 from anchorai.assistant import llm
-from anchorai.assistant.classifier import UNKNOWN, IntentClassifier, get_classifier
+from anchorai.assistant.classifier import (
+    UNKNOWN,
+    WRITE_REQUEST,
+    IntentClassifier,
+    get_classifier,
+)
 from anchorai.assistant.prompt import DONT_KNOW, build_messages
 from anchorai.assistant.slots import Slots, extract_slots
 from anchorai.assistant.tools import TOOLS, Evidence
@@ -128,7 +133,11 @@ def prepare(
         llm_used=False,
     )
     named = False
-    if prediction.intent == UNKNOWN and (previous := _previous(history, classifier)):
+    if (
+        prediction.intent == UNKNOWN
+        and not WRITE_REQUEST.search(message)
+        and (previous := _previous(history, classifier))
+    ):
         # "What about M0002?" or "explain that more simply": continue the previous question,
         # with whatever the new message names, else the previous turn's members and entities.
         slots = extract_slots(message, classifier.instructors, classifier.classes)[0]
@@ -214,20 +223,26 @@ def _events(prepared: Prepared, chat_stream: ChatStream) -> Iterator[tuple[str, 
         yield "done", {"grounded": False, "llm_used": False, "answer": reply.answer}
         return
     parts: list[str] = []
+    pieces = chat_stream(prepared.messages)
     try:
-        for piece in chat_stream(prepared.messages):
+        for piece in pieces:
             parts.append(piece)
             yield "delta", {"text": piece}
-    except (OpenAIError, IndexError, AttributeError) as e:
-        log.warning("assistant LLM unavailable, using template answer: %s", e)
+    except Exception as e:  # noqa: BLE001 - any LLM or network failure degrades to the template
+        log.warning("assistant LLM failed, using template answer: %s", e)
         parts = []
-    # `done` carries the final text, which replaces whatever was streamed: the fallback if the
-    # LLM failed (even midway), or the don't-know line if it said nothing.
-    text = "".join(parts).strip()
-    if not parts:
-        text = prepared.fallback
-        yield "delta", {"text": text}
-    yield "done", {"grounded": True, "llm_used": bool(parts), "answer": text or DONT_KNOW}
+    finally:
+        # A client that disconnects closes this generator; stop reading from the LLM too.
+        close = getattr(pieces, "close", None)
+        if close:
+            close()
+    # `done` carries the final text and replaces whatever was streamed. When the LLM fails, even
+    # midway, the template goes only here, never as a delta appended to a partial answer.
+    if parts:
+        answer_text = "".join(parts).strip() or DONT_KNOW
+    else:
+        answer_text = prepared.fallback
+    yield "done", {"grounded": True, "llm_used": bool(parts), "answer": answer_text}
 
 
 def save_feedback(session: Session, user: User, feedback: FeedbackIn) -> AssistantFeedback:
