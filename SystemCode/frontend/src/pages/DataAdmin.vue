@@ -8,7 +8,7 @@ import ProgressBar from 'primevue/progressbar'
 import { useToast } from 'primevue/usetoast'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { api } from '../api/client'
-import type { BuildStatus, DataOverview, Fairness, Metrics } from '../api/types'
+import type { BuildStatus, DataOverview, Fairness, KgStatus, Metrics } from '../api/types'
 import ChartCard from '../components/ChartCard.vue'
 import ConfirmAction from '../components/ConfirmAction.vue'
 import KpiTile from '../components/KpiTile.vue'
@@ -96,11 +96,11 @@ async function upload(event: Event) {
 const kgMessage = ref<string | null>(null)
 async function rebuildKg() {
   try {
-    await api<unknown>('/graph/rebuild', { method: 'POST' })
+    await api<KgStatus>('/admin/kg/reload', { method: 'POST' })
     kgMessage.value = null
     toast.add({ severity: 'success', summary: 'Knowledge graph rebuilt', life: 4000 })
-  } catch {
-    kgMessage.value = 'Knowledge-graph rebuild is not available yet (Stream C). Run `uv run anchorai kg load` instead.'
+  } catch (e) {
+    kgMessage.value = errorMessage(e)
   }
 }
 
