@@ -1,0 +1,5 @@
+budget,retained with guardrails,retained without guardrails,sd with guardrails,sd without guardrails,gap (free - guarded),offers with guardrails,offers without guardrails,spend with guardrails,spend without guardrails,staff_minutes with guardrails,staff_minutes without guardrails,violations G01_contact_fatigue,violations total,violations share of free plan offers
+500,40.662,45.597,0.0,0.0,4.935,739.0,849.0,492.0,492.0,4105.0,4655.0,114.0,114.0,0.134
+1000,47.698,52.605,0.0,0.0,4.906,781.0,890.0,999.0,990.0,4730.0,5260.0,119.0,119.0,0.134
+2000,59.792,65.187,0.0,0.0,5.395,862.0,972.0,1992.0,1998.0,5910.0,6450.0,135.0,135.0,0.139
+4000,73.966,80.015,0.0,0.0,6.049,911.0,879.0,3399.0,3627.0,7200.0,7200.0,123.0,123.0,0.14

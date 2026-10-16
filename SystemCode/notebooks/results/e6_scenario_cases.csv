@@ -16,8 +16,11 @@ social_medium,True,,G03 D06 P04 P08,"class_pass, checkin_message",discount_1m<-G
 social_low_risk,True,,G03 G04 D06,,"discount_1m<-G03, free_pt_session<-G04, class_pass<-G04",Social member at low risk gets nothing
 disengaged_medium,True,,G03 D03 P07 P08,checkin_message,discount_1m<-G03,Disengaged at medium risk; the disengaged check-in (SMS) outranks the generic one
 disengaged_low_risk,True,,G03 G04 D03,,"discount_1m<-G03, free_pt_session<-G04, class_pass<-G04",Disengaged at low risk is derived but not acted on
-falling_regular_low_risk,True,,G03 G04 D01 P02,,"discount_1m<-G03, free_pt_session<-G04, class_pass<-G04",The low-risk guardrail removes the PT session a falling regular would get
-falling_regular_medium,True,,G03 D01 P02 P08,"free_pt_session, checkin_message",discount_1m<-G03,Falling regular at medium risk gets the in-person PT session
+new_member_absent,True,,G03 D04 D02 P07 P08,checkin_message,discount_1m<-G03,A new member barely visiting is disengaged even though their short history shows no fall
+always_low_not_disengaged,True,,G03 P08,checkin_message,discount_1m<-G03,A member who always came rarely is not disengaged (judged against their own usual rate)
+falling_regular_low_risk,True,,G03 G04 D01 P02,checkin_message,"discount_1m<-G03, free_pt_session<-G04, class_pass<-G04",A falling regular gets a free check-in even at low risk (the low-risk guardrail blocks paid offers only)
+falling_regular_medium,True,,G03 D01 P02 P08,checkin_message,discount_1m<-G03,"Falling regular at medium risk gets a check-in, not a PT session"
+small_dip_not_falling,True,,G03 P08,checkin_message,discount_1m<-G03,A regular whose visits dipped to 75% of usual is not a falling regular
 new_member_not_slipping,True,,G03 G04 D02,,"discount_1m<-G03, free_pt_session<-G04, class_pass<-G04",A new member with steady visits triggers no onboarding
 new_and_slipping_low_risk,True,,G03 G04 D02 P01,,"discount_1m<-G03, free_pt_session<-G04, class_pass<-G04",New and slipping but low risk; the low-risk guardrail removes the onboarding session
 everything_at_once,True,,D05 D02 P01 P06 P05,"free_pt_session, discount_1m",,"New, slipping, high-value, month-to-month, high risk; duplicate PT proposals collapse to the first"
