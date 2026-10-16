@@ -23,6 +23,7 @@ What each stream needs from the others: blockers, reviews, decisions and promise
 | 4 | C | review | Member 360's rule-trace and graph panels now use C's `RuleTrace` and `EgoGraph` components; B's two panels are unchanged | Touches A's page | open | 2026-10-16 |
 | 5 | C | review | C1–C5 landed on `main` without a cross-stream review: auth and app DB, rule engine, rule base, knowledge graph | AGENTS.md requires one review from another stream (A or B) | open | 2026-10-16 |
 | 14 | C | deliver | Write ~10 questions a gym manager or staff member might ask the assistant, in your own words, each tagged with an intent (`member_risk`, `member_actions`, `compare_members`, `graph_impact`, `plan_summary`, `what_if_budget`) or `unknown` | E8 needs a test set the assistant's author never saw; the current one (`notebooks/c_intent_classifier.ipynb`) is optimistic | open | 2026-10-16 |
+| 16 | C | decision | Should the data rebuild job (`anchorai/discovery/jobs.py`) call `anchorai.knowledge.reload.sync_graph()` when it finishes? Admin edits to instructors, classes and events live in SQLite and are merged on top of your tables, so they survive a rebuild | After a rebuild the cached KG facts are ignored until someone runs `anchorai kg load` or the admin reload button | open | 2026-10-16 |
 
 ## Stream B: Decision & Optimisation
 
