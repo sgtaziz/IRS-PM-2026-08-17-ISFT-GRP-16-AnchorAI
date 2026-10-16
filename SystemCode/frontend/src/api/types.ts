@@ -287,6 +287,7 @@ export interface Glossary {
   rules: Record<string, string>
   offers: Record<string, string>
   facts: Record<string, string>
+  offer_channels: Record<string, Channel[]>
 }
 
 export interface RuleSet {
