@@ -3,6 +3,7 @@
 import threading
 from typing import Any
 
+import yaml
 from pydantic import BaseModel
 from sqlmodel import Session, select
 
@@ -48,7 +49,7 @@ def active_rules(session: Session) -> tuple[int | None, list[Rule]]:
         return None, load_rule_files()
     try:
         return version.version, load_rules(version.yaml_text)
-    except (ValueError, TypeError) as e:
+    except (ValueError, TypeError, yaml.YAMLError) as e:
         raise InvalidRuleBase(f"Active rule version {version.version} is invalid: {e}") from e
 
 

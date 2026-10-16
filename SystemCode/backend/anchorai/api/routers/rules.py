@@ -12,6 +12,7 @@ from anchorai.reasoning.service import Glossary, RuleSet
 from anchorai.reasoning.versions import (
     InvalidDraft,
     Report,
+    StaleRules,
     UnknownRule,
     UnknownVersion,
     VersionDetail,
@@ -34,11 +35,17 @@ class DraftTestIn(DraftIn):
 
 class SaveIn(DraftIn):
     note: str = Field(min_length=1)
+    base_version: int | None
 
 
 class EnableIn(BaseModel):
     enabled: bool
     note: str | None = None
+    base_version: int | None
+
+
+class ActivateIn(BaseModel):
+    base_version: int | None
 
 
 def _invalid(e: InvalidDraft) -> HTTPException:
@@ -56,9 +63,13 @@ def list_rules(session: SessionDep):
 @router.put("", response_model=VersionSummary)
 def save_rules(body: SaveIn, session: SessionDep, user: Admin):
     try:
-        return versions.save_version(session, user, body.yaml_text, body.note.strip())
+        return versions.save_version(
+            session, user, body.yaml_text, body.note.strip(), body.base_version
+        )
     except InvalidDraft as e:
         raise _invalid(e) from None
+    except StaleRules as e:
+        raise HTTPException(409, str(e)) from None
 
 
 @router.get("/glossary", response_model=Glossary)
@@ -110,13 +121,15 @@ def get_version(version: int, session: SessionDep):
 
 
 @router.post("/versions/{version}/activate", response_model=VersionSummary)
-def activate_version(version: int, session: SessionDep, user: Admin):
+def activate_version(version: int, body: ActivateIn, session: SessionDep, user: Admin):
     try:
-        return versions.activate_version(session, user, version)
+        return versions.activate_version(session, user, version, body.base_version)
     except UnknownVersion as e:
         raise HTTPException(404, str(e)) from None
     except InvalidDraft as e:
         raise _invalid(e) from None
+    except StaleRules as e:
+        raise HTTPException(409, str(e)) from None
 
 
 @router.get("/trace/{member_id}", response_model=RuleOutcome)
@@ -135,8 +148,12 @@ def trace(member_id: str, session: SessionDep):
 @router.patch("/{rule_id}", response_model=VersionSummary)
 def set_rule_enabled(rule_id: str, body: EnableIn, session: SessionDep, user: Admin):
     try:
-        return versions.set_enabled(session, user, rule_id, body.enabled, body.note)
+        return versions.set_enabled(
+            session, user, rule_id, body.enabled, body.note, body.base_version
+        )
     except UnknownRule as e:
         raise HTTPException(404, str(e)) from None
     except InvalidDraft as e:
         raise _invalid(e) from None
+    except StaleRules as e:
+        raise HTTPException(409, str(e)) from None

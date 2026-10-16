@@ -5,13 +5,14 @@ from typing import Any
 
 import yaml
 from pydantic import BaseModel, ValidationError
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, func, select
 
 from anchorai import catalog
 from anchorai.db.audit import record_audit
 from anchorai.db.models import RuleVersion, User
 from anchorai.reasoning import service
-from anchorai.reasoning.engine import load_rules, run
+from anchorai.reasoning.engine import run
 from anchorai.reasoning.facts import KNOWN_FACTS, FactType
 from anchorai.reasoning.models import Rule, RuleOutcome
 from anchorai.reasoning.validate import Issue
@@ -73,6 +74,10 @@ class UnknownVersion(LookupError):
 
 
 class UnknownRule(LookupError):
+    pass
+
+
+class StaleRules(RuntimeError):
     pass
 
 
@@ -232,13 +237,49 @@ def _diff(before: list[Rule], after: list[Rule]) -> dict[str, list[str]]:
     }
 
 
+def _active_row(session: Session) -> RuleVersion | None:
+    return session.exec(
+        select(RuleVersion).where(RuleVersion.is_active).order_by(RuleVersion.version.desc())
+    ).first()
+
+
+def _require_base(session: Session, base_version: int | None) -> None:
+    row = _active_row(session)
+    if (row.version if row else None) != base_version:
+        raise StaleRules("The rules changed since you opened them; reload and try again")
+
+
+def _before(session: Session) -> tuple[int | None, list[Rule]]:
+    """The active rules for the audit trail; a broken active version must not block a fix."""
+    try:
+        return service.active_rules(session)
+    except service.InvalidRuleBase:
+        row = _active_row(session)
+        return (row.version if row else None), []
+
+
+def _commit(session: Session) -> None:
+    try:
+        session.commit()
+    except IntegrityError:
+        # Another writer took the same version number first.
+        session.rollback()
+        raise StaleRules("The rules changed since you opened them; reload and try again") from None
+
+
 def save_version(
-    session: Session, user: User, yaml_text: str, note: str, action: str = "rule_version_create"
+    session: Session,
+    user: User,
+    yaml_text: str,
+    note: str,
+    base_version: int | None,
+    action: str = "rule_version_create",
 ) -> VersionSummary:
     rules, report = check_draft(session, yaml_text)
     if not report.ok:
         raise InvalidDraft(report)
-    before_version, before = service.active_rules(session)
+    _require_base(session, base_version)
+    before_version, before = _before(session)
     latest = session.exec(select(func.max(RuleVersion.version))).one() or 0
     for row in session.exec(select(RuleVersion).where(RuleVersion.is_active)).all():
         row.is_active = False
@@ -261,14 +302,23 @@ def save_version(
         after={"version": row.version, "rule_count": len(rules), "note": note}
         | _diff(before, rules),
     )
-    session.commit()
+    _commit(session)
     return _summary(row, _usernames(session))
 
 
 def set_enabled(
-    session: Session, user: User, rule_id: str, enabled: bool, note: str | None
+    session: Session,
+    user: User,
+    rule_id: str,
+    enabled: bool,
+    note: str | None,
+    base_version: int | None,
 ) -> VersionSummary:
-    _, rules = service.active_rules(session)
+    _require_base(session, base_version)
+    try:
+        _, rules = service.active_rules(session)
+    except service.InvalidRuleBase as e:
+        raise InvalidDraft(Report(rule_count=0, parse_errors=[str(e)], issues=[])) from None
     rules = [r.model_copy(deep=True) for r in rules]
     target = next((r for r in rules if r.id == rule_id), None)
     if target is None:
@@ -280,19 +330,22 @@ def set_enabled(
         user,
         dump_rules(rules),
         note or default,
+        base_version,
         action="rule_enable" if enabled else "rule_disable",
     )
 
 
-def activate_version(session: Session, user: User, version: int) -> VersionSummary:
+def activate_version(
+    session: Session, user: User, version: int, base_version: int | None
+) -> VersionSummary:
     row = _get(session, version)
-    active_version, active = service.active_rules(session)
+    _require_base(session, base_version)
     if row.is_active:
         return _summary(row, _usernames(session))
-    try:
-        rules = load_rules(row.yaml_text)
-    except (ValueError, TypeError) as e:
-        raise InvalidDraft(Report(rule_count=0, parse_errors=[str(e)], issues=[])) from None
+    rules, report = check_draft(session, row.yaml_text)
+    if not report.ok:
+        raise InvalidDraft(report)
+    active_version, active = _before(session)
     for other in session.exec(select(RuleVersion).where(RuleVersion.is_active)).all():
         other.is_active = False
         session.add(other)
@@ -307,5 +360,5 @@ def activate_version(session: Session, user: User, version: int) -> VersionSumma
         before={"active_version": active_version, "rule_count": len(active)},
         after={"active_version": version, "rule_count": len(rules)} | _diff(active, rules),
     )
-    session.commit()
+    _commit(session)
     return _summary(row, _usernames(session))
