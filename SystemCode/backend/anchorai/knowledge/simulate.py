@@ -101,6 +101,7 @@ def simulate(session: Session, event_type: EventType, entity_id: str) -> Simulat
         label = f"the {names[entity_id]} class is cancelled"
         hits = {r["member_id"]: None for r in read(queries.MEMBERS_BY_CLASS, class_id=entity_id)}
 
+    already_happened = entity_id in set(tables["events"]["entity_id"])
     _, rules = reasoning.active_rules(session)
     all_facts = reasoning.all_facts()
     members = []
@@ -110,12 +111,12 @@ def simulate(session: Session, event_type: EventType, entity_id: str) -> Simulat
         before = run(rules, all_facts[member_id], member_id)
         facts = dict(all_facts[member_id])
         if event_type == "instructor_left":
-            facts["anchor_instructor_share"] = max(
-                share, facts.get("anchor_instructor_share") or 0.0
-            )
-            facts["lost_anchor_instructor"] = (
-                facts["anchor_instructor_share"] >= ANCHOR_SHARE_THRESHOLD
-            )
+            # The stored share sums every instructor who has already left; add this one
+            # unless they're among them.
+            existing = facts.get("anchor_instructor_share") or 0.0
+            combined = existing if already_happened else min(1.0, existing + share)
+            facts["anchor_instructor_share"] = combined
+            facts["lost_anchor_instructor"] = combined >= ANCHOR_SHARE_THRESHOLD
         else:
             facts["class_cancelled"] = True
         after = run(rules, facts, member_id)
