@@ -1,4 +1,8 @@
 import logging
+import sys
+import threading
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -28,7 +32,25 @@ if get_settings().anchorai_jwt_secret in INSECURE_JWT_SECRETS:
         "(openssl rand -hex 32) before sharing this server."
     )
 
-app = FastAPI(title="AnchorAI", version="0.1.0")
+
+def _warm_up_assistant() -> None:
+    from anchorai.assistant.classifier import get_classifier
+
+    try:
+        get_classifier()
+    except Exception:
+        logging.getLogger("uvicorn.error").exception("assistant warm-up failed")
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    # Loading the embedding model takes seconds; do it now so the first question doesn't wait.
+    if get_settings().assistant_warmup and "pytest" not in sys.modules:
+        threading.Thread(target=_warm_up_assistant, name="assistant-warmup", daemon=True).start()
+    yield
+
+
+app = FastAPI(title="AnchorAI", version="0.1.0", lifespan=lifespan)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"],

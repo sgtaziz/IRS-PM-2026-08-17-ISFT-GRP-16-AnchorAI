@@ -32,6 +32,7 @@ class Settings(BaseSettings):
     llm_tool_calling: bool = False
     llm_timeout_seconds: float = 30.0
     assistant_embedding_model: str = "all-MiniLM-L6-v2"
+    assistant_warmup: bool = True
 
     neo4j_uri: str = "bolt://localhost:7687"
     neo4j_user: str = "neo4j"
