@@ -9,6 +9,7 @@ from anchorai.api.routers import (
     admin_offers,
     assistant,
     auth,
+    graph,
     health,
     members,
     plan,
@@ -44,6 +45,9 @@ app.include_router(
 )
 app.include_router(
     rules.router, prefix="/api/rules", tags=["rules (Stream C)"], dependencies=any_role
+)
+app.include_router(
+    graph.router, prefix="/api/graph", tags=["graph (Stream C)"], dependencies=any_role
 )
 app.include_router(
     assistant.router, prefix="/api/assistant", tags=["assistant (Stream C)"], dependencies=any_role
