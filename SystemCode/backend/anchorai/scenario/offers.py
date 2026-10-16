@@ -7,7 +7,7 @@ OFFER_CATALOG: list[dict] = [
         "cost": 0.0,
         "staff_minutes": 5,
         "inventory": None,
-        "channels": ["sms", "email"],
+        "channels": ["sms", "email", "call"],
         "eligibility": "Any active member",
         "required_skill": "",
     },

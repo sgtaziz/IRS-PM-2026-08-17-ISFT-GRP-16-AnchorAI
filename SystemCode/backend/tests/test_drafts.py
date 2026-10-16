@@ -78,7 +78,7 @@ def test_inactive_offer_and_unsupported_channel(client, login, built, no_llm, en
     from anchorai.db.models import OfferCatalog
 
     staff, manager = login("staff1"), login("manager")
-    assert post(client, staff, offer="checkin_message", channel="call").status_code == 409
+    assert post(client, staff, offer="checkin_message", channel="in_person").status_code == 409
     with Session(engine) as s:
         row = s.get(OfferCatalog, "checkin_message")
         row.active = False
