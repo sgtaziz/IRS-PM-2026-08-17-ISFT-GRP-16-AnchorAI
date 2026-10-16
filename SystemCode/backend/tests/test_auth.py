@@ -31,7 +31,10 @@ def test_role_enforcement(client, login):
     assert client.post("/api/plan", json={}, headers=login("staff1")).status_code == 403
     # Manager passes the role check and reaches the (unimplemented) handler or validation.
     assert client.post("/api/plan", json={}, headers=login("manager")).status_code not in (401, 403)
-    assert client.put("/api/rules/x", json={}, headers=login("manager")).status_code == 403
+    assert (
+        client.patch("/api/rules/x", json={"enabled": False}, headers=login("manager")).status_code
+        == 403
+    )
     assert client.get("/api/health").status_code == 200
 
 
