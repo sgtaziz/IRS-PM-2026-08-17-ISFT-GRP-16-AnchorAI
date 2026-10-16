@@ -2,7 +2,7 @@
 # threshold: below this cosine similarity to every intent centroid, the assistant says it doesn't know.
 # member_slots: [min, max] member ids the question must mention (or get from page context) for the intent to apply.
 # unknown_examples: out-of-scope questions used only to tune the threshold, never as a class.
-threshold: 0.275
+threshold: 0.35
 intents:
   member_risk:
     description: 'Why a member is at risk: churn score, drivers, segment'
