@@ -8,11 +8,9 @@ from anchorai.config import get_settings
 from anchorai.db import migrate
 from anchorai.db.seeds import run_seeds
 from anchorai.db.session import get_engine, reset_engine
-from anchorai.discovery.scores import load_scores
-from anchorai.knowledge.graph import get_driver, neo4j_available
-from anchorai.knowledge.loader import load_graph
-from anchorai.knowledge.signals import compute_kg_facts, save_kg_facts
-from anchorai.scenario.tables import generated_dir, read_tables
+from anchorai.knowledge.reload import GraphDown, reload_graph
+from anchorai.knowledge.signals import kg_facts_path
+from anchorai.scenario.tables import generated_dir
 
 app = typer.Typer(help="AnchorAI command line.", no_args_is_help=True)
 db_app = typer.Typer(help="App database: migrations and seeds.", no_args_is_help=True)
@@ -70,19 +68,17 @@ def data_build() -> None:
 
 @kg_app.command("load")
 def kg_load() -> None:
-    """Load the knowledge graph into Neo4j from the parquet tables, then cache its facts."""
+    """Load the knowledge graph into Neo4j from the data tables and admin edits, then cache its facts."""
     if not (generated_dir() / "members.parquet").exists():
         typer.echo("kg load: data tables not built; run `uv run anchorai data build`", err=True)
         raise typer.Exit(1)
-    driver = get_driver()
-    if not neo4j_available(driver):
+    try:
+        counts = reload_graph()
+    except GraphDown:
         # Degrade instead of failing setup: rules on KG facts just won't fire.
         typer.echo("kg load: Neo4j is not reachable; skipped (start it with docker compose)")
         return
-    scores = load_scores() if (generated_dir() / "member_scores.parquet").exists() else None
-    counts = load_graph(driver, read_tables(), scores)
-    path = save_kg_facts(compute_kg_facts(driver))
-    typer.echo(f"Loaded graph {counts}; cached KG facts to {path}")
+    typer.echo(f"Loaded graph {counts}; cached KG facts to {kg_facts_path()}")
 
 
 @app.command()

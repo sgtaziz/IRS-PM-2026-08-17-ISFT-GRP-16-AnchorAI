@@ -113,3 +113,9 @@ def get_classifier() -> IntentClassifier:
     instructors, classes = name_lookup()
     encode = sentence_encoder(get_settings().assistant_embedding_model)
     return IntentClassifier(encode, specs, threshold, instructors, classes)
+
+
+def refresh_names() -> None:
+    """Pick up added or renamed instructors and classes without reloading the embedding model."""
+    if get_classifier.cache_info().currsize:
+        get_classifier().instructors, get_classifier().classes = name_lookup()

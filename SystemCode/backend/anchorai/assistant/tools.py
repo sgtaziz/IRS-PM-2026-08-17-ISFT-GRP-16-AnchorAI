@@ -12,6 +12,7 @@ from anchorai.db.models import Plan, PlanItem
 from anchorai.discovery import service as member_data
 from anchorai.features import LABELS
 from anchorai.knowledge import queries
+from anchorai.knowledge.entities import effective
 from anchorai.knowledge.graph import GraphUnavailable, read
 from anchorai.knowledge.signals import graph_signals
 from anchorai.reasoning import service as reasoning
@@ -56,9 +57,9 @@ def probability(p: float | None) -> str:
 
 
 def name_lookup() -> tuple[dict[str, str], dict[str, str]]:
-    tables = member_data.get_data().tables
-    instructors = dict(zip(tables["instructors"]["name"], tables["instructors"]["instructor_id"]))
-    classes = dict(zip(tables["classes"]["name"], tables["classes"]["class_id"]))
+    eff = effective()
+    instructors = dict(zip(eff.instructors["name"], eff.instructors["instructor_id"]))
+    classes = dict(zip(eff.classes["name"], eff.classes["class_id"]))
     return instructors, classes
 
 
@@ -192,10 +193,10 @@ def _affected(query: str, label: str, kind: str, ref: str, lines: _Lines, **para
 
 
 def graph_impact(session: Session, slots: Slots) -> ToolResult:
-    tables = member_data.get_data().tables
-    instructors = tables["instructors"].set_index("instructor_id")["name"]
-    classes = tables["classes"].set_index("class_id")
-    events = tables["events"]
+    eff = effective(session)
+    instructors = eff.instructors.set_index("instructor_id")["name"]
+    classes = eff.classes.set_index("class_id")
+    events = eff.events
     lines = _Lines()
     targets = [("instructor", i) for i in slots.instructor_ids] + [
         ("class", c) for c in slots.class_ids
