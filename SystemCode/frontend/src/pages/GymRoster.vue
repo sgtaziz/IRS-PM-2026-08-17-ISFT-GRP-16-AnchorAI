@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CalendarX2, Database, GraduationCap, Plus, RefreshCw, UserMinus, UserPlus, Users } from 'lucide-vue-next'
+import { ArrowRight, CalendarX2, Database, GraduationCap, Plus, RefreshCw, UserMinus, UserPlus, Users } from 'lucide-vue-next'
 import Button from 'primevue/button'
 import Column from 'primevue/column'
 import Dialog from 'primevue/dialog'
@@ -17,12 +17,11 @@ import { api } from '../api/client'
 import type { EventType, KgStatus, Roster, RosterClass, RosterEdit, RosterInstructor } from '../api/types'
 import { errorMessage, useAsync } from '../composables/useAsync'
 import { date, dateTime } from '../format'
-import ConfirmAction from './ConfirmAction.vue'
-import DataTableX from './DataTableX.vue'
-import PageState from './PageState.vue'
-import SectionCard from './SectionCard.vue'
-
-const emit = defineEmits<{ changed: [] }>()
+import ConfirmAction from '../components/ConfirmAction.vue'
+import DataTableX from '../components/DataTableX.vue'
+import PageHeader from '../components/PageHeader.vue'
+import PageState from '../components/PageState.vue'
+import SectionCard from '../components/SectionCard.vue'
 
 const toast = useToast()
 const roster = useAsync(() => api<Roster>('/admin/gym'))
@@ -54,7 +53,6 @@ async function changed(edit: RosterEdit, summary: string) {
     toast.add({ severity: 'success', summary, life: 3000 })
   }
   await Promise.all([roster.run(), kg.run()])
-  emit('changed')
 }
 
 async function reloadGraph() {
@@ -62,7 +60,6 @@ async function reloadGraph() {
   try {
     await api<KgStatus>('/admin/kg/reload', { method: 'POST' })
     toast.add({ severity: 'success', summary: 'Knowledge graph reloaded', life: 3000 })
-    emit('changed')
   } catch (e) {
     toast.add({ severity: 'error', summary: 'Could not reload the knowledge graph', detail: errorMessage(e), life: 7000 })
   } finally {
@@ -145,11 +142,18 @@ const dialogTitle = computed(() => {
 </script>
 
 <template>
-  <SectionCard
-    title="Events & roster"
-    subtitle="Record who has left and which classes are cancelled. The graph is rebuilt after each change."
-    :icon="CalendarX2"
-  >
+  <div class="page">
+    <PageHeader
+      title="Events & roster"
+      subtitle="Record who has left and which classes are cancelled. The knowledge graph is rebuilt after each change."
+    >
+      <template #actions>
+        <RouterLink to="/graph" class="inline-flex items-center gap-1.5 text-sm font-semibold no-underline">
+          See who an event affects <ArrowRight :size="15" aria-hidden="true" />
+        </RouterLink>
+      </template>
+    </PageHeader>
+    <SectionCard title="Instructors and classes" subtitle="Add people and classes, reassign teaching, or record an event" :icon="CalendarX2">
     <div class="mb-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
       <span class="text-xs text-ink-500">
         {{ kg.data.value?.last_reloaded_at ? `Graph reloaded ${dateTime(kg.data.value.last_reloaded_at)}` : 'Graph not reloaded since the server started' }}
@@ -277,6 +281,7 @@ const dialogTitle = computed(() => {
       Graph holds {{ kg.data.value.counts.instructors }} instructors, {{ kg.data.value.counts.classes }} classes and {{ kg.data.value.counts.events }} events.
     </p>
   </SectionCard>
+  </div>
 
   <Dialog :visible="mode !== null" :header="dialogTitle" modal :style="{ width: 'min(480px, 94vw)' }" @update:visible="(v: boolean) => !v && (mode = null)">
     <form v-if="mode" class="flex flex-col gap-4" @submit.prevent="submit">

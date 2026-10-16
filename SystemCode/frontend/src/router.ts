@@ -22,6 +22,7 @@ export const routes: RouteRecordRaw[] = [
   { path: '/plan', name: 'Weekly plan', component: () => import('./pages/PlanBuilder.vue'), meta: { roles: ['manager', 'admin'] } },
   { path: '/scenarios', name: 'Scenarios', component: () => import('./pages/Scenarios.vue'), meta: { roles: ['manager', 'admin'] } },
   { path: '/graph', name: 'Knowledge graph', component: () => import('./pages/GraphExplorer.vue'), meta: { roles: ['manager', 'admin'] } },
+  { path: '/roster', name: 'Events & roster', component: () => import('./pages/GymRoster.vue'), meta: { roles: ['manager', 'admin'] } },
   { path: '/my-contacts', name: 'My contacts', component: () => import('./pages/MyContacts.vue'), meta: { roles: ['staff', 'manager', 'admin'] } },
   { path: '/assistant', name: 'Assistant', component: () => import('./pages/Assistant.vue'), meta: { roles: ['staff', 'manager', 'admin'] } },
   { path: '/admin/rules', name: 'Rules', component: () => import('./pages/RulesAdmin.vue'), meta: { roles: ['admin'] } },

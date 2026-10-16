@@ -16,12 +16,12 @@ import EmptyState from '../components/EmptyState.vue'
 import KpiTile from '../components/KpiTile.vue'
 import PageHeader from '../components/PageHeader.vue'
 import PageState from '../components/PageState.vue'
-import RosterPanel from '../components/RosterPanel.vue'
 import RiskBadge from '../components/RiskBadge.vue'
 import SectionCard from '../components/SectionCard.vue'
 import { useAsync } from '../composables/useAsync'
 import { pct } from '../format'
 import { ruleCode } from '../labels'
+import { useAuthStore } from '../stores/auth'
 import { useGlossaryStore } from '../stores/glossary'
 
 const entities = useAsync(() => api<GraphEntities>('/graph/entities'))
@@ -30,6 +30,7 @@ const sim = useAsync((event_type: EventType, entity_id: string) =>
 )
 const ego = useAsync((id: string) => api<EgoGraphData>(`/graph/ego/${encodeURIComponent(id)}`))
 
+const auth = useAuthStore()
 const glossary = useGlossaryStore()
 const target = ref<string | null>(null)
 const memberId = ref('')
@@ -72,12 +73,6 @@ function offers(m: AffectedMember) {
   return m.allowed.map((p) => glossary.offer(p.offer_id)).join(', ') || '—'
 }
 
-function onRosterChanged() {
-  entities.run()
-  if (target.value) simulate()
-  if (shown.value) ego.run(shown.value)
-}
-
 function onSelect(type: string, id: string) {
   if (type === 'Member' && id !== shown.value) showMember(id)
 }
@@ -88,7 +83,13 @@ function onSelect(type: string, id: string) {
     <PageHeader
       title="Knowledge graph"
       subtitle="Simulate an instructor leaving or a class closing to see who it would affect. Nothing in the data changes."
-    />
+    >
+      <template v-if="auth.hasRole(['manager', 'admin'])" #actions>
+        <RouterLink to="/roster" class="inline-flex items-center gap-1.5 text-sm font-semibold no-underline">
+          Manage events & roster <ArrowRight :size="15" aria-hidden="true" />
+        </RouterLink>
+      </template>
+    </PageHeader>
     <div class="grid items-start gap-5 xl:grid-cols-[minmax(0,1.6fr)_minmax(22rem,1fr)]">
       <SectionCard title="Simulate an event" subtitle="Pick an instructor or class; affected members and the rules they newly trigger appear below" :icon="Zap">
         <PageState :loading="entities.loading.value" :error="entities.error.value" @retry="entities.run">
@@ -120,7 +121,7 @@ function onSelect(type: string, id: string) {
                 <TriangleAlert :size="16" class="shrink-0" aria-hidden="true" /> If {{ sim.data.value.label }}
               </p>
               <p v-if="sim.data.value.graph_out_of_date" class="m-0 mb-4 flex items-center gap-2 rounded-lg bg-warn-soft px-3.5 py-2.5 text-sm text-warn-ink">
-                <TriangleAlert :size="16" class="shrink-0" aria-hidden="true" /> The knowledge graph is out of date, so these counts may miss recent roster edits. Reload it below.
+                <TriangleAlert :size="16" class="shrink-0" aria-hidden="true" /> The knowledge graph is out of date, so these counts may miss recent roster edits. Reload it on the roster page.
               </p>
               <div class="mb-5 grid gap-3 sm:grid-cols-3">
                 <KpiTile label="Members affected" :value="sim.data.value.affected.toLocaleString()" :icon="Users" />
@@ -190,7 +191,6 @@ function onSelect(type: string, id: string) {
         </PageState>
       </SectionCard>
     </div>
-    <RosterPanel class="mt-5" @changed="onRosterChanged" />
   </div>
 </template>
 
