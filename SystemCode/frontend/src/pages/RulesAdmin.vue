@@ -45,7 +45,18 @@ const vocab = useAsync(() => api<Vocabulary>('/rules/vocabulary'))
 const versions = useAsync(() => api<RuleVersion[]>('/rules/versions'))
 const toast = useToast()
 const tab = ref('rules')
-const highlightRule = useRoute().query.rule
+const route = useRoute()
+const highlightRule = computed(() => route.query.rule)
+const first = ref(0)
+const RULE_ROWS = 50
+async function showHighlighted() {
+  const sorted = [...(rules.data.value?.rules ?? [])].sort((a, b) => b.salience - a.salience)
+  const at = sorted.findIndex((r) => r.id === highlightRule.value)
+  if (at < 0) return
+  first.value = Math.floor(at / RULE_ROWS) * RULE_ROWS
+  await nextTick()
+  document.querySelector('.rule-hl')?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+}
 const failed = (summary: string, e: unknown) => {
   if (isStale(e)) {
     toast.add({ severity: 'warn', summary: 'Rules changed since you opened them', detail: 'Reloaded the latest version. Review it and try again.', life: 7000 })
@@ -64,9 +75,9 @@ onMounted(async () => {
   vocab.run()
   await rules.run()
   await loadYaml()
-  await nextTick()
-  document.querySelector('.rule-hl')?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+  await showHighlighted()
 })
+watch(highlightRule, showHighlighted)
 
 const editorOpen = ref(false)
 const editing = ref<Rule | null>(null)
@@ -267,7 +278,8 @@ function test() {
                     data-key="id"
                     export-name="rules"
                     :global-filter-fields="['id', 'description', 'source', 'kind']"
-                    :rows="50"
+                    v-model:first="first"
+                    :rows="RULE_ROWS"
                     sort-field="salience"
                     :sort-order="-1"
                   >
