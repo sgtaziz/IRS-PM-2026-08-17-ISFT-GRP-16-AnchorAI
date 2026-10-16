@@ -63,8 +63,10 @@ def login(client):
 
 @pytest.fixture
 def built(tmp_path, monkeypatch):
+    """Fixture tables plus stand-in scores, served as the data dir every module reads."""
+    out = tmp_path / "generated"
     tables = read_tables(FIXTURES)
-    write_tables(tables, tmp_path)
+    write_tables(tables, out)
     members = tables["members"]
     features = build_features(members)
     ids = features.index
@@ -82,10 +84,12 @@ def built(tmp_path, monkeypatch):
     probs = pd.Series(np.linspace(0.05, 0.95, len(ids)), index=ids)
     contributions = pd.DataFrame(0.1, index=ids, columns=FEATURES)
     scores = score_frame(members, segment_ids, segments["name"], probs, contributions)
-    features.rename_axis("member_id").reset_index().to_parquet(tmp_path / "features.parquet")
-    segments.to_parquet(tmp_path / "segments.parquet")
-    scores.to_parquet(tmp_path / "member_scores.parquet")
-    (tmp_path / "model_card.json").write_text(json.dumps({"n_members": len(ids)}))
-    monkeypatch.setattr(service, "generated_dir", lambda: tmp_path)
+    features.rename_axis("member_id").reset_index().to_parquet(out / "features.parquet")
+    segments.to_parquet(out / "segments.parquet")
+    scores.to_parquet(out / "member_scores.parquet")
+    (out / "model_card.json").write_text(json.dumps({"n_members": len(ids)}))
+    # Point the settings at the temp dir so every module (scores, KG facts, reload, CLI) reads
+    # the fixture, never the developer's SystemCode/data/generated.
+    monkeypatch.setattr(get_settings(), "anchorai_data_dir", tmp_path)
     monkeypatch.setattr(service, "_cache", None)
     return segments
