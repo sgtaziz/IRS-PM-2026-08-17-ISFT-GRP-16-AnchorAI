@@ -20,9 +20,11 @@ from anchorai.schemas import Channel
 log = logging.getLogger(__name__)
 
 SMS_LIMIT = 300
-# Internal scoring is for staff; it must never reach a member.
+# Internal scoring and retention framing are for staff; they must never reach a member.
 FORBIDDEN = re.compile(
-    r"\b(churn\w*|risk\w*|score\w*|probabilit\w*|model|algorithm)\b", re.IGNORECASE
+    r"\b(churn\w*|at[- ]risk|risk\w*|score\w*|probabilit\w*|model|algorithm|"
+    r"leav\w*|quit\w*|slipping|high[- ]value|cancel\w* your (membership|contract))\b",
+    re.IGNORECASE,
 )
 PLACEHOLDER = re.compile(r"\[[^\]]*\]|\{[^}]*\}")
 NUMBER = re.compile(r"\d+(?:\.\d+)?")
@@ -31,7 +33,8 @@ CHANNEL_STYLE = {
     "sms": f"A text message of at most {SMS_LIMIT - 40} characters. No subject, no emojis.",
     "email": "An email of 60-110 words. The first line is 'Subject: ' followed by a short subject.",
     "call": "A phone call script of 5-8 short lines: opening, reason, offer, ask, close.",
-    "in_person": "4-6 short '- ' bullet talking points for a face-to-face chat.",
+    "in_person": "4-6 short '- ' bullet talking points written for the staff member to say "
+    "face to face, not a script addressed to the member.",
 }
 SYSTEM = """You write short messages from a gym's staff to one member, in a warm, friendly tone.
 Use ONLY the facts in the evidence lines. Never invent prices, dates, discounts, guarantees or
@@ -53,6 +56,10 @@ class Draft(BaseModel):
     channel: Channel
     source: Literal["llm", "template"]
     evidence: list[str]
+
+
+class OfferUnavailable(RuntimeError):
+    pass
 
 
 class OfferBlocked(RuntimeError):
@@ -189,8 +196,14 @@ def _llm(evidence: list[str], channel: Channel) -> Draft | None:
 
 
 def make_draft(session: Session, req: DraftIn, use_llm: bool = True) -> Draft:
-    """Raises UnknownMember / UnknownOffer (from the guardrail check) or OfferBlocked."""
+    """Raises UnknownMember / UnknownOffer (from the guardrail check), OfferUnavailable or OfferBlocked.
+
+    Every channel must be one the offer's catalogue entry lists, call and in person included."""
     check = check_items(session, [ProposedItem(**req.model_dump())])[0]
+    if not check.offer_active:
+        raise OfferUnavailable("This offer is not active")
+    if not check.channel_offered:
+        raise OfferUnavailable(f"This offer is not available by {req.channel.value}")
     if not check.allowed:
         raise OfferBlocked(check)
     template = _template(session, req.member_id, req.offer_id, req.channel)

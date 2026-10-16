@@ -17,6 +17,8 @@ def make_draft(body: DraftIn, session: SessionDep):
         raise HTTPException(404, f"Unknown member {e}") from None
     except check.UnknownOffer as e:
         raise HTTPException(422, f"Unknown offer {e}") from None
+    except drafts.OfferUnavailable as e:
+        raise HTTPException(409, str(e)) from None
     except drafts.OfferBlocked as e:
         raise HTTPException(409, f"This offer is blocked for this member: {e}") from None
     except DataNotBuilt as e:

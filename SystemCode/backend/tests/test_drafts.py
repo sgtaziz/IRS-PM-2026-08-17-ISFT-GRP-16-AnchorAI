@@ -8,7 +8,7 @@ CASES = [
     ("M0008", "free_pt_session", "call"),
     ("M0008", "checkin_message", "sms"),
     ("M0008", "discount_1m", "email"),
-    ("M0007", "checkin_message", "in_person"),
+    ("M0007", "free_pt_session", "in_person"),
 ]
 
 
@@ -50,6 +50,9 @@ def test_llm_text_is_used_when_clean(client, login, built, monkeypatch):
     [
         "Hi, you are at risk of leaving.",
         "Hi, enjoy 50% off!",
+        "We hate to see you leaving.",
+        "You are a high-value member.",
+        "Hi from the New and slipping group.",
         "Hi, this is [Gym Name].",
         "x" * (SMS_LIMIT + 1),
         "",
@@ -67,3 +70,31 @@ def test_unknown_blocked_and_roles(client, login, built, no_llm):
     assert post(client, staff, channel="pigeon").status_code == 422
     assert post(client, staff, member="M0005").status_code == 409
     assert client.post("/api/drafts", json={}).status_code == 401
+
+
+def test_inactive_offer_and_unsupported_channel(client, login, built, no_llm, engine):
+    from sqlmodel import Session
+
+    from anchorai.db.models import OfferCatalog
+
+    staff, manager = login("staff1"), login("manager")
+    assert post(client, staff, offer="checkin_message", channel="call").status_code == 409
+    with Session(engine) as s:
+        row = s.get(OfferCatalog, "checkin_message")
+        row.active = False
+        s.add(row)
+        s.commit()
+    try:
+        r = post(client, staff)
+        assert r.status_code == 409 and "not active" in r.json()["detail"]
+        item = {"member_id": "M0008", "offer_id": "checkin_message", "channel": "sms"}
+        checked = client.post("/api/rules/check", json={"items": [item]}, headers=manager).json()[0]
+        assert checked["offer_active"] is False and checked["allowed"] is True
+        glossary = client.get("/api/rules/glossary", headers=staff).json()
+        assert "checkin_message" not in glossary["offer_channels"]
+    finally:
+        with Session(engine) as s:
+            row = s.get(OfferCatalog, "checkin_message")
+            row.active = True
+            s.add(row)
+            s.commit()
