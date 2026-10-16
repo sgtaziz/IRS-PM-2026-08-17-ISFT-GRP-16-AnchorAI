@@ -1,13 +1,13 @@
 # Derived facts: name a pattern once, so playbooks and traces read in plain words.
-# Thresholds are drafts until set in notebooks/c_rules.ipynb.
+# Thresholds come from notebooks/c_rules.ipynb, checked against the simulated interviews in Miscellaneous/interviews/.
 
 - id: D01_falling_regular
   kind: derive
   salience: 50
-  description: A regular class-goer whose visits this month fell to 80% of their usual rate or less
-  when: ["avg_class_frequency_total >= 2", "trend_ratio <= 0.8"]
+  description: A regular class-goer whose visits this month fell to 70% of their usual rate or less
+  when: ["avg_class_frequency_total >= 2", "trend_ratio <= 0.7"]
   then: {assert: {falling_regular: true}}
-  source: team assumption
+  source: "simulated interviews 2026-10-16 (owner, area manager, membership lead): a 20% dip is noise, act on about half; data: smaller drops also churn, so 0.7 is the compromise"
 
 - id: D02_new_member
   kind: derive
@@ -15,15 +15,23 @@
   description: A new member in their first two months, when churn is highest
   when: ["lifetime <= 1"]
   then: {assert: {new_member: true}}
-  source: team assumption
+  source: "simulated interviews 2026-10-16 (owner, area manager, membership lead): the first one to two months decide it"
 
 - id: D03_disengaged
   kind: derive
   salience: 50
-  description: Barely visiting this month
-  when: ["avg_class_frequency_current_month < 0.5"]
+  description: Barely visiting this month, and below their own usual rate
+  when: ["avg_class_frequency_current_month < 0.5", "trend_ratio < 0.8"]
   then: {assert: {disengaged: true}}
-  source: team assumption
+  source: "simulated interviews 2026-10-16 (owner, area manager, membership lead): judge against the member's own baseline; members who always came rarely are not disengaged"
+
+- id: D04_new_and_absent
+  kind: derive
+  salience: 50
+  description: A member in their first two months who is barely visiting, which their short history can't show as a fall
+  when: ["lifetime <= 1", "avg_class_frequency_current_month < 0.5"]
+  then: {assert: {disengaged: true}}
+  source: "simulated interviews 2026-10-16 (owner, area manager, membership lead): a new member with almost no visits in the first weeks is the biggest risk"
 
 - id: D05_high_value_at_risk
   kind: derive
@@ -39,7 +47,7 @@
   description: Joined through a partner company or a friend, so social offers fit
   when: ["promo_friends == 1"]
   then: {assert: {social_member: true}}
-  source: team assumption
+  source: "simulated interviews 2026-10-16 (owner, area manager, membership lead): friends join and leave together"
 
 - id: D07_lost_instructor
   kind: derive
@@ -47,7 +55,7 @@
   description: Most of their class visits were with an instructor who has left
   when: ["lost_anchor_instructor == true"]
   then: {assert: {routine_disrupted: true}}
-  source: team assumption
+  source: "simulated interviews 2026-10-16 (owner, area manager, membership lead): an instructor's regulars follow them out within weeks"
 
 - id: D08_class_cancelled
   kind: derive
@@ -55,4 +63,4 @@
   description: A class they attend was cancelled
   when: ["class_cancelled == true"]
   then: {assert: {routine_disrupted: true}}
-  source: team assumption
+  source: "simulated interviews 2026-10-16 (owner, area manager, membership lead): members of a cancelled slot fade over one to two months"

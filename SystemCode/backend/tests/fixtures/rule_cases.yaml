@@ -141,33 +141,56 @@ cases:
 
   - id: disengaged_medium
     title: Disengaged at medium risk; the disengaged check-in (SMS) outranks the generic one
-    facts: {avg_class_frequency_current_month: 0.2, risk_band: medium}
+    facts: {avg_class_frequency_total: 1.0, avg_class_frequency_current_month: 0.2, trend_ratio: 0.2, risk_band: medium}
     expect:
       fires: [D03_disengaged, P07_disengaged_checkin, P08_medium_risk_checkin]
       allowed: [checkin_message]
 
   - id: disengaged_low_risk
     title: Disengaged at low risk is derived but not acted on
-    facts: {avg_class_frequency_current_month: 0.2}
+    facts: {avg_class_frequency_total: 1.0, avg_class_frequency_current_month: 0.2, trend_ratio: 0.2}
     expect:
       fires: [D03_disengaged]
       silent: [P07_disengaged_checkin]
       allowed: []
 
+  - id: new_member_absent
+    title: A new member barely visiting is disengaged even though their short history shows no fall
+    facts: {lifetime: 1, avg_class_frequency_total: 0.2, avg_class_frequency_current_month: 0.2, trend_ratio: 1.0, risk_band: medium}
+    expect:
+      fires: [D02_new_member, D04_new_and_absent, P07_disengaged_checkin]
+      silent: [D03_disengaged]
+      allowed: [checkin_message]
+
+  - id: always_low_not_disengaged
+    title: A member who always came rarely is not disengaged (judged against their own usual rate)
+    facts: {avg_class_frequency_total: 0.3, avg_class_frequency_current_month: 0.3, trend_ratio: 1.0, risk_band: medium}
+    expect:
+      fires: [P08_medium_risk_checkin]
+      silent: [D03_disengaged, P07_disengaged_checkin]
+      allowed: [checkin_message]
+
   - id: falling_regular_low_risk
-    title: The low-risk guardrail removes the PT session a falling regular would get
+    title: A falling regular gets a free check-in even at low risk (the low-risk guardrail blocks paid offers only)
     facts: {trend_ratio: 0.6}
     expect:
-      fires: [D01_falling_regular, P02_falling_regular_pt, G04_low_risk_no_paid_offers]
-      allowed: []
+      fires: [D01_falling_regular, P02_falling_regular_checkin, G04_low_risk_no_paid_offers]
+      allowed: [checkin_message]
       blocked: {discount_1m: G03_discount_eligibility, free_pt_session: G04_low_risk_no_paid_offers, class_pass: G04_low_risk_no_paid_offers}
 
   - id: falling_regular_medium
-    title: Falling regular at medium risk gets the in-person PT session
+    title: Falling regular at medium risk gets a check-in, not a PT session
     facts: {trend_ratio: 0.6, risk_band: medium}
     expect:
-      fires: [D01_falling_regular, P02_falling_regular_pt, P08_medium_risk_checkin]
-      allowed: [free_pt_session, checkin_message]
+      fires: [D01_falling_regular, P02_falling_regular_checkin, P08_medium_risk_checkin]
+      allowed: [checkin_message]
+
+  - id: small_dip_not_falling
+    title: A regular whose visits dipped to 75% of usual is not a falling regular
+    facts: {trend_ratio: 0.75, risk_band: medium}
+    expect:
+      silent: [D01_falling_regular, P02_falling_regular_checkin]
+      allowed: [checkin_message]
 
   - id: new_member_not_slipping
     title: A new member with steady visits triggers no onboarding
