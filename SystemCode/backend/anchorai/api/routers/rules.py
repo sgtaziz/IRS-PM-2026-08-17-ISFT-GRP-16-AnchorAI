@@ -4,7 +4,7 @@ from anchorai.api.deps import SessionDep, require_role
 from anchorai.discovery.service import DataNotBuilt
 from anchorai.reasoning import service
 from anchorai.reasoning.models import RuleOutcome
-from anchorai.reasoning.service import RuleSet
+from anchorai.reasoning.service import Glossary, RuleSet
 
 router = APIRouter()
 
@@ -13,6 +13,14 @@ router = APIRouter()
 def list_rules(session: SessionDep):
     try:
         return service.rule_set(session)
+    except service.InvalidRuleBase as e:
+        raise HTTPException(500, str(e)) from None
+
+
+@router.get("/glossary", response_model=Glossary)
+def glossary(session: SessionDep):
+    try:
+        return service.glossary(session)
     except service.InvalidRuleBase as e:
         raise HTTPException(500, str(e)) from None
 

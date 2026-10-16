@@ -23,6 +23,14 @@ class RuleSet(BaseModel):
     issues: list[Issue]
 
 
+class Glossary(BaseModel):
+    """Readable names for the ids the UI shows: rules, offers and facts."""
+
+    rules: dict[str, str]
+    offers: dict[str, str]
+    facts: dict[str, str]
+
+
 class InvalidRuleBase(RuntimeError):
     pass
 
@@ -52,6 +60,20 @@ def check(session: Session, rules: list[Rule]) -> list[Issue]:
 def rule_set(session: Session) -> RuleSet:
     version, rules = active_rules(session)
     return RuleSet(version=version, rules=rules, issues=check(session, rules))
+
+
+def glossary(session: Session) -> Glossary:
+    _, rules = active_rules(session)
+    facts = {name: spec.description for name, spec in KNOWN_FACTS.items()}
+    # Derived facts have no spec; the rule that asserts them describes them best.
+    for r in rules:
+        for name in r.then.assert_ or {}:
+            facts.setdefault(name, r.description)
+    return Glossary(
+        rules={r.id: r.description for r in rules},
+        offers={o.offer_id: o.name for o in catalog.list_offers(session)},
+        facts=facts,
+    )
 
 
 def all_facts() -> dict[str, dict[str, Any]]:

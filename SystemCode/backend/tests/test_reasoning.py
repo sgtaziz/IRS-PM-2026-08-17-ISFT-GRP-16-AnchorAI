@@ -200,3 +200,10 @@ def test_trace_endpoint(client, login, built):
     assert client.get("/api/rules", headers=staff).status_code == 403
     rules = client.get("/api/rules", headers=login("admin")).json()
     assert rules["rules"] and rules["issues"] == []
+
+
+def test_glossary_names_every_rule_and_offer(client, login):
+    body = client.get("/api/rules/glossary", headers=login("staff1")).json()
+    assert set(body["offers"]) == set(OFFERS)
+    assert all(rule.id in body["rules"] for rule in load_rule_files())
+    assert body["facts"]["trend_ratio"] and "routine_disrupted" in body["facts"]
