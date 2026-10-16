@@ -24,6 +24,7 @@ SMS_LIMIT = 300
 FORBIDDEN = re.compile(
     r"\b(churn\w*|risk\w*|score\w*|probabilit\w*|model|algorithm)\b", re.IGNORECASE
 )
+PLACEHOLDER = re.compile(r"\[[^\]]*\]|\{[^}]*\}")
 NUMBER = re.compile(r"\d+(?:\.\d+)?")
 
 CHANNEL_STYLE = {
@@ -36,7 +37,8 @@ SYSTEM = """You write short messages from a gym's staff to one member, in a warm
 Use ONLY the facts in the evidence lines. Never invent prices, dates, discounts, guarantees or
 conditions that are not in them. Offer exactly the offer in the evidence and nothing more.
 Never say the member may leave, is at risk or has a score; never mention data, models or tracking.
-Do not use a name; start with a plain greeting. Reply with the message only."""
+Do not use a name or placeholders such as [Name]; start with a plain greeting.
+Reply with the message only."""
 
 
 class DraftIn(BaseModel):
@@ -151,7 +153,12 @@ def _split_subject(text: str) -> tuple[str | None, str]:
 
 def _acceptable(text: str, evidence: list[str], channel: Channel) -> bool:
     allowed = set(NUMBER.findall(" ".join(evidence)))
-    if not text or FORBIDDEN.search(text) or not set(NUMBER.findall(text)) <= allowed:
+    if (
+        not text
+        or FORBIDDEN.search(text)
+        or PLACEHOLDER.search(text)
+        or not set(NUMBER.findall(text)) <= allowed
+    ):
         return False
     return channel is not Channel.SMS or len(text) <= SMS_LIMIT
 

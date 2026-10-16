@@ -46,7 +46,14 @@ def test_llm_text_is_used_when_clean(client, login, built, monkeypatch):
 
 
 @pytest.mark.parametrize(
-    "reply", ["Hi, you are at risk of leaving.", "Hi, enjoy 50% off!", "x" * (SMS_LIMIT + 1), ""]
+    "reply",
+    [
+        "Hi, you are at risk of leaving.",
+        "Hi, enjoy 50% off!",
+        "Hi, this is [Gym Name].",
+        "x" * (SMS_LIMIT + 1),
+        "",
+    ],
 )
 def test_unsafe_llm_output_falls_back(client, login, built, monkeypatch, reply):
     monkeypatch.setattr(drafts, "chat", lambda *a, **k: reply)
