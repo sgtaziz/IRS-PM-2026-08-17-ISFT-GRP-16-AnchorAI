@@ -2,7 +2,8 @@
 
 import logging
 import re
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Iterator, Sequence
+from dataclasses import dataclass
 from typing import Literal
 
 from openai import OpenAIError
@@ -19,6 +20,7 @@ from anchorai.db.models import AssistantFeedback, User
 
 log = logging.getLogger(__name__)
 Chat = Callable[[list[dict]], str]
+ChatStream = Callable[[list[dict]], Iterator[str]]
 # Plan figures are manager-only in the API (PLAN 8.1); the assistant must not leak them to staff.
 MANAGER_INTENTS = {"plan_summary", "what_if_budget"}
 MEMBER_ID = re.compile(r"M\d{4}")
@@ -91,16 +93,24 @@ def _previous(history: Sequence[HistoryTurn], classifier: IntentClassifier) -> H
     return turn.model_copy(update={"slots": slots})
 
 
-def answer(
+@dataclass
+class Prepared:
+    """Everything up to the LLM call. `messages` is None when the reply is already final."""
+
+    reply: AssistantReply
+    messages: list[dict] | None = None
+    # What to answer when the LLM is unavailable.
+    fallback: str = DONT_KNOW
+
+
+def prepare(
     session: Session,
     message: str,
     context_member_id: str | None = None,
     role: str = "staff",
     history: Sequence[HistoryTurn] = (),
     classifier: IntentClassifier | None = None,
-    chat: Chat = llm.chat,
-) -> AssistantReply:
-    """`history` is the chat so far, oldest first; it is kept by the client, not the server."""
+) -> Prepared:
     try:
         classifier = classifier or get_classifier()
     except OSError as e:
@@ -132,32 +142,92 @@ def answer(
         ):
             reply.intent, reply.slots, reply.follow_up = previous.intent, slots, True
     if reply.intent == UNKNOWN:
-        return reply
+        return Prepared(reply)
 
     if reply.intent in MANAGER_INTENTS and role == "staff":
         reply.answer = "Plan details are only available to managers."
-        return reply
+        return Prepared(reply)
 
     result = TOOLS[reply.intent](session, reply.slots)
     reply.tool, reply.evidence = result.tool, result.evidence
     if not result.evidence:
         reply.answer = result.note or DONT_KNOW
-        return reply
+        return Prepared(reply)
 
     reply.grounded = True
+    pairs = [(t.question, t.answer) for t in history]
+    # Without the LLM, answer straight from the evidence, unless the question was a clarification
+    # only the LLM could rephrase.
+    if reply.follow_up and not named:
+        fallback = "I can't answer follow-up questions while the language model is offline."
+    else:
+        fallback = _template(result.evidence)
+    return Prepared(reply, build_messages(message, result.evidence, pairs), fallback)
+
+
+def answer(
+    session: Session,
+    message: str,
+    context_member_id: str | None = None,
+    role: str = "staff",
+    history: Sequence[HistoryTurn] = (),
+    classifier: IntentClassifier | None = None,
+    chat: Chat = llm.chat,
+) -> AssistantReply:
+    """`history` is the chat so far, oldest first; it is kept by the client, not the server."""
+    prepared = prepare(session, message, context_member_id, role, history, classifier)
+    reply = prepared.reply
+    if prepared.messages is None:
+        return reply
     try:
-        pairs = [(t.question, t.answer) for t in history]
-        reply.answer = chat(build_messages(message, result.evidence, pairs)).strip() or DONT_KNOW
+        reply.answer = chat(prepared.messages).strip() or DONT_KNOW
         reply.llm_used = True
     except (OpenAIError, IndexError, AttributeError) as e:
-        # LLM down or misconfigured: still answer, straight from the evidence, unless the question
-        # was a clarification only the LLM could rephrase.
         log.warning("assistant LLM unavailable, using template answer: %s", e)
-        if reply.follow_up and not named:
-            reply.answer = "I can't answer follow-up questions while the language model is offline."
-        else:
-            reply.answer = _template(result.evidence)
+        reply.answer = prepared.fallback
     return reply
+
+
+def stream_answer(
+    session: Session,
+    message: str,
+    context_member_id: str | None = None,
+    role: str = "staff",
+    history: Sequence[HistoryTurn] = (),
+    classifier: IntentClassifier | None = None,
+    chat_stream: ChatStream | None = None,
+) -> Iterator[tuple[str, dict]]:
+    """Events for the SSE endpoint: one `meta`, then `delta`s of the answer text, then `done`.
+
+    The tools run before this returns, while the caller's session is still open; the LLM is only
+    called as the events are read.
+    """
+    prepared = prepare(session, message, context_member_id, role, history, classifier)
+    return _events(prepared, chat_stream or llm.chat_stream)
+
+
+def _events(prepared: Prepared, chat_stream: ChatStream) -> Iterator[tuple[str, dict]]:
+    reply = prepared.reply
+    yield "meta", reply.model_dump(exclude={"answer", "grounded", "llm_used"})
+    if prepared.messages is None:
+        yield "delta", {"text": reply.answer}
+        yield "done", {"grounded": False, "llm_used": False, "answer": reply.answer}
+        return
+    parts: list[str] = []
+    try:
+        for piece in chat_stream(prepared.messages):
+            parts.append(piece)
+            yield "delta", {"text": piece}
+    except (OpenAIError, IndexError, AttributeError) as e:
+        log.warning("assistant LLM unavailable, using template answer: %s", e)
+        parts = []
+    # `done` carries the final text, which replaces whatever was streamed: the fallback if the
+    # LLM failed (even midway), or the don't-know line if it said nothing.
+    text = "".join(parts).strip()
+    if not parts:
+        text = prepared.fallback
+        yield "delta", {"text": text}
+    yield "done", {"grounded": True, "llm_used": bool(parts), "answer": text or DONT_KNOW}
 
 
 def save_feedback(session: Session, user: User, feedback: FeedbackIn) -> AssistantFeedback:

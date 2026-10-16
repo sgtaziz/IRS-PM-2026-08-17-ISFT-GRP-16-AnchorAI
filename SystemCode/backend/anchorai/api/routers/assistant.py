@@ -1,4 +1,8 @@
+import json
+from collections.abc import Iterator
+
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from anchorai.api.deps import CurrentUser, SessionDep
@@ -25,6 +29,27 @@ def chat(req: ChatRequest, session: SessionDep, user: CurrentUser):
         )
     except (DataNotBuilt, service.AssistantUnavailable) as e:
         raise HTTPException(503, str(e)) from None
+
+
+def _sse(events: Iterator[tuple[str, dict]]) -> Iterator[str]:
+    for event, data in events:
+        yield f"event: {event}\ndata: {json.dumps(data)}\n\n"
+
+
+@router.post("/chat/stream")
+def chat_stream(req: ChatRequest, session: SessionDep, user: CurrentUser):
+    """Server-sent events: `meta` (intent, slots, evidence), `delta` answer text, then `done`."""
+    try:
+        events = service.stream_answer(
+            session, req.message, req.member_id, role=user.role, history=req.history
+        )
+    except (DataNotBuilt, service.AssistantUnavailable) as e:
+        raise HTTPException(503, str(e)) from None
+    return StreamingResponse(
+        _sse(events),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
 
 
 class FeedbackOut(BaseModel):

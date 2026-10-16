@@ -1,3 +1,5 @@
+import json
+
 import numpy as np
 import pytest
 from openai import APIConnectionError
@@ -212,3 +214,42 @@ def test_chat_and_feedback_endpoints(client, login, built, monkeypatch, classifi
         client.post("/api/assistant/feedback", json=fb | {"rating": 5}, headers=staff).status_code
         == 422
     )
+
+
+def sse(response):
+    events = []
+    for block in response.text.strip().split("\n\n"):
+        name, data = block.split("\n", 1)
+        events.append((name.removeprefix("event: "), json.loads(data.removeprefix("data: "))))
+    return events
+
+
+def test_chat_stream_endpoint(client, login, built, monkeypatch, classifier):
+    monkeypatch.setattr(service, "get_classifier", lambda: classifier)
+    staff = login("staff1")
+    body = {"message": "why the risk", "member_id": "M0002"}
+    assert client.post("/api/assistant/chat/stream", json=body).status_code == 401
+
+    monkeypatch.setattr(service.llm, "chat_stream", lambda m: iter(["High ", "risk [E1]."]))
+    events = sse(client.post("/api/assistant/chat/stream", json=body, headers=staff))
+    assert [e for e, _ in events] == ["meta", "delta", "delta", "done"]
+    meta, done = events[0][1], events[-1][1]
+    assert meta["intent"] == "member_risk" and meta["tool"] and meta["evidence"][0]["id"] == "E1"
+    assert "answer" not in meta
+    assert done == {"grounded": True, "llm_used": True, "answer": "High risk [E1]."}
+
+    def broken(_):
+        yield "partial "
+        raise APIConnectionError(request=None)
+
+    monkeypatch.setattr(service.llm, "chat_stream", broken)
+    events = sse(client.post("/api/assistant/chat/stream", json=body, headers=staff))
+    done = events[-1][1]
+    assert not done["llm_used"] and done["grounded"] and "[E1]" in done["answer"]
+
+    monkeypatch.setattr(service.llm, "chat_stream", lambda m: pytest.fail("no LLM"))
+    unknown = sse(
+        client.post("/api/assistant/chat/stream", json={"message": "weather"}, headers=staff)
+    )
+    assert [e for e, _ in unknown] == ["meta", "delta", "done"]
+    assert unknown[-1][1] == {"grounded": False, "llm_used": False, "answer": DONT_KNOW}
