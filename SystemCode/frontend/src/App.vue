@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
 import ConfirmDialog from 'primevue/confirmdialog'
+import Drawer from 'primevue/drawer'
 import Toast from 'primevue/toast'
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import AssistantChat from './components/AssistantChat.vue'
 import MemberSearch from './components/MemberSearch.vue'
 import { routes } from './router'
 import { useAuthStore } from './stores/auth'
@@ -12,6 +14,11 @@ const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
 const menuOpen = ref(false)
+const assistantOpen = ref(false)
+
+// The floating assistant knows which member is open, and hides on its own page.
+const showAssistant = computed(() => auth.isAuthenticated && !route.meta.public && route.name !== 'Assistant')
+const pageMember = computed(() => (route.name === 'Member' ? String(route.params.id) : null))
 
 const nav = computed(() =>
   routes.filter((r) => !r.meta?.hidden && (!r.meta?.roles || auth.hasRole(r.meta.roles))),
@@ -57,4 +64,10 @@ function logout() {
     </aside>
     <main><RouterView /></main>
   </div>
+  <template v-if="showAssistant">
+    <Button class="assistant-fab" label="Ask the assistant" aria-haspopup="dialog" @click="assistantOpen = true" />
+    <Drawer v-model:visible="assistantOpen" header="Assistant" position="right" class="assistant-drawer">
+      <AssistantChat :member-id="pageMember" />
+    </Drawer>
+  </template>
 </template>
