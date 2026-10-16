@@ -1,3 +1,4 @@
+import pytest
 from sqlmodel import Session, func, select
 
 from anchorai.db.models import RuleVersion
@@ -96,3 +97,20 @@ def test_rollback_checks_the_version_and_a_broken_active_one_can_be_replaced(cli
     )
     body = {"yaml_text": good, "note": "recover", "base_version": bad_yaml}
     assert client.put("/api/rules", json=body, headers=admin).status_code == 200
+
+
+def test_activate_is_atomic_when_another_writer_got_in_after_the_check(
+    client, login, engine, monkeypatch
+):
+    from anchorai.db.models import User
+    from anchorai.reasoning import versions
+
+    admin = login("admin")
+    base = _active(client, admin)
+    monkeypatch.setattr(versions, "_require_base", lambda *_: None)
+    with Session(engine) as session:
+        user = session.exec(select(User).where(User.username == "admin")).one()
+        # The caller saw `base`, but another writer has activated a different version since.
+        with pytest.raises(versions.StaleRules):
+            versions.activate_version(session, user, 1, base_version=base + 100)
+    assert _active(client, admin) == base

@@ -5,6 +5,7 @@ from typing import Any
 
 import yaml
 from pydantic import BaseModel, ValidationError
+from sqlalchemy import update
 from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, func, select
 
@@ -346,11 +347,25 @@ def activate_version(
     if not report.ok:
         raise InvalidDraft(report)
     active_version, active = _before(session)
-    for other in session.exec(select(RuleVersion).where(RuleVersion.is_active)).all():
-        other.is_active = False
-        session.add(other)
-    row.is_active = True
-    session.add(row)
+    # Conditional on the version the caller saw, so a concurrent activation loses instead of winning silently.
+    deactivated = session.exec(
+        update(RuleVersion)
+        .where(RuleVersion.is_active, RuleVersion.version == base_version)
+        .values(is_active=False)
+    ).rowcount
+    if base_version is not None and deactivated != 1:
+        session.rollback()
+        raise StaleRules("The rules changed since you opened them; reload and try again")
+    session.exec(update(RuleVersion).where(RuleVersion.version == version).values(is_active=True))
+    if (
+        session.exec(
+            select(func.count()).select_from(RuleVersion).where(RuleVersion.is_active)
+        ).one()
+        != 1
+    ):
+        session.rollback()
+        raise StaleRules("The rules changed since you opened them; reload and try again")
+    session.refresh(row)
     record_audit(
         session,
         user,
