@@ -76,6 +76,16 @@ SCHEMAS: dict[str, dict[str, str]] = {
         "offer_id": "string",
         "uplift": "float64",
     },
+    "true_churn": {
+        "member_id": "string",
+        # Scenario-only ground truth: next-month churn probability without any contact.
+        "base_churn": "float64",
+        "event_churn": "float64",
+        "lost_instructor_share": "float64",
+        "cancelled_share": "float64",
+        # One seeded draw of the no-contact outcome, for rates rather than probabilities.
+        "churned_no_contact": "bool",
+    },
     "events": {
         "event_id": "string",
         "event_type": "string",
@@ -94,6 +104,7 @@ PRIMARY_KEYS: dict[str, list[str]] = {
     "offers": ["offer_id"],
     "interventions": ["intervention_id"],
     "true_uplift": ["member_id", "offer_id"],
+    "true_churn": ["member_id"],
     "events": ["event_id"],
 }
 
@@ -105,6 +116,7 @@ FOREIGN_KEYS: list[tuple[str, str, str]] = [
     ("interventions", "offer_id", "offers"),
     ("true_uplift", "member_id", "members"),
     ("true_uplift", "offer_id", "offers"),
+    ("true_churn", "member_id", "members"),
 ]
 
 
