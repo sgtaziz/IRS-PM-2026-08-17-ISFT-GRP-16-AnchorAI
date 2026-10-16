@@ -1,6 +1,6 @@
 # User guide
 
-Source for the report appendix "User guide". Stream C wrote the sign-in, knowledge graph, message draft, assistant, rules, users and audit sections. Streams A and B fill in the placeholder pages.
+Source for the report appendix "User guide". Stream C wrote the sign-in, knowledge graph, message draft, assistant, rules, users and audit sections. Stream A wrote the dashboard, segments, members, Member 360, offers and data sections. Stream B fills in its pages.
 
 This guide assumes AnchorAI is installed and seeded (see the installation guide).
 
@@ -57,23 +57,102 @@ On every page except the Assistant page, a round button at the bottom right open
 
 ## 2. Pages written by Stream A and Stream B
 
-These pages are in the application. Their sections are to be written by the owning stream.
+These pages are in the application. Stream B's sections are still to be written.
+
+**How risk is shown everywhere.** Each member has a churn probability for next month, from a calibrated model (0.3 means about 3 in 10 such members leave). It is grouped into three risk bands, shown as text and colour, never colour alone:
+
+- **High risk:** 0.6 or more
+- **Medium risk:** 0.3 to 0.6
+- **Low risk:** below 0.3
+
+A probability is never shown as 0% or 100%; the extremes read "<1%" and ">99%".
 
 ### Dashboard (W10)
 
-To be written by Stream A.
+Managers and admins land here. It answers "how many members might we lose, and what is it worth?"
+
+The tiles at the top:
+
+- **Members at high risk:** members with a churn probability of 0.6 or more, out of all members.
+- **Monthly revenue at risk:** the sum over all members of churn probability × monthly fee, the revenue you would expect to lose next month if nobody acts.
+- **Plan coverage:** the share of high-risk members included in the latest approved weekly plan. It shows "—" until a plan has been approved.
+- **Contacted, Reached and Retained (accepted offer):** counts for the latest week in which staff logged outcomes. "Reached" counts every outcome except no answer; "Retained" counts accepted offers.
+
+The charts below:
+
+- **Risk distribution:** how many members fall in each 10% band of churn probability. A tall bar at each end is normal for this data (see the E2 notebook).
+- **Segment mix:** each segment's size next to how many of its members are high risk.
+- **Outcomes by week:** contacted, reached and retained members per week, once staff log outcomes.
+
+The date under the title is when the scores were calculated.
+
+<!-- screenshot: dashboard with tiles and the three charts -->
 
 ### Segments (W11)
 
-To be written by Stream A.
+Members are grouped into segments (four in the default build) by how they use the gym: tenure, visits, visit trend, contract, extra spend, age and class attendance. Segments are ordered from the highest churn rate to the lowest.
+
+Each segment card shows:
+
+- a plain-English name and a one-line description of a typical member
+- **Members:** the segment's size
+- **Churn rate:** the share of its members who actually left, in the source data
+- **High risk now:** members currently scored 0.6 or more
+- **Monthly revenue:** the monthly fees of its members
+- **Profile vs all members:** the segment's averages (blue) next to everyone's (grey)
+
+Select **View N members** to open the Members list filtered to that segment.
+
+<!-- screenshot: segments page with the four cards -->
 
 ### Members (W12)
 
-To be written by Stream A.
+A table of every member with their current risk. Managers and admins can open it.
+
+1. **Filter** with the boxes above the table:
+   - **Member ID:** any part of an ID, e.g. `M004`
+   - **Segment**, **Risk band** and **Club**
+   - **Tenure (months):** from and to
+
+   **Clear filters** resets them. The filters are kept in the page address, so you can bookmark or share a filtered list.
+2. **Sort** by selecting a column heading: Member, Risk, Monthly value, Tenure, Visit trend or Age. Select it again to reverse the order. The default is highest risk first.
+3. **Page** through results with the controls under the table, showing 25, 50 or 100 rows per page.
+4. Select **Export CSV** to download every member that matches the filters, not just the page on screen.
+5. Select a row to open that member's Member 360.
+
+**Visit trend** compares this month's weekly visits with the member's lifetime average: 1.00× means as usual, 0.50× means half as often.
+
+<!-- screenshot: members list filtered to one segment and the high risk band -->
 
 ### Member 360 (W13)
 
-To be written by Stream A, except the two panels below, which Stream C owns. Open a member from the Members list, the global search, or any member link in this app.
+Everything about one member on one page. Open a member from the Members list, the global search (Ctrl+K), or any member link in the app. Staff can open Member 360 too, read only.
+
+**Header.** The member ID, segment, club, the date the score was calculated, and a risk badge with the band and probability.
+
+- **Ask the assistant about this member** opens the assistant with this member as context.
+- **Back to members** returns to the list (managers and admins).
+
+**Tiles.**
+
+- **Churn probability:** calibrated, for next month.
+- **Monthly value:** the member's monthly fee.
+- **Months as member:** tenure.
+- **Visit trend:** this month's visits against the member's lifetime average.
+
+**Why this risk score.** The top factors behind this member's score. A red bar pushes towards churn and a green bar keeps the member; the longer the bar, the stronger the push. These explain the model's estimate. They are not proof of cause, so use them to start a conversation, not to diagnose.
+
+**Profile vs segment.** The member's own figures next to the average member of their segment, so unusual values stand out.
+
+**Classes attended.** Each group class with its instructor and the member's weekly visits. Members who don't attend classes see "Does not attend group classes".
+
+**Past retention contacts.** Earlier offers: the week, the offer, the channel, and whether the member stayed or left.
+
+**Segment.** The segment's name and description.
+
+**Similar past cases** and **Contact and outcome history** belong to Stream B and say "Coming soon" until their planning work lands.
+
+Stream C owns the two panels below.
 
 **Rule trace panel.** It shows what the rule base concludes for this member.
 
@@ -100,11 +179,70 @@ To be written by Stream B.
 
 ### Offers & constraints (W41)
 
-To be written by Stream A.
+Admins only. These are the inputs the weekly plan reads. Every change is recorded in the audit log.
+
+**Offer catalogue.** Each offer has:
+
+- a cost, staff time and weekly stock (blank means unlimited)
+- the channels it can be sent through
+- a required staff skill (e.g. PT sessions need a trainer)
+- an eligibility note
+- an active switch
+
+To change the catalogue:
+
+1. Select **Add offer**, fill in the form, and select **Create offer**.
+   - **Offer ID:** lowercase letters, digits and underscores; it can't be changed later.
+   - **Channels:** pick at least one.
+   - **Eligibility:** describes who should receive it; the rules enforce it.
+2. Select **Edit** on a row to change an offer, then **Save offer**. Switch **Active** off to stop offering it without deleting it.
+3. Select **Delete** to remove an offer, and confirm. Past plans keep their record. A deleted offer stays deleted after a restart. To bring back the default catalogue, run `uv run anchorai db reset` (this resets the whole demo database).
+
+**Staff roster.** Weekly hours and skills for each active staff user, used when calls are assigned. Change a row and select **Save** on that row. Deactivated users are not listed; add staff on the Users page.
+
+**Planning constraints.** Defaults for the weekly plan and its contact caps, for Stream B's plan builder to read. Select **Save constraints** after changing them.
+
+- **Default weekly budget**
+- **Default staff minutes per week**
+- **Max contacts per member per 30 days**
+- **Max offers per member per 90 days**
+
+<!-- screenshot: offers and constraints page -->
 
 ### Data & models (W42)
 
-To be written by Stream A.
+Admins only. This page shows where the data comes from, rebuilds it, and shows how good the models are. The line under the title says when the current build was made and with which seed.
+
+**Source data.** The Kaggle file in use, its size, when it was added, the number of members and its licence.
+
+**Replace the source data.**
+
+1. Under **Replace with a new Kaggle CSV**, choose the file.
+2. It is checked before it is used. It needs all 14 Kaggle columns and at least 100 rows; otherwise the page says what is missing and keeps the current file.
+3. Rebuild afterwards (below) to use the new data.
+
+**Rebuild data and models.**
+
+1. Enter a **Seed** (42 reproduces the report's results).
+2. Select **Rebuild data and models** and confirm.
+3. The status badge shows **Running**, then **Done** or **Failed** with the error. A rebuild takes about half a minute; the app keeps serving the old data until it finishes, then every page uses the new build.
+
+A rebuild regenerates the scenario tables, retrains the segments and the churn model, rescores every member, and refreshes the knowledge graph if it is available. Changing the seed changes every number in the experiments.
+
+**Rebuild knowledge graph** reloads the graph from the data tables and the gym edits. If the graph can't be reached, the page says why, and everything else keeps working.
+
+**Model card.** All metrics are measured on 800 test members the model never saw while training.
+
+- **Headline figures:**
+  - F1 (churn class), PR-AUC and Brier score (lower is better)
+  - silhouette for the segments, with the chosen number of segments and their stability
+  - the largest recall gaps between age bands and between genders
+- **Model vs baselines:** the model against a single logistic regression, a simple visit-count rule, and a version without the columns that might leak the outcome.
+- **Calibration:** predicted against observed churn rates; points near the diagonal mean the probabilities can be taken at face value.
+- **Segmentation: silhouette by k:** cluster quality for 2 to 10 segments.
+- **Fairness:** recall, precision and false-positive rate for each age band and gender.
+
+<!-- screenshot: data and models page with the model card -->
 
 ### Settings (W45)
 
