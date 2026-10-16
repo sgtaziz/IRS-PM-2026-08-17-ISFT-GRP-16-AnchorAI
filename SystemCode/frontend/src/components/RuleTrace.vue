@@ -25,6 +25,8 @@ function facts(matched: Record<string, unknown>) {
   })
 }
 
+const ruleTip = (id: string) => `${glossary.rule(id)} (${id})`
+
 const lower = (label: string) => (label === label.toUpperCase() ? label : label.toLowerCase())
 
 type Kind = 'derive' | 'playbook' | 'guardrail'
@@ -39,8 +41,12 @@ function effect(text: string): { kind: Kind; text: string } {
     return { kind: 'guardrail', text: `Blocks ${ids.includes('all') ? 'all offers' : ids.map(glossary.offer).join(', ')}` }
   }
   const pairs = [...text.replace(/\s*\(kept existing.*\)$/, '').matchAll(/(\w+)=([^,]+)/g)]
-  const derived = pairs.map(([, k, v]) => (v === 'True' ? humanize(k) : `${humanize(k)} = ${v}`))
-  return { kind: 'derive', text: derived.length ? `Concludes: ${derived.join(', ')}` : 'Already known' }
+  const derived = pairs.map(([, k, v]) =>
+    v === 'True' ? humanize(k) : v === 'False' ? `not ${humanize(k).toLowerCase()}` : `${humanize(k)} = ${v}`,
+  )
+  if (derived.length) return { kind: 'derive', text: `Concludes: ${derived.join(', ')}` }
+  // "assert" alone means every fact was already set by an earlier rule.
+  return { kind: 'derive', text: /^assert(\s|$)/.test(text) && !text.includes('=') ? 'Nothing new: already known' : text }
 }
 
 const KIND_STYLE: Record<Kind, { icon: typeof Lightbulb; cls: string }> = {
@@ -62,7 +68,7 @@ const KIND_STYLE: Record<Kind, { icon: typeof Lightbulb; cls: string }> = {
             <span class="font-semibold text-ink-800">{{ glossary.offer(p.offer_id) }}</span>
             <span class="text-ink-500"> · {{ channelLabel(p.channel) }}</span>
           </span>
-          <span v-tooltip.top="glossary.rule(p.rule_id)" class="id-chip" tabindex="0">{{ ruleCode(p.rule_id) }}</span>
+          <span v-tooltip.top="ruleTip(p.rule_id)" class="id-chip" tabindex="0" role="note" :aria-label="ruleTip(p.rule_id)">{{ ruleCode(p.rule_id) }}</span>
         </li>
       </ul>
     </section>
@@ -75,7 +81,7 @@ const KIND_STYLE: Record<Kind, { icon: typeof Lightbulb; cls: string }> = {
             <span class="font-semibold text-ink-800">{{ target === 'all' ? 'All offers' : glossary.offer(target) }}</span>
             <span class="block text-xs text-ink-500">{{ glossary.rule(rule) }}</span>
           </span>
-          <span class="id-chip">{{ ruleCode(rule) }}</span>
+          <span v-tooltip.top="ruleTip(rule)" class="id-chip" tabindex="0" role="note" :aria-label="ruleTip(rule)">{{ ruleCode(rule) }}</span>
         </li>
       </ul>
     </section>
@@ -91,7 +97,7 @@ const KIND_STYLE: Record<Kind, { icon: typeof Lightbulb; cls: string }> = {
             <p class="m-0 flex flex-wrap items-baseline gap-x-2 text-sm">
               <span class="sr-only">Step {{ i + 1 }}:</span>
               <span class="font-medium text-ink-800">{{ f.description }}</span>
-              <span v-tooltip.top="f.rule_id" class="id-chip">{{ ruleCode(f.rule_id) }}</span>
+              <span v-tooltip.top="ruleTip(f.rule_id)" class="id-chip" tabindex="0" role="note" :aria-label="ruleTip(f.rule_id)">{{ ruleCode(f.rule_id) }}</span>
             </p>
             <p class="m-0 mt-0.5 text-[0.8125rem] font-medium text-ink-600">{{ effect(f.effect).text }}</p>
             <p class="m-0 mt-1.5 flex flex-wrap gap-1">
