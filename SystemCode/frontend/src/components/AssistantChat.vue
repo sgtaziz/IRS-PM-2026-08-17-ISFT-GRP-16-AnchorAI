@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowUp, CalendarCheck, ThumbsDown, ThumbsUp, Gift, Network, RotateCcw, Scale, Sparkles, TrendingDown, TriangleAlert, UserRound } from 'lucide-vue-next'
+import { ArrowUp, CalendarCheck, ListOrdered, ThumbsDown, ThumbsUp, Gift, Network, RotateCcw, Scale, Sparkles, TrendingDown, TriangleAlert, UserRound } from 'lucide-vue-next'
 import Button from 'primevue/button'
 import Textarea from 'primevue/textarea'
 import { computed, nextTick, ref, watch, type Component } from 'vue'
@@ -26,6 +26,7 @@ const INTENT_LABELS: Record<string, string> = {
   member_actions: 'Member actions',
   compare_members: 'Compare members',
   graph_impact: 'Graph impact',
+  list_members: 'Member list',
   plan_summary: 'Plan summary',
   what_if_budget: 'What-if budget',
   unknown: 'Not understood',
@@ -54,6 +55,7 @@ const starters = computed(() => {
     { text: `Why is ${m} at risk?`, icon: TrendingDown },
     { text: `What should we offer ${m}?`, icon: Gift },
     { text: `Compare ${m} with ${other}`, icon: Scale },
+    { text: 'Who are the top 10 members at risk?', icon: ListOrdered },
     { text: 'Who is affected by Maya Chen leaving?', icon: Network },
   ]
   if (isManager.value) out.push({ text: "What's in this week's plan?", icon: CalendarCheck })
@@ -70,6 +72,7 @@ function followUps(reply: AssistantReply): string[] {
       return [`Why is ${a} at risk?`, 'Why those offers?']
     case 'compare_members':
       return [`What should we offer ${a}?`, `What should we offer ${b}?`]
+    case 'list_members':
     case 'graph_impact': {
       const top = reply.evidence.find((e) => e.kind === 'member' && e.ref)?.ref
       return top ? [`Why is ${top} at risk?`, `What should we offer ${top}?`] : []

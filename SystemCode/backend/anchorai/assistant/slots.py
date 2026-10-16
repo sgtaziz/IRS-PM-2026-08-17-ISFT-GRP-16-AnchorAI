@@ -25,6 +25,24 @@ NOT_MEMBER_AFTER = re.compile(
     r"|classes|visits|times|calls|offers)\b",
     re.IGNORECASE,
 )
+WORD_NUMBERS = {"three": 3, "five": 5, "ten": 10, "fifteen": 15, "twenty": 20}
+_COUNT = "|".join(["\\d{1,3}", *WORD_NUMBERS])
+# "top 10", "first five", "10 riskiest"; the number is taken out so it never reads as a member id.
+COUNT = [
+    re.compile(rf"\b(?:top|first|next|worst|riskiest|highest)\s+({_COUNT})\b", re.IGNORECASE),
+    re.compile(rf"\b({_COUNT})\s+(?:highest|riskiest|worst|top|most)\b", re.IGNORECASE),
+    re.compile(rf"\b({_COUNT})\s+(?:members|people|customers)\b", re.IGNORECASE),
+]
+CLUB = re.compile(r"\bclub\s+(C\d{1,2})\b|\b(C\d{1,2})\b", re.IGNORECASE)
+RISK_BAND = re.compile(r"\b(high|medium|low)[\s-]+risk\b", re.IGNORECASE)
+NEW_MEMBERS = re.compile(
+    r"\bnew(?:er|est)?\s+(?:members?|joiners?|people|customers)\b|\b(?:recently|just)\s+joined\b",
+    re.IGNORECASE,
+)
+# Substrings of the segment names in the member table; resolved against the real names by the tool.
+SEGMENT_WORDS = re.compile(
+    r"\b(new and slipping|loyalists?|solo trainers?|class[\s-]goers?)\b", re.IGNORECASE
+)
 YEAR = re.compile(r"^(19|20)\d\d$")
 
 
@@ -33,6 +51,11 @@ class Slots(BaseModel):
     amount: float | None = None
     instructor_ids: list[str] = []
     class_ids: list[str] = []
+    limit: int | None = None
+    risk_band: str | None = None
+    segment: str | None = None
+    club_id: str | None = None
+    new_members: bool = False
 
 
 def _take_amounts(text: str) -> tuple[list[float], str]:
@@ -58,6 +81,28 @@ def extract_slots(
     slots = Slots()
     amounts, rest = _take_amounts(text)
     slots.amount = amounts[0] if amounts else None
+
+    def take_count(match: re.Match) -> str:
+        word = match.group(1).lower()
+        slots.limit = WORD_NUMBERS.get(word) or int(word)
+        return match.group(0).replace(match.group(1), " COUNT ")
+
+    if not slots.amount:
+        for pattern in COUNT:
+            if pattern.search(rest):
+                rest = pattern.sub(take_count, rest, count=1)
+                break
+
+    if club := CLUB.search(rest):
+        slots.club_id = (club.group(1) or club.group(2)).upper()
+        rest = CLUB.sub(" CLUB ", rest)
+    if band := RISK_BAND.search(rest):
+        slots.risk_band = band.group(1).lower()
+    if NEW_MEMBERS.search(rest):
+        slots.new_members = True
+    if segment := SEGMENT_WORDS.search(rest):
+        slots.segment = re.sub(r"[\s-]+", " ", segment.group(1).lower())
+        rest = SEGMENT_WORDS.sub(" SEGMENT ", rest)
 
     for full, iid in instructors.items():
         # Full names in any case; a first name only when capitalised ("Sam", not "sam" or "lee").

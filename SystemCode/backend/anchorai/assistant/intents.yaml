@@ -65,6 +65,25 @@ intents:
     - Which members are at risk because a class was cancelled?
     - What's the impact of Priya Nair leaving the club?
     - Who will be affected if the Spin class stops?
+  list_members:
+    description: A ranked list of members by churn risk, optionally by risk band, segment, club or new members
+    examples:
+    - Who are the top 10 members at risk?
+    - Which members should we call this week?
+    - High risk members in club C2
+    - Show me new members who are slipping
+    - List the 5 riskiest members
+    - Who is most likely to leave?
+    - Top 15 members by churn probability
+    - Which members in club C1 are at risk?
+    - Show the highest risk members
+    - Who are the worst 20 members for churn?
+    - Give me a list of high-risk members
+    - Which new members are about to cancel?
+    - Which solo trainers are at risk?
+    - Who should staff reach out to first?
+    - Show me the 10 members most likely to churn
+    - Name the members with the highest churn risk
   plan_summary:
     description: What is in the current weekly plan
     examples:

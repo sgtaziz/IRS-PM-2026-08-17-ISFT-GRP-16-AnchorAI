@@ -42,6 +42,26 @@ def test_names_and_common_word_classes():
     assert extract_slots("i'm sam, from sales", INSTRUCTORS, CLASSES)[0].instructor_ids == []
 
 
+@pytest.mark.parametrize(
+    ("text", "limit", "filters"),
+    [
+        ("who are the top 10 members at risk?", 10, {}),
+        ("first five members to call", 5, {}),
+        ("high risk members in club C2", None, {"risk_band": "high", "club_id": "C2"}),
+        ("show me new members who are slipping", None, {"new_members": True}),
+        ("which solo trainers are at risk", None, {"segment": "solo trainers"}),
+        ("show the 30 riskiest", 30, {}),
+        ("which members should we call this week", None, {}),
+    ],
+)
+def test_list_slots(text, limit, filters):
+    slots, normalised = extract_slots(text, INSTRUCTORS, CLASSES)
+    assert slots.limit == limit and slots.member_ids == []
+    for field, value in filters.items():
+        assert getattr(slots, field) == value
+    assert limit is None or "COUNT" in normalised
+
+
 def bag_of_words(texts):
     vocab = ["risk", "offer", "compare", "budget", "plan", "affected", "member"]
     rows = np.array([[t.lower().count(w) for w in vocab] for t in texts], dtype=float) + 1e-9
@@ -77,10 +97,30 @@ def test_shipped_intents_load():
         "member_actions",
         "compare_members",
         "graph_impact",
+        "list_members",
         "plan_summary",
         "what_if_budget",
     }
     assert 0 < threshold < 1 and all(len(s.examples) >= 10 for s in specs)
+
+
+def test_list_members_tool(built, engine):
+    from anchorai.assistant.slots import Slots
+    from anchorai.assistant.tools import list_members
+
+    with Session(engine) as session:
+        top = list_members(session, Slots(limit=3))
+        assert top.evidence[0].ref is None and "Showing the 3 members" in top.evidence[0].text
+        members = top.evidence[1:]
+        assert len(members) == 3 and all(e.kind == "member" and e.ref for e in members)
+        probs = [float(e.text.split("probability ")[1].split("%")[0].strip("<>")) for e in members]
+        assert probs == sorted(probs, reverse=True)
+        # No limit means 10; a huge one shows everything up to 25 (the fixture has 12 members).
+        assert len(list_members(session, Slots()).evidence) == 11
+        assert len(list_members(session, Slots(limit=999)).evidence) == 13
+        assert "(high risk)" in list_members(session, Slots(risk_band="high")).evidence[1].text
+        nothing = list_members(session, Slots(club_id="C99"))
+        assert not nothing.evidence and nothing.note
 
 
 def test_answer_is_grounded_and_degrades(built, engine, classifier):

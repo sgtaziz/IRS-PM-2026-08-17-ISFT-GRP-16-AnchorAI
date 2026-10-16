@@ -346,6 +346,11 @@ export interface Slots {
   amount: number | null
   instructor_ids: string[]
   class_ids: string[]
+  limit?: number | null
+  risk_band?: string | null
+  segment?: string | null
+  club_id?: string | null
+  new_members?: boolean
 }
 
 export interface Evidence {

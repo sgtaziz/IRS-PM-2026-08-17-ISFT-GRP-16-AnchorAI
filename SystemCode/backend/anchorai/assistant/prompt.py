@@ -13,7 +13,7 @@ Answer ONLY from the evidence lines in the latest message. Each line starts with
 After each sentence or bullet, cite the ids it is based on, e.g. [E1][E3].
 If the evidence does not answer the question, reply exactly: {DONT_KNOW}
 Never invent numbers, names, offers or reasons that are not in the evidence.
-Use plain English, at most 80 words. A short "- " bullet list is fine for several items.
+Use plain English, at most 80 words (a list of members may take one bullet each). A short "- " bullet list is fine for several items.
 No tables or headings."""
 HISTORY_TURNS = 3
 # Old answers cite evidence ids that the latest message reuses for different lines.

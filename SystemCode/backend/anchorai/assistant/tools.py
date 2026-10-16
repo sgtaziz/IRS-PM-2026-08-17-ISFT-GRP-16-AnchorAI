@@ -239,6 +239,48 @@ def graph_impact(session: Session, slots: Slots) -> ToolResult:
     return ToolResult(tool="graph_impact", evidence=lines.items)
 
 
+DEFAULT_LIMIT, MAX_LIMIT = 10, 25
+NEW_MEMBER_MONTHS = 2
+
+
+def list_members(session: Session, slots: Slots) -> ToolResult:
+    table = member_data.get_data().table
+    limit = min(max(slots.limit or DEFAULT_LIMIT, 1), MAX_LIMIT)
+    filters = []
+    if slots.risk_band:
+        table = table[table["risk_band"] == slots.risk_band]
+        filters.append(f"{slots.risk_band} risk")
+    if slots.club_id:
+        table = table[table["club_id"] == slots.club_id]
+        filters.append(f"club {slots.club_id}")
+    if slots.new_members:
+        table = table[table["lifetime"] <= NEW_MEMBER_MONTHS]
+        filters.append(f"members of {NEW_MEMBER_MONTHS} months or less")
+    if slots.segment:
+        names = table["segment"].str.lower().str.replace("-", " ")
+        table = table[names.str.contains(slots.segment, regex=False)]
+        filters.append(f"segment matching '{slots.segment}'")
+    if table.empty:
+        return ToolResult(tool="list_members", note="No members match those filters.")
+    top = table.sort_values("churn_prob", ascending=False, kind="stable").head(limit)
+    lines = _Lines()
+    scope = f" ({', '.join(filters)})" if filters else ""
+    lines.add(
+        f"Showing the {len(top)} members with the highest churn probability out of "
+        f"{len(table)} matching{scope}",
+        "member",
+    )
+    for member_id, row in top.iterrows():
+        lines.add(
+            f"{member_id}: churn probability {probability(row['churn_prob'])} "
+            f"({row['risk_band']} risk), segment '{row['segment']}', club {row['club_id']}, "
+            f"{row['lifetime']} months as a member",
+            "member",
+            member_id,
+        )
+    return ToolResult(tool="list_members", evidence=lines.items)
+
+
 def plan_summary(session: Session, slots: Slots) -> ToolResult:
     plan = session.exec(select(Plan).order_by(Plan.week_start.desc(), Plan.id.desc())).first()
     if plan is None:
@@ -274,6 +316,7 @@ TOOLS = {
     "member_actions": member_actions,
     "compare_members": compare_members,
     "graph_impact": graph_impact,
+    "list_members": list_members,
     "plan_summary": plan_summary,
     "what_if_budget": what_if_budget,
 }
