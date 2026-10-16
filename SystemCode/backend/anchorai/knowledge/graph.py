@@ -2,18 +2,23 @@ from functools import lru_cache
 from typing import Any
 
 from neo4j import Driver, GraphDatabase, ManagedTransaction
-from neo4j.exceptions import AuthError, ServiceUnavailable
+from neo4j.exceptions import AuthError, ServiceUnavailable, SessionExpired
 
 from anchorai.config import get_settings
 
-GraphUnavailable = (ServiceUnavailable, AuthError, OSError)
+GraphUnavailable = (ServiceUnavailable, SessionExpired, AuthError, OSError)
 
 
 @lru_cache
 def get_driver() -> Driver:
     s = get_settings()
+    # Fail fast: the driver otherwise retries for ~60 s and the page that asked stalls.
     return GraphDatabase.driver(
-        s.neo4j_uri, auth=(s.neo4j_user, s.neo4j_password), connection_timeout=3
+        s.neo4j_uri,
+        auth=(s.neo4j_user, s.neo4j_password),
+        connection_timeout=3,
+        connection_acquisition_timeout=3,
+        max_transaction_retry_time=0,
     )
 
 
