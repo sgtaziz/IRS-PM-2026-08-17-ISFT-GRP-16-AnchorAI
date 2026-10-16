@@ -11,6 +11,7 @@ export interface Turn {
   pageMember: string | null
   reply: AssistantReply | null
   error: string | null
+  rated: 1 | -1 | null
 }
 
 const HISTORY_TURNS = 4
@@ -38,7 +39,7 @@ export const useAssistantStore = defineStore('assistant', () => {
       .slice(-HISTORY_TURNS)
       .map((t) => ({ question: t.question, answer: t.reply!.answer, intent: t.reply!.intent, slots: t.reply!.slots }))
     const memberId = focus(pageMember)
-    const turn = reactive<Turn>({ id: nextId++, question, pageMember, reply: null, error: null })
+    const turn = reactive<Turn>({ id: nextId++, question, pageMember, reply: null, error: null, rated: null })
     turns.value.push(turn)
     busy.value = true
     const started = generation
@@ -54,11 +55,27 @@ export const useAssistantStore = defineStore('assistant', () => {
     }
   }
 
+  /** Thumbs up or down, logged for the assistant evaluation (PLAN W30). */
+  async function rate(turn: Turn, rating: 1 | -1) {
+    if (!turn.reply || turn.rated) return
+    await api('/assistant/feedback', {
+      method: 'POST',
+      body: JSON.stringify({
+        message: turn.question,
+        answer: turn.reply.answer,
+        intent: turn.reply.intent,
+        tool: turn.reply.tool,
+        rating,
+      }),
+    })
+    turn.rated = rating
+  }
+
   function reset() {
     generation++
     busy.value = false
     turns.value = []
   }
 
-  return { turns, busy, focus, ask, reset }
+  return { turns, busy, focus, ask, rate, reset }
 })

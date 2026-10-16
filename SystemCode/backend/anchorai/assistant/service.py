@@ -3,6 +3,7 @@
 import logging
 import re
 from collections.abc import Callable, Sequence
+from typing import Literal
 
 from openai import OpenAIError
 from pydantic import BaseModel, Field, field_validator
@@ -13,6 +14,8 @@ from anchorai.assistant.classifier import UNKNOWN, IntentClassifier, get_classif
 from anchorai.assistant.prompt import DONT_KNOW, build_messages
 from anchorai.assistant.slots import Slots, extract_slots
 from anchorai.assistant.tools import TOOLS, Evidence
+from anchorai.db.audit import record_audit
+from anchorai.db.models import AssistantFeedback, User
 
 log = logging.getLogger(__name__)
 Chat = Callable[[list[dict]], str]
@@ -45,6 +48,15 @@ class AssistantReply(BaseModel):
     llm_used: bool
     # True when the question had no intent of its own and continued the previous turn's.
     follow_up: bool = False
+
+
+class FeedbackIn(BaseModel):
+    message: str = Field(max_length=1000)
+    answer: str = Field(max_length=4000)
+    intent: str | None = Field(default=None, max_length=50)
+    tool: str | None = Field(default=None, max_length=50)
+    rating: Literal[1, -1]
+    comment: str | None = Field(default=None, max_length=1000)
 
 
 class HistoryTurn(BaseModel):
@@ -146,3 +158,19 @@ def answer(
         else:
             reply.answer = _template(result.evidence)
     return reply
+
+
+def save_feedback(session: Session, user: User, feedback: FeedbackIn) -> AssistantFeedback:
+    row = AssistantFeedback(user_id=user.id, **feedback.model_dump())
+    session.add(row)
+    session.flush()
+    record_audit(
+        session,
+        user,
+        "assistant_feedback",
+        "assistant_feedback",
+        str(row.id),
+        after=feedback.model_dump(),
+    )
+    session.commit()
+    return row

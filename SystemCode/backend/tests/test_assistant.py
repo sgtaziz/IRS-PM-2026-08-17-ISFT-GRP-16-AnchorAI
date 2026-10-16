@@ -151,7 +151,7 @@ def test_follow_ups_continue_the_previous_turn(built, engine, classifier):
         assert blocked.answer == "Plan details are only available to managers."
 
 
-def test_chat_endpoint(client, login, built, monkeypatch, classifier):
+def test_chat_and_feedback_endpoints(client, login, built, monkeypatch, classifier):
     monkeypatch.setattr(service, "get_classifier", lambda: classifier)
     monkeypatch.setattr(service.llm, "chat", lambda m: "answer [E1]")
     staff = login("staff1")
@@ -165,4 +165,10 @@ def test_chat_endpoint(client, login, built, monkeypatch, classifier):
         body["intent"] == "member_risk"
         and body["evidence"]
         and body["slots"]["member_ids"] == ["M0002"]
+    )
+    fb = {"message": "why the risk", "answer": body["answer"], "intent": "member_risk", "rating": 1}
+    assert client.post("/api/assistant/feedback", json=fb, headers=staff).status_code == 200
+    assert (
+        client.post("/api/assistant/feedback", json=fb | {"rating": 5}, headers=staff).status_code
+        == 422
     )

@@ -1,14 +1,25 @@
 <script setup lang="ts">
-import { ArrowUp, CalendarCheck, Gift, Network, RotateCcw, Scale, Sparkles, TrendingDown, TriangleAlert, UserRound } from 'lucide-vue-next'
+import { ArrowUp, CalendarCheck, ThumbsDown, ThumbsUp, Gift, Network, RotateCcw, Scale, Sparkles, TrendingDown, TriangleAlert, UserRound } from 'lucide-vue-next'
 import Button from 'primevue/button'
 import Textarea from 'primevue/textarea'
 import { computed, nextTick, ref, watch, type Component } from 'vue'
 import type { AssistantReply } from '../api/types'
-import { useAssistantStore } from '../stores/assistant'
+import { useToast } from 'primevue/usetoast'
+import { errorMessage } from '../composables/useAsync'
+import { useAssistantStore, type Turn } from '../stores/assistant'
 import { useAuthStore } from '../stores/auth'
 import AssistantAnswer from './AssistantAnswer.vue'
 
 const props = defineProps<{ memberId?: string | null; compact?: boolean }>()
+const toast = useToast()
+
+async function rate(turn: Turn, rating: 1 | -1) {
+  try {
+    await store.rate(turn, rating)
+  } catch (e) {
+    toast.add({ severity: 'error', summary: 'Feedback not saved', detail: errorMessage(e), life: 4000 })
+  }
+}
 
 const INTENT_LABELS: Record<string, string> = {
   member_risk: 'Member risk',
@@ -138,6 +149,23 @@ watch(
                   <span v-else-if="!t.reply.llm_used" class="warn" title="The language model is offline, so the evidence is shown as is">
                     Language model offline
                   </span>
+                  <template v-if="t.reply.grounded">
+                    <span class="grow !bg-transparent !p-0" />
+                    <button
+                      v-for="r in ([1, -1] as const)"
+                      :key="r"
+                      type="button"
+                      class="rate"
+                      :class="{ on: t.rated === r }"
+                      :disabled="!!t.rated"
+                      :aria-pressed="t.rated === r"
+                      :aria-label="r === 1 ? 'Helpful' : 'Not helpful'"
+                      :title="r === 1 ? 'Helpful' : 'Not helpful'"
+                      @click="rate(t, r)"
+                    >
+                      <component :is="r === 1 ? ThumbsUp : ThumbsDown" :size="14" aria-hidden="true" />
+                    </button>
+                  </template>
                 </div>
               </template>
             </div>
@@ -212,6 +240,11 @@ watch(
 .meta { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem; margin-top: 0.6rem; font-size: 0.72rem; color: var(--color-ink-500); }
 .meta > span { padding: 0.15rem 0.5rem; border-radius: 999px; background: var(--color-ink-100); }
 .meta .intent { background: var(--color-brand-50); color: var(--color-brand-800); font-weight: 600; }
+.rate { display: grid; place-items: center; width: 1.6rem; height: 1.6rem; border: 0; border-radius: 6px; background: none; color: var(--color-ink-500); cursor: pointer; }
+.rate:hover:not(:disabled) { background: var(--color-ink-100); color: var(--color-ink-800); }
+.rate:focus-visible { outline: 2px solid var(--color-brand-500); outline-offset: 1px; }
+.rate:disabled { cursor: default; opacity: 0.45; }
+.rate.on { opacity: 1; color: var(--color-brand-600); }
 .meta .warn { background: var(--color-warn-soft); color: var(--color-warn-ink); }
 .typing { display: flex; gap: 0.3rem; padding: 0.35rem 0.1rem; }
 .typing i { width: 0.45rem; height: 0.45rem; border-radius: 50%; background: var(--color-brand-400); opacity: 0.35; animation: blink 1.2s infinite; }

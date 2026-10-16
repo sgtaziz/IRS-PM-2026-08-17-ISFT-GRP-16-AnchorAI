@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field
 
 from anchorai.api.deps import CurrentUser, SessionDep
 from anchorai.assistant import service
-from anchorai.assistant.service import AssistantReply, HistoryTurn
+from anchorai.assistant.service import AssistantReply, FeedbackIn, HistoryTurn
 from anchorai.discovery.service import DataNotBuilt
 
 router = APIRouter()
@@ -25,3 +25,12 @@ def chat(req: ChatRequest, session: SessionDep, user: CurrentUser):
         )
     except (DataNotBuilt, service.AssistantUnavailable) as e:
         raise HTTPException(503, str(e)) from None
+
+
+class FeedbackOut(BaseModel):
+    id: int
+
+
+@router.post("/feedback", response_model=FeedbackOut)
+def feedback(fb: FeedbackIn, session: SessionDep, user: CurrentUser):
+    return FeedbackOut(id=service.save_feedback(session, user, fb).id)
