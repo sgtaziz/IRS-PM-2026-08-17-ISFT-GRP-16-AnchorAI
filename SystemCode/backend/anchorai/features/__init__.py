@@ -50,7 +50,7 @@ LABELS = {
     "contract_progress": "Share of contract used",
     "avg_class_frequency_current_month": "Visits per week this month",
     "trend_ratio": "Visit trend (this month vs lifetime)",
-    "freq_drop": "Drop in weekly visits",
+    "freq_drop": "Change in weekly visits",
 }
 
 

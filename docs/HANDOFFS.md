@@ -24,6 +24,7 @@ What each stream needs from the others: blockers, reviews, decisions and promise
 | 5 | C | review | C1–C5 landed on `main` without a cross-stream review: auth and app DB, rule engine, rule base, knowledge graph | AGENTS.md requires one review from another stream (A or B) | open | 2026-10-16 |
 | 14 | C | deliver | Write ~10 questions a gym manager or staff member might ask the assistant, in your own words, each tagged with an intent (`member_risk`, `member_actions`, `compare_members`, `graph_impact`, `plan_summary`, `what_if_budget`) or `unknown` | E8 needs a test set the assistant's author never saw; the current one (`notebooks/c_intent_classifier.ipynb`) is optimistic | open | 2026-10-16 |
 | 16 | C | review | The data rebuild job (`anchorai/discovery/jobs.py`) now calls `anchorai.knowledge.reload.sync_graph()` after `pipeline.run`, so the KG and its rule facts match the rebuilt tables plus admin roster edits | Touches A's file (one call); `sync_graph` never raises, a down graph shows as stale | open | 2026-10-16 |
+| 18 | C | review | C renamed the `freq_drop` driver label in `anchorai/features/__init__.py` from "Drop in weekly visits" to "Change in weekly visits" | The old label read as if visits had dropped; in E8 the assistant flagged it as contradicting flat or rising visits in all 3 member-risk answers | open | 2026-10-16 |
 
 ## Stream B: Decision & Optimisation
 
