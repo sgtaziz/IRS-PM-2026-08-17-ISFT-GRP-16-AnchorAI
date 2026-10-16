@@ -10,6 +10,7 @@ import pandas as pd
 
 from anchorai import pipeline
 from anchorai.config import get_settings
+from anchorai.knowledge.reload import sync_graph
 from anchorai.scenario.build import load_kaggle
 from anchorai.scenario.tables import SchemaError
 
@@ -49,6 +50,9 @@ def start_rebuild(seed: int) -> dict:
         global _status
         try:
             pipeline.run(seed)
+            # Admin roster edits live in SQLite on top of the rebuilt tables; reload the KG and its
+            # rule facts so they match. Never raises: a down graph is shown as stale on its page.
+            sync_graph()
             _status = BuildStatus("done", seed, _status.started_at, _now())
         except Exception as exc:  # noqa: BLE001  a thread must record any failure for the page
             _status = BuildStatus("failed", seed, _status.started_at, _now(), str(exc))
