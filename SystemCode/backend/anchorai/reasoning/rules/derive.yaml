@@ -4,7 +4,7 @@
 - id: D01_falling_regular
   kind: derive
   salience: 50
-  description: A regular class-goer whose visits this month fell to 80% of their usual rate or less (127 members, c_rules)
+  description: A regular class-goer whose visits this month fell to 80% of their usual rate or less
   when: ["avg_class_frequency_total >= 2", "trend_ratio <= 0.8"]
   then: {assert: {falling_regular: true}}
   source: team assumption
@@ -12,7 +12,7 @@
 - id: D02_new_member
   kind: derive
   salience: 50
-  description: In their first two months, where churn is 50-82% and falls below base rate by month 3 (c_rules)
+  description: A new member in their first two months, when churn is highest
   when: ["lifetime <= 1"]
   then: {assert: {new_member: true}}
   source: team assumption
