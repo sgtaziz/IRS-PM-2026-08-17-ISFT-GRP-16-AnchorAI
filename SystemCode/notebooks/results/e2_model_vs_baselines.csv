@@ -1,4 +1,4 @@
 ,f1,precision,recall,pr_auc,roc_auc,brier
-AnchorAI ensemble (calibrated),0.908,0.91,0.906,0.974,0.988,0.034
+AnchorAI ensemble (calibrated),0.908,0.906,0.91,0.973,0.988,0.035
 single LR,0.862,0.818,0.91,0.953,0.978,0.056
 churn if visits per week this month <= 1.63,0.549,0.426,0.774,0.39,0.699,0.336

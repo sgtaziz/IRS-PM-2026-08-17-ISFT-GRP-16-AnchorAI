@@ -1,0 +1,4 @@
+band,members,mean_predicted,observed_rate
+low,579,0.016,0.029
+medium,24,0.441,0.417
+high,197,0.951,0.939
