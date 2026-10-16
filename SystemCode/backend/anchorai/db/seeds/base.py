@@ -5,17 +5,14 @@ upserting by username, and ANCHORAI_SEED governs everything else.
 """
 
 import random
-from pathlib import Path
 
 from sqlmodel import Session, select
 
-import anchorai.reasoning
 from anchorai import catalog
 from anchorai.auth.security import hash_password
 from anchorai.config import get_settings
 from anchorai.db.models import RuleVersion, User
-
-RULES_DIR = Path(anchorai.reasoning.__file__).parent / "rules"
+from anchorai.reasoning.engine import rule_files_text
 
 DEMO_USERS: list[tuple[str, str, str]] = [
     ("admin", "admin", "Alex Admin"),
@@ -23,10 +20,6 @@ DEMO_USERS: list[tuple[str, str, str]] = [
     ("staff1", "staff", "Sam Staff"),
     ("staff2", "staff", "Jordan Staff"),
 ]
-
-
-def rules_yaml() -> str:
-    return "\n".join(p.read_text() for p in sorted(RULES_DIR.glob("*.yaml")))
 
 
 def seed(session: Session, rng: random.Random) -> None:
@@ -45,7 +38,9 @@ def seed(session: Session, rng: random.Random) -> None:
 
     if session.exec(select(RuleVersion).where(RuleVersion.version == 1)).first() is None:
         session.add(
-            RuleVersion(version=1, yaml_text=rules_yaml(), note="Seeded rule base", is_active=True)
+            RuleVersion(
+                version=1, yaml_text=rule_files_text(), note="Seeded rule base", is_active=True
+            )
         )
 
     session.flush()
