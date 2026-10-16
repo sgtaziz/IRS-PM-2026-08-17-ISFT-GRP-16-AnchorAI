@@ -54,8 +54,8 @@ q52,ai,if budget drops to 1000 what do we lose?,what_if_budget,what_if_budget,0.
 q53,ai,"Is another $1,500 worth it?",what_if_budget,what_if_budget,0.4924,what_if_budget,True,True
 q54,ai,Tell me a joke about squats,unknown,unknown,0.0803,unknown,True,True
 q55,ai,What time does the pool close on Sundays?,unknown,unknown,0.2488,unknown,True,True
-q56,ai,What does churn mean?,unknown,list_members,0.3104,unknown,False,True
-q57,ai,Delete member M0012,unknown,member_actions,0.6411,member_risk,False,False
+q56,ai,What does churn mean?,unknown,unknown,0.3104,unknown,True,True
+q57,ai,Delete member M0012,unknown,unknown,0.0,member_risk,True,False
 q58,ai,"thanks, that helps",unknown,unknown,0.129,unknown,True,True
 q59,ai,How do I add a new instructor?,unknown,graph_impact,0.5191,graph_impact,False,False
 q60,ai,What is the capital of France?,unknown,unknown,0.0882,unknown,True,True
