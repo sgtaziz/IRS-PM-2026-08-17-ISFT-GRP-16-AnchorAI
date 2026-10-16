@@ -4,7 +4,7 @@ import math
 from collections import Counter
 from collections.abc import Iterable
 from itertools import combinations
-from typing import Any, Literal
+from typing import Literal
 
 from pydantic import BaseModel
 
@@ -18,37 +18,27 @@ class Issue(BaseModel):
     message: str
 
 
-def _numeric(v: Any) -> bool:
-    return isinstance(v, int | float) and not isinstance(v, bool)
-
-
 def _satisfiable(conditions: list[Condition]) -> bool:
     """Whether some single value of one fact can meet all the conditions on it."""
+    probe = [Condition("x", c.op, c.value) for c in conditions]
     candidates: set | None = None
     for c in conditions:
-        if c.op == "==":
-            values = {c.value}
-        elif c.op == "in":
-            values = set(c.value)
-        else:
-            continue
-        candidates = values if candidates is None else candidates & values
+        if c.op in ("==", "in"):
+            values = {c.value} if c.op == "==" else set(c.value)
+            candidates = values if candidates is None else candidates & values
     if candidates is not None:
-        return any(all(c.holds({"x": v}) for c in _renamed(conditions)) for v in candidates)
+        return any(all(c.holds({"x": v}) for c in probe) for v in candidates)
 
     lo, lo_strict, hi, hi_strict = -math.inf, False, math.inf, False
     for c in conditions:
-        if not _numeric(c.value):
-            continue
         if c.op in (">", ">=") and (c.value > lo or (c.value == lo and c.op == ">")):
             lo, lo_strict = c.value, c.op == ">"
         elif c.op in ("<", "<=") and (c.value < hi or (c.value == hi and c.op == "<")):
             hi, hi_strict = c.value, c.op == "<"
-    return lo < hi or (lo == hi and not lo_strict and not hi_strict)
-
-
-def _renamed(conditions: list[Condition]) -> list[Condition]:
-    return [Condition("x", c.op, c.value) for c in conditions]
+    if lo < hi:
+        return True
+    # A single point is left; only != / not in can still rule it out.
+    return lo == hi and not lo_strict and not hi_strict and all(c.holds({"x": lo}) for c in probe)
 
 
 def _can_both_hold(a: Rule, b: Rule) -> bool:
@@ -76,6 +66,14 @@ def validate(
     for r in enabled:
         for fact, value in (r.then.assert_ or {}).items():
             asserted.setdefault(fact, set()).add(value)
+            if fact in known:
+                issues.append(
+                    Issue(
+                        rule_id=r.id,
+                        severity="error",
+                        message=f"Derive rules cannot change the input fact '{fact}'",
+                    )
+                )
 
     for r in rules:
         for c in r.conditions:
@@ -121,7 +119,7 @@ def validate(
                     severity="warning",
                     message=(
                         f"Contradicts {b.id} on {', '.join(clashes)} when both match; "
-                        "the higher-priority rule's value is overwritten by the later one"
+                        "the higher-priority rule's value wins and the other is ignored"
                     ),
                 )
             )
