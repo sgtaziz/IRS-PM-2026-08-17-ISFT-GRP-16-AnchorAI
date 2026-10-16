@@ -64,6 +64,11 @@ You can run each step on its own:
 | `uv run anchorai db reset` | Fresh, seeded demo database |
 | `uv run anchorai kg load` | Reload the knowledge graph |
 
+### Staff assistant
+
+The assistant needs an OpenAI-compatible LLM endpoint (`LLM_BASE_URL`, `LLM_API_KEY`, `LLM_MODEL` in `.env`). On its first question the API downloads the `all-MiniLM-L6-v2` embedding model (about 90 MB) for intent detection; after that it runs offline. If the LLM is unreachable, the assistant still answers, straight from the evidence lines.
+
+
 ## 5. Run
 
 ```sh
