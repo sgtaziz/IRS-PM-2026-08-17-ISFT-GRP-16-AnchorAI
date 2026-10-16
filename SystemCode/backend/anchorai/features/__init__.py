@@ -20,7 +20,7 @@ NUMERIC = [
     "contract_progress",
     "avg_class_frequency_current_month",
     "trend_ratio",
-    "freq_drop",
+    "visit_change",
 ]
 FEATURES = CATEGORICAL + NUMERIC
 # Possibly measured in the same month as the churn label (PLAN.md drift item 5), plus
@@ -30,7 +30,7 @@ SUSPECT = [
     "contract_progress",
     "avg_class_frequency_current_month",
     "trend_ratio",
-    "freq_drop",
+    "visit_change",
 ]
 
 LABELS = {
@@ -50,7 +50,7 @@ LABELS = {
     "contract_progress": "Share of contract used",
     "avg_class_frequency_current_month": "Visits per week this month",
     "trend_ratio": "Visit trend (this month vs lifetime)",
-    "freq_drop": "Change in weekly visits",
+    "visit_change": "Change in weekly visits (this month vs lifetime)",
 }
 
 
@@ -62,7 +62,8 @@ def build_features(members: pd.DataFrame) -> pd.DataFrame:
     f = m[[c for c in FEATURES if c in m.columns]].astype(float)
     # Members with no lifetime visits have no trend; treat them as flat rather than infinite.
     f["trend_ratio"] = np.where(total > 0, current / total.where(total > 0), 1.0).clip(0, 3)
-    f["freq_drop"] = total - current
+    # Signed so the label reads true: negative means fewer visits this month than usual.
+    f["visit_change"] = current - total
     f["contract_progress"] = (1 - m["month_to_end_contract"] / m["contract_period"]).clip(0, 1)
     f["charges_per_month"] = m["avg_additional_charges_total"] / (m["lifetime"] + 1)
     return f[FEATURES]
