@@ -8,7 +8,7 @@ The source for the report appendix "Scenario layer parameters" (Stream A). The c
 |---|---|---|
 | `members` | all 14 Kaggle columns, renamed to lowercase | `member_id`, `club_id`, `monthly_value`, `split` |
 | `instructors`, `classes`, `attendance`, `offers` | none | all |
-| `interventions`, `true_uplift`, `events` | none | all |
+| `interventions`, `true_uplift`, `true_churn`, `events` | none | all |
 
 Segmentation and the churn model (experiments E1 and E2) use only the real columns. The synthetic tables exist because the Kaggle data has no clubs, classes, instructors, offers or intervention history, which the knowledge graph, CBR, uplift models and optimiser need (PLAN.md drift item 2). Results that depend on them (E3–E7) test whether the system *recovers known structure* and makes *better decisions against a known ground truth*. They are not claims about real members' responses.
 
@@ -26,12 +26,13 @@ Segmentation and the churn model (experiments E1 and E2) use only the real colum
 - `events` (in the week before `AS_OF` = 2026-10-12):
   - the instructor with the most attendees leaves (`instructor_left`)
   - the busiest class at another club is cancelled (`class_cancelled`)
+  - Their effect on churn is described under "Gym events" below.
 
 ## Offers
 
 | offer_id | cost | staff minutes | weekly inventory | channels | skill |
 |---|---|---|---|---|---|
-| `checkin_message` | 0 | 5 | unlimited | sms, email | none |
+| `checkin_message` | 0 | 5 | unlimited | sms, email, call | none |
 | `free_pt_session` | 40 | 60 | 40 | call, in person | trainer |
 | `class_pass` | 15 | 10 | 100 | sms, email, call | none |
 | `discount_1m` | 12 | 15 | unlimited | email, call | none |
@@ -45,7 +46,8 @@ The same catalogue seeds the app database (`offer_catalog`), where admins can ed
 ```
 z = -1.4 + 1.3·[lifetime ≤ 2] + 1.1·[trend_ratio < 0.7] − 0.9·[contract = 12]
          − 0.4·group_visits − 0.5·(visits_per_week_total − 1.9)
-base_churn = sigmoid(z)
+base_churn  = sigmoid(z)
+event_churn = sigmoid(z + event shift)          (see "Gym events"; equals base_churn without events)
 ```
 
 **Raw effect of each offer on next-month retention.** Here `falling = trend_ratio < 0.85`, `new = lifetime ≤ 3` and `price_sensitive = contract = 1 and extra spend < 120`:
@@ -57,28 +59,69 @@ base_churn = sigmoid(z)
 | `class_pass` | 0.01 + 0.10·group_visits + 0.04·promo_friends |
 | `discount_1m` | 0.01 + 0.12·price_sensitive − 0.06·[contract = 12] |
 
-- **Scaling by risk:** each raw effect is multiplied by `(0.6 + base_churn)`, so persuasion matters more for members who are at risk.
-- **Realised uplift (`true_uplift.uplift`):** `clip(1 − base_churn + effect, 0, 1) − (1 − base_churn)`. The effect saturates when retention is already near certain.
+- **Scaling by risk:** each raw effect is multiplied by `(0.6 + hazard)`, so persuasion matters more for members who are at risk.
+- **Realised uplift (`true_uplift.uplift`):** `clip(1 − hazard + effect, 0, 1) − (1 − hazard)`. The effect saturates when retention is already near certain.
+- **Which hazard:** `true_uplift` describes contacting a member *now*, after the gym events, so it uses `event_churn`. Members untouched by an event are unaffected.
 - **Negative effects:** a discount can lower annual members' retention, the "sleeping dogs" effect.
+
+## Gym events (`true_churn`)
+
+An event raises the no-contact churn hazard of the members it touches, in proportion to how much of their routine it hits. The churn model cannot see this: it is trained on the Kaggle snapshot, which has no events. Only the knowledge graph knows who was affected, so this is the information E7 measures.
+
+**Exposure.** For each member with class visits (the same definitions as the knowledge graph's `anchor_instructor_share` and `class_cancelled` signals):
+
+- `lost_instructor_share` = weekly visits in classes taught by an instructor who left ÷ all weekly class visits
+- `cancelled_share` = weekly visits in cancelled classes ÷ all weekly class visits
+- Members without class visits have both shares at 0. A class whose instructor left *and* which was cancelled counts in both.
+
+**Effect on the hazard** (`EVENT_EFFECTS` in `anchorai/scenario/build.py`):
+
+```
+event shift = 1.4 · lost_instructor_share + 0.9 · cancelled_share     (log-odds)
+event_churn = sigmoid(z + event shift)
+```
+
+- `instructor_left`: 1.4 per full share, odds × 4.1 for a member who trained only with that instructor. Losing the instructor you train with is the larger shock.
+- `class_cancelled`: 0.9 per full share, odds × 2.5. The rest of the member's routine stays intact.
+- **Timing:** an event counts from the week it happened. Past contacts in earlier weeks keep their pre-event outcomes; contacts in or after that week use the higher hazard.
+
+**The `true_churn` table** (one row per member, scenario-only ground truth):
+
+| Column | Meaning |
+|---|---|
+| `base_churn` | next-month churn probability without contact, before events |
+| `event_churn` | the same after the events; equal to `base_churn` for unaffected members |
+| `lost_instructor_share`, `cancelled_share` | the exposure above |
+| `churned_no_contact` | one seeded draw from `event_churn`, for churn *rates* rather than probabilities |
+
+**Measuring the knowledge graph's value (E7).** Members who attend classes are lower-risk to begin with, so comparing flagged members with *all* members confounds the event with who goes to classes. On real Kaggle labels that comparison shows lift below 1 (`results/c3_signal_churn.csv`). The fair measure is within the flagged members: their hazard with versus without the event. With the default seed (`results/a5_event_lift.csv`):
+
+| Flagged members | n | Within-member rise (event ÷ base) | Lift vs all members (event_churn) |
+|---|---|---|---|
+| ≥ 50% of class visits with the departed instructor | 186 | 1.80 | 1.41 |
+| attend the cancelled class | 170 | 1.32 | 1.00 |
+
+**Injected events.** To score events added later (e.g. through the knowledge-graph admin page), recompute the truth with the same functions: `event_exposure(attendance, classes, events)` then `event_shift(...)` on top of `base_logit(features)`.
 
 ## Intervention history (`interventions`)
 
 - **Who was contacted:** a random 60% of members (2,400), each in a random week within the 12 weeks before `AS_OF`.
 - **Treatment:** 60% of them were treated with a uniformly random offer, sent through a uniformly random channel the offer allows. The rest are untreated controls, with `offer_id` and `channel` left empty.
-- **Outcome:** `stayed ~ Bernoulli(1 − base_churn + true_uplift if treated)`.
+- **Outcome:** `stayed ~ Bernoulli(1 − hazard + uplift if treated)`, with the hazard in force that week (events count from their own week).
 - **Why randomise:** assignment is random (RCT-like), so uplift estimators are unbiased in principle. Their errors come from heterogeneity and sample size, not confounding.
 
 ## Sanity checks
 
 From `SystemCode/notebooks/a_scenario_uplift.ipynb` with the default seed:
 
-- **Stay rate:** treated members stay 4.5 points more often than untreated ones.
-- **Uplift:** the mean true uplift is +5.6 points. 6% of (member, offer) pairs have a negative effect.
-- **Heterogeneity:** the mean true uplift ranges from −3.7 points (discount, annual-contract members) to +24.3 points (PT session, new and slipping members). The full table is in `results/a5_true_uplift_by_segment.csv`.
-- **Estimator recovery:** the T-learner baseline (A6) reaches Spearman 0.40 against the truth overall and 0.60 for PT sessions (`results/a6_tlearner_recovery.csv`).
+- **Stay rate:** treated members stay 4.9 points more often than untreated ones.
+- **Uplift:** the mean true uplift is +5.8 points. 6% of (member, offer) pairs have a negative effect.
+- **Heterogeneity:** the mean true uplift ranges from −3.7 points (discount, annual-contract members) to +24.4 points (PT session, new and slipping members). The full table is in `results/a5_true_uplift_by_segment.csv`.
+- **Estimator recovery:** the T-learner baseline (A6) reaches Spearman 0.39 against the truth overall and 0.61 for PT sessions (`results/a6_tlearner_recovery.csv`).
+- **Events:** 482 members are touched by an event (312 by the departed instructor, 170 by the cancelled class). Their mean no-contact hazard rises from 0.320 to 0.335 across all members.
 
 ## Limitations
 
 - **The effects are assumptions.** They encode plausible retention playbook knowledge but are not measured on real members.
 - **The circularity risk is deliberate and stated.** A model that recovers these effects shows that it *can* recover heterogeneous effects, not that the real effects are these.
-- **Sensitivity:** rerun the scenario with different effect sizes by scaling the multiplier in `offer_effects` (see PLAN.md §11).
+- **Sensitivity:** rerun the scenario with different effect sizes by scaling `raw_offer_effects` or `EVENT_EFFECTS` (`build_tables(..., event_effects=...)`; see PLAN.md §11). With `EVENT_EFFECTS` at 0 the event signals carry no information, matching the real-data result.
