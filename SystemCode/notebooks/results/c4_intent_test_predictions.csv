@@ -1,61 +1,70 @@
-question,true,centroid,score,knn,keyword,slot_rule
-why's M0310 flagged as risky,member_risk,member_risk,0.609,member_risk,member_risk,member_risk
-chances that member 155 cancels?,member_risk,member_risk,0.646,member_risk,graph_impact,member_risk
-what is pushing M2500 toward leaving,member_risk,member_risk,0.543,member_risk,graph_impact,member_risk
-risk level for m0042 pls,member_risk,member_risk,0.68,member_risk,compare_members,member_risk
-is member 3001 about to churn,member_risk,member_risk,0.704,member_risk,member_risk,member_risk
-Give me the risk breakdown for M0777,member_risk,member_risk,0.814,member_risk,compare_members,member_risk
-why does M1200 look like they'll leave,member_risk,compare_members,0.667,member_risk,member_risk,member_risk
-how worried should we be about M0066,member_risk,member_risk,0.754,member_risk,unknown,member_risk
-what offer suits M0310,member_actions,member_actions,0.601,member_actions,member_actions,member_actions
-what do we send member 155?,member_actions,member_actions,0.723,member_actions,member_actions,member_actions
-why no offer for M2500?,member_actions,member_actions,0.76,member_actions,compare_members,member_actions
-which playbook applies to M0042,member_actions,compare_members,0.552,compare_members,member_actions,member_actions
-why did M3001 get blocked from offers,member_actions,member_actions,0.658,member_actions,member_actions,member_actions
-what's the next best action for M0777,member_actions,member_actions,0.667,member_actions,compare_members,member_actions
-how do we win back M1200,member_actions,member_actions,0.578,compare_members,member_actions,member_actions
-explain the rule trace for M0066,member_actions,compare_members,0.602,compare_members,compare_members,member_actions
-why M0310 and not M0042?,compare_members,compare_members,0.921,compare_members,unknown,compare_members
-compare member 155 with member 2500,compare_members,compare_members,0.726,compare_members,compare_members,compare_members
-"M3001 or M0777, who's riskier",compare_members,compare_members,0.799,member_risk,compare_members,compare_members
-why is 1200 on the list while 66 isn't,compare_members,compare_members,0.809,compare_members,compare_members,compare_members
-difference between M0042 and M1200 please,compare_members,compare_members,0.89,compare_members,compare_members,compare_members
-why was M0777 chosen over M3001,compare_members,compare_members,0.878,compare_members,compare_members,compare_members
-how does M0155 stack up against M2500,compare_members,compare_members,0.742,compare_members,compare_members,compare_members
-"who should we prioritise, M0066 or M0310?",compare_members,compare_members,0.767,compare_members,compare_members,compare_members
-who's affected now that Maya left,graph_impact,graph_impact,0.809,graph_impact,graph_impact,graph_impact
-members in the cancelled hiit class,graph_impact,graph_impact,0.78,graph_impact,graph_impact,graph_impact
-which members followed Sam Rivera's classes,graph_impact,graph_impact,0.758,graph_impact,graph_impact,graph_impact
-impact of losing Ken Sato,graph_impact,graph_impact,0.775,graph_impact,unknown,graph_impact
-who attends Zumba with Maya Chen,graph_impact,graph_impact,0.749,graph_impact,unknown,graph_impact
-if Pilates is cancelled who do we lose,graph_impact,graph_impact,0.705,graph_impact,graph_impact,graph_impact
-members whose instructor quit,graph_impact,graph_impact,0.829,graph_impact,graph_impact,graph_impact
-show me the cohort affected by the class cancellation,graph_impact,graph_impact,0.561,graph_impact,graph_impact,graph_impact
-what's planned for this week,plan_summary,plan_summary,0.654,plan_summary,plan_summary,plan_summary
-how many calls are in the plan,plan_summary,plan_summary,0.705,plan_summary,plan_summary,plan_summary
-total cost of the current plan?,plan_summary,plan_summary,0.592,what_if_budget,plan_summary,plan_summary
-is this week's plan approved,plan_summary,plan_summary,0.746,plan_summary,plan_summary,plan_summary
-list the offers going out this week,plan_summary,plan_summary,0.568,plan_summary,plan_summary,plan_summary
-how many members will the plan keep,plan_summary,plan_summary,0.748,plan_summary,plan_summary,plan_summary
-plan overview please,plan_summary,plan_summary,0.74,plan_summary,compare_members,plan_summary
-how much staff time does the plan take,plan_summary,plan_summary,0.664,plan_summary,plan_summary,plan_summary
-what if we had $2500,what_if_budget,what_if_budget,0.641,what_if_budget,what_if_budget,what_if_budget
-"budget 6000, how many retained?",what_if_budget,what_if_budget,0.68,what_if_budget,what_if_budget,what_if_budget
-what happens if the budget drops to 1000,what_if_budget,what_if_budget,0.809,what_if_budget,what_if_budget,what_if_budget
-could we keep more members with another $700,what_if_budget,what_if_budget,0.573,what_if_budget,what_if_budget,what_if_budget
-rerun with a 4k budget,what_if_budget,what_if_budget,0.683,what_if_budget,what_if_budget,what_if_budget
-what does tripling the budget get us,what_if_budget,what_if_budget,0.658,what_if_budget,what_if_budget,what_if_budget
-would $1200 be enough,what_if_budget,what_if_budget,0.599,what_if_budget,what_if_budget,what_if_budget
-plan with 900 dollars instead,what_if_budget,what_if_budget,0.665,what_if_budget,what_if_budget,what_if_budget
-what's the capital of France,unknown,unknown,0.05,unknown,unknown,unknown
-can you order pizza,unknown,unknown,0.168,unknown,unknown,unknown
-how do I cancel my own membership,unknown,member_actions,0.341,member_actions,graph_impact,unknown
-tell me a joke,unknown,unknown,0.16,unknown,unknown,unknown
-what's the parking situation,unknown,unknown,0.17,unknown,unknown,unknown
-who is the club manager,unknown,member_actions,0.389,graph_impact,unknown,unknown
-set an alarm for 6am,unknown,unknown,0.19,unknown,unknown,unknown
-is the sauna open,unknown,unknown,0.089,unknown,unknown,unknown
-summarise the news,unknown,unknown,0.272,unknown,unknown,unknown
-what's 2 plus 2,unknown,unknown,0.147,unknown,unknown,unknown
-how many calories in a banana,unknown,unknown,0.043,unknown,unknown,unknown
-change my shift on Monday,unknown,unknown,0.262,plan_summary,unknown,unknown
+question,true,centroid,score,knn,keyword,slot_rule,shipped
+why's M0310 flagged as risky,member_risk,member_risk,0.609,member_risk,member_risk,member_risk,member_risk
+chances that member 155 cancels?,member_risk,member_risk,0.646,graph_impact,graph_impact,member_risk,member_risk
+what is pushing M2500 toward leaving,member_risk,member_risk,0.543,member_risk,graph_impact,member_risk,member_risk
+risk level for m0042 pls,member_risk,member_risk,0.68,member_risk,compare_members,member_risk,member_risk
+is member 3001 about to churn,member_risk,member_risk,0.704,list_members,member_risk,member_risk,member_risk
+Give me the risk breakdown for M0777,member_risk,member_risk,0.814,member_risk,compare_members,member_risk,member_risk
+why does M1200 look like they'll leave,member_risk,compare_members,0.667,member_risk,member_risk,member_risk,member_risk
+how worried should we be about M0066,member_risk,member_risk,0.754,member_risk,unknown,member_risk,member_risk
+what offer suits M0310,member_actions,member_actions,0.601,member_actions,member_actions,member_actions,member_actions
+what do we send member 155?,member_actions,member_actions,0.723,member_actions,member_actions,member_actions,member_actions
+why no offer for M2500?,member_actions,member_actions,0.76,member_actions,compare_members,member_actions,member_actions
+which playbook applies to M0042,member_actions,compare_members,0.552,compare_members,member_actions,member_actions,member_actions
+why did M3001 get blocked from offers,member_actions,member_actions,0.658,member_actions,member_actions,member_actions,member_actions
+what's the next best action for M0777,member_actions,member_actions,0.667,member_actions,compare_members,member_actions,member_actions
+how do we win back M1200,member_actions,member_actions,0.578,compare_members,member_actions,member_actions,member_actions
+explain the rule trace for M0066,member_actions,compare_members,0.602,compare_members,compare_members,member_actions,member_actions
+why M0310 and not M0042?,compare_members,compare_members,0.921,compare_members,unknown,compare_members,compare_members
+compare member 155 with member 2500,compare_members,compare_members,0.726,compare_members,compare_members,compare_members,compare_members
+"M3001 or M0777, who's riskier",compare_members,compare_members,0.799,member_risk,compare_members,compare_members,compare_members
+why is 1200 on the list while 66 isn't,compare_members,compare_members,0.809,compare_members,compare_members,compare_members,compare_members
+difference between M0042 and M1200 please,compare_members,compare_members,0.89,compare_members,compare_members,compare_members,compare_members
+why was M0777 chosen over M3001,compare_members,compare_members,0.878,compare_members,compare_members,compare_members,compare_members
+how does M0155 stack up against M2500,compare_members,compare_members,0.742,compare_members,compare_members,compare_members,compare_members
+"who should we prioritise, M0066 or M0310?",compare_members,compare_members,0.767,compare_members,compare_members,compare_members,compare_members
+who's affected now that Maya left,graph_impact,graph_impact,0.809,graph_impact,graph_impact,graph_impact,graph_impact
+members in the cancelled hiit class,graph_impact,graph_impact,0.78,graph_impact,graph_impact,graph_impact,graph_impact
+which members followed Sam Rivera's classes,graph_impact,graph_impact,0.758,graph_impact,graph_impact,graph_impact,graph_impact
+impact of losing Ken Sato,graph_impact,graph_impact,0.775,graph_impact,unknown,graph_impact,graph_impact
+who attends Zumba with Maya Chen,graph_impact,graph_impact,0.749,graph_impact,unknown,graph_impact,graph_impact
+if Pilates is cancelled who do we lose,graph_impact,graph_impact,0.705,graph_impact,graph_impact,graph_impact,graph_impact
+members whose instructor quit,graph_impact,graph_impact,0.829,graph_impact,graph_impact,graph_impact,graph_impact
+show me the cohort affected by the class cancellation,graph_impact,graph_impact,0.561,graph_impact,graph_impact,graph_impact,graph_impact
+what's planned for this week,plan_summary,plan_summary,0.654,plan_summary,plan_summary,plan_summary,plan_summary
+how many calls are in the plan,plan_summary,plan_summary,0.705,plan_summary,plan_summary,plan_summary,plan_summary
+total cost of the current plan?,plan_summary,plan_summary,0.592,what_if_budget,plan_summary,plan_summary,plan_summary
+is this week's plan approved,plan_summary,plan_summary,0.746,plan_summary,plan_summary,plan_summary,plan_summary
+list the offers going out this week,plan_summary,plan_summary,0.568,plan_summary,plan_summary,plan_summary,plan_summary
+how many members will the plan keep,plan_summary,plan_summary,0.748,plan_summary,plan_summary,plan_summary,plan_summary
+plan overview please,plan_summary,plan_summary,0.74,plan_summary,compare_members,plan_summary,plan_summary
+how much staff time does the plan take,plan_summary,plan_summary,0.664,plan_summary,plan_summary,plan_summary,plan_summary
+what if we had $2500,what_if_budget,what_if_budget,0.641,what_if_budget,what_if_budget,what_if_budget,what_if_budget
+"budget 6000, how many retained?",what_if_budget,what_if_budget,0.68,what_if_budget,what_if_budget,what_if_budget,what_if_budget
+what happens if the budget drops to 1000,what_if_budget,what_if_budget,0.809,what_if_budget,what_if_budget,what_if_budget,what_if_budget
+could we keep more members with another $700,what_if_budget,what_if_budget,0.573,what_if_budget,what_if_budget,what_if_budget,what_if_budget
+rerun with a 4k budget,what_if_budget,what_if_budget,0.683,what_if_budget,what_if_budget,what_if_budget,what_if_budget
+what does tripling the budget get us,what_if_budget,what_if_budget,0.658,what_if_budget,what_if_budget,what_if_budget,what_if_budget
+would $1200 be enough,what_if_budget,what_if_budget,0.599,what_if_budget,what_if_budget,what_if_budget,what_if_budget
+plan with 900 dollars instead,what_if_budget,what_if_budget,0.665,what_if_budget,what_if_budget,what_if_budget,what_if_budget
+what's the capital of France,unknown,unknown,0.05,unknown,unknown,unknown,unknown
+can you order pizza,unknown,unknown,0.168,unknown,unknown,unknown,unknown
+how do I cancel my own membership,unknown,member_actions,0.341,list_members,graph_impact,unknown,unknown
+tell me a joke,unknown,unknown,0.19,unknown,unknown,unknown,unknown
+what's the parking situation,unknown,unknown,0.17,unknown,unknown,unknown,unknown
+who is the club manager,unknown,member_actions,0.389,list_members,unknown,list_members,unknown
+set an alarm for 6am,unknown,unknown,0.19,unknown,unknown,unknown,unknown
+is the sauna open,unknown,unknown,0.089,unknown,unknown,unknown,unknown
+summarise the news,unknown,unknown,0.272,unknown,unknown,unknown,unknown
+what's 2 plus 2,unknown,unknown,0.147,unknown,unknown,unknown,unknown
+how many calories in a banana,unknown,unknown,0.043,unknown,unknown,unknown,unknown
+change my shift on Monday,unknown,unknown,0.262,plan_summary,unknown,unknown,unknown
+who are the top 10 members at risk?,list_members,list_members,0.867,list_members,list_members,list_members,list_members
+which members should we call this week,list_members,list_members,0.585,plan_summary,plan_summary,list_members,list_members
+high risk members in club C2,list_members,list_members,0.744,list_members,member_risk,list_members,list_members
+show me new members who are slipping,list_members,list_members,0.574,list_members,list_members,list_members,list_members
+list the 7 members most likely to cancel,list_members,list_members,0.624,list_members,member_risk,list_members,list_members
+top five riskiest members in club C1,list_members,list_members,0.818,list_members,list_members,list_members,list_members
+which new joiners are about to leave,list_members,list_members,0.508,list_members,member_risk,list_members,list_members
+rank members by churn probability,list_members,list_members,0.588,list_members,member_risk,list_members,list_members
+any solo trainers we should worry about,list_members,list_members,0.397,member_risk,unknown,list_members,list_members
