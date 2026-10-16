@@ -108,3 +108,20 @@ def test_live_graph_signals_on_fixtures():
     assert facts.loc[["M0004", "M0007"], "class_cancelled"].all()
     graph = ego_graph("M0002")
     assert {n.data["type"] for n in graph.nodes} >= {"Member", "Club", "Class", "Instructor"}
+
+
+def test_simulate_event_reports_new_rule_firings(client, login, built, monkeypatch):
+    monkeypatch.setattr(
+        "anchorai.knowledge.simulate.read",
+        lambda query, **params: [{"member_id": "M0001"}, {"member_id": "M0003"}],
+    )
+    manager = login("manager")
+    body = {"event_type": "class_cancelled", "entity_id": "K01"}
+    assert client.post("/api/graph/simulate", json=body, headers=login("staff1")).status_code == 403
+    r = client.post("/api/graph/simulate", json=body, headers=manager).json()
+    assert r["affected"] == 2 and r["label"].endswith("class is cancelled")
+    assert all("D08_class_cancelled" in m["new_rules"] for m in r["members"])
+    missing = client.post("/api/graph/simulate", json=body | {"entity_id": "K99"}, headers=manager)
+    assert missing.status_code == 404
+    entities = client.get("/api/graph/entities", headers=manager).json()
+    assert {e["id"] for e in entities["classes"] if e["has_event"]} == {"K04"}

@@ -27,6 +27,15 @@ MATCH (m:Member)-[:ATTENDS]->(:Class)-[:TAUGHT_BY]->(i:Instructor {instructor_id
 RETURN DISTINCT m.member_id AS member_id, m.churn_prob AS churn_prob, m.risk_band AS risk_band
 """
 
+SHARE_WITH_INSTRUCTOR = """
+MATCH (m:Member)-[a:ATTENDS]->(:Class)
+WITH m, sum(a.visits_per_week) AS total
+WHERE total > 0
+MATCH (m)-[a:ATTENDS]->(:Class)-[:TAUGHT_BY]->(:Instructor {instructor_id: $instructor_id})
+WITH m, total, sum(a.visits_per_week) AS lost
+RETURN m.member_id AS member_id, lost / total AS share
+"""
+
 MEMBERS_BY_CLASS = """
 MATCH (m:Member)-[:ATTENDS]->(k:Class {class_id: $class_id})
 RETURN DISTINCT m.member_id AS member_id, m.churn_prob AS churn_prob, m.risk_band AS risk_band
