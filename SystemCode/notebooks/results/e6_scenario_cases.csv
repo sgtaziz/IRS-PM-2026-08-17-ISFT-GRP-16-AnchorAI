@@ -1,0 +1,23 @@
+case,ok,failed,fired,allowed,blocked,title
+steady_low_risk,True,,G03 G04,,"discount_1m<-G03, free_pt_session<-G04, class_pass<-G04","Steady, low-risk member needs nothing"
+new_and_slipping_medium,True,,D02 P01 P08,"free_pt_session, checkin_message",,"New member whose visits are falling, medium risk, month-to-month"
+high_value_at_risk,True,,G03 D05 P06,free_pt_session,discount_1m<-G03,High-value member at high risk gets a PT session; discount is blocked on a 6-month contract
+month_to_month_high_risk,True,,P05,discount_1m,,"Month-to-month member at high risk, below the high-value fee, gets the discounted month"
+discount_never_proposed_off_month_to_month,True,,G03,,discount_1m<-G03,High risk on a 6-month contract below the high-value fee; no playbook applies
+recently_contacted,True,,G01 G03 D05 P06,,"all<-G01, discount_1m<-G03",A playbook proposes but the contact-fatigue guardrail blocks everything
+contact_30_days_ago,True,,G03 D05 P06,free_pt_session,discount_1m<-G03,Exactly 30 days since the last contact is allowed again
+offer_cap_reached,True,,G02 G03 D05 P06,,"all<-G02, discount_1m<-G03",Two offers in 90 days blocks everything even when the last contact is old
+never_contacted,True,,G03 D05 P06,free_pt_session,discount_1m<-G03,"A never-contacted member has no contact facts, so fatigue cannot block"
+lost_anchor_instructor,True,,G03 G04 D07 P03,checkin_message,"discount_1m<-G03, free_pt_session<-G04, class_pass<-G04",Low-risk member whose instructor left still gets a check-in (cheap offers are not blocked)
+class_cancelled_medium,True,,G03 D08 P03 P08,checkin_message,discount_1m<-G03,Class cancelled at medium risk; the SMS check-in outranks the email one and is the only check-in kept
+lost_instructor_recently_contacted,True,,G01 G03 G04 D07 P03,,"all<-G01, discount_1m<-G03, free_pt_session<-G04, class_pass<-G04",A disrupted routine does not override contact fatigue
+kg_facts_absent,True,,G03 P08,checkin_message,discount_1m<-G03,Without KG facts the disruption rules stay silent
+social_medium,True,,G03 D06 P04 P08,"class_pass, checkin_message",discount_1m<-G03,"Social member at medium risk gets a class pass, then a check-in"
+social_low_risk,True,,G03 G04 D06,,"discount_1m<-G03, free_pt_session<-G04, class_pass<-G04",Social member at low risk gets nothing
+disengaged_medium,True,,G03 D03 P07 P08,checkin_message,discount_1m<-G03,Disengaged at medium risk; the disengaged check-in (SMS) outranks the generic one
+disengaged_low_risk,True,,G03 G04 D03,,"discount_1m<-G03, free_pt_session<-G04, class_pass<-G04",Disengaged at low risk is derived but not acted on
+falling_regular_low_risk,True,,G03 G04 D01 P02,,"discount_1m<-G03, free_pt_session<-G04, class_pass<-G04",The low-risk guardrail removes the PT session a falling regular would get
+falling_regular_medium,True,,G03 D01 P02 P08,"free_pt_session, checkin_message",discount_1m<-G03,Falling regular at medium risk gets the in-person PT session
+new_member_not_slipping,True,,G03 G04 D02,,"discount_1m<-G03, free_pt_session<-G04, class_pass<-G04",A new member with steady visits triggers no onboarding
+new_and_slipping_low_risk,True,,G03 G04 D02 P01,,"discount_1m<-G03, free_pt_session<-G04, class_pass<-G04",New and slipping but low risk; the low-risk guardrail removes the onboarding session
+everything_at_once,True,,D05 D02 P01 P06 P05,"free_pt_session, discount_1m",,"New, slipping, high-value, month-to-month, high risk; duplicate PT proposals collapse to the first"
