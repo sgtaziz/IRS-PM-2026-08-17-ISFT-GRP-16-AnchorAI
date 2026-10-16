@@ -1,0 +1,9 @@
+id,question,intent,pred,score,baseline,notes,author
+q06,how worried should we be about 1288?,member_risk,unknown,0.2553,unknown,"bare number, vague wording",ai
+q17,Show the playbook for 1999,member_actions,unknown,0.159,unknown,,ai
+q31,anyone hurt by the recent staff departure?,graph_impact,list_members,0.371,unknown,no entity named,ai
+q43,how much are we spending this week,plan_summary,what_if_budget,0.5334,what_if_budget,,ai
+q45,Which members are we ringing this week?,plan_summary,list_members,0.5738,unknown,boundary with list_members; plan call list,ai
+q56,What does churn mean?,unknown,list_members,0.3104,unknown,"near-domain, definition question; no tool for it",ai
+q57,Delete member M0012,unknown,member_actions,0.6411,member_risk,"action request, out of scope; contains a member id",ai
+q59,How do I add a new instructor?,unknown,graph_impact,0.5191,graph_impact,"app how-to, no tool",ai

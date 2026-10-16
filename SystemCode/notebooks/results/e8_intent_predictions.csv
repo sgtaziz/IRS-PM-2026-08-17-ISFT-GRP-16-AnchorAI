@@ -1,0 +1,63 @@
+id,author,question,intent,pred,score,baseline,correct,baseline_correct
+q01,ai,Is M0412 in danger of quitting?,member_risk,member_risk,0.7596,member_risk,True,True
+q02,ai,whats the chance that member 77 cancels their membership,member_risk,member_risk,0.6753,member_actions,True,False
+q03,ai,M0231 churn risk breakdown please,member_risk,member_risk,0.7526,member_risk,True,True
+q04,ai,What is behind the high score for M3105?,member_risk,member_risk,0.5899,member_risk,True,True
+q05,ai,why is this member flagged as risky?,member_risk,member_risk,0.5973,member_risk,True,True
+q06,ai,how worried should we be about 1288?,member_risk,unknown,0.2553,unknown,False,False
+q07,ai,M0890 - segment and risk?,member_risk,member_risk,0.6944,member_risk,True,True
+q08,ai,Which signals suggest member 2999 is slipping away?,member_risk,member_risk,0.434,member_risk,True,True
+q09,ai,Tell me why M0014 is scored so high,member_risk,member_risk,0.5293,member_risk,True,True
+q10,ai,What's the best way to win back M1175?,member_actions,member_actions,0.5574,member_risk,True,False
+q11,ai,can we send M0066 a discount?,member_actions,member_actions,0.6879,member_risk,True,False
+q12,ai,What did the rules decide for member 2040?,member_actions,member_actions,0.6823,member_actions,True,True
+q13,ai,Which offers are off the table for M0507 and why?,member_actions,member_actions,0.7442,member_actions,True,True
+q14,ai,wat should we do about M3333,member_actions,member_actions,0.7194,member_actions,True,True
+q15,ai,Is it OK to contact M0120 again so soon?,member_actions,member_actions,0.496,member_actions,True,True
+q16,ai,what should we do for this member?,member_actions,member_actions,0.7095,member_actions,True,True
+q17,ai,Show the playbook for 1999,member_actions,unknown,0.159,unknown,False,False
+q18,ai,Recommended next step for M0742?,member_actions,member_actions,0.6653,member_actions,True,True
+q19,ai,Why is M0100 ahead of M0200 in the queue?,compare_members,compare_members,0.6282,compare_members,True,True
+q20,ai,M0050 or M0051 - who needs us more?,compare_members,compare_members,0.7633,compare_members,True,True
+q21,ai,What separates 3010 from 3011?,compare_members,compare_members,0.883,compare_members,True,True
+q22,ai,why did M0600 get contacted and not M0601,compare_members,compare_members,0.7339,compare_members,True,True
+q23,ai,Put M0021 side by side with M0022,compare_members,compare_members,0.5875,compare_members,True,True
+q24,ai,Why not M0008 instead of M0012 this week?,compare_members,compare_members,0.7229,compare_members,True,True
+q25,ai,compare with M0014,compare_members,compare_members,0.7691,compare_members,True,True
+q26,ai,How many members are hit if Tom Becker is gone?,graph_impact,graph_impact,0.7642,graph_impact,True,True
+q27,ai,who loses out when Ana Costa stops teaching,graph_impact,graph_impact,0.7668,graph_impact,True,True
+q28,ai,Members affected by the Zumba cancellation?,graph_impact,graph_impact,0.7644,graph_impact,True,True
+q29,ai,"if Barre is dropped from the timetable, whose routine breaks?",graph_impact,graph_impact,0.5841,graph_impact,True,True
+q30,ai,Which members relied on Ken Sato?,graph_impact,graph_impact,0.6982,graph_impact,True,True
+q31,ai,anyone hurt by the recent staff departure?,graph_impact,list_members,0.371,unknown,False,False
+q32,ai,whos affected by nora ali leaving,graph_impact,graph_impact,0.862,graph_impact,True,True
+q33,ai,Which classes were cancelled and who went to them?,graph_impact,graph_impact,0.7247,graph_impact,True,True
+q34,ai,Who are our most at-risk people right now?,list_members,list_members,0.7013,list_members,True,True
+q35,ai,give me the 8 members most likely to cancel,list_members,list_members,0.605,graph_impact,True,False
+q36,ai,list high risk members at C3,list_members,list_members,0.7839,list_members,True,True
+q37,ai,Which new joiners look like they are drifting?,list_members,list_members,0.4208,unknown,True,False
+q38,ai,top 5 churn risks in club C1,list_members,list_members,0.6884,list_members,True,True
+q39,ai,Show me everyone in the medium risk band,list_members,list_members,0.5197,unknown,True,False
+q40,ai,Which members need a call first?,list_members,list_members,0.5436,unknown,True,False
+q41,ai,Rank members by how likely they are to leave,list_members,list_members,0.5904,list_members,True,True
+q42,ai,What does the plan for this week look like?,plan_summary,plan_summary,0.7673,plan_summary,True,True
+q43,ai,how much are we spending this week,plan_summary,what_if_budget,0.5334,what_if_budget,False,False
+q44,ai,Has this week's plan been signed off?,plan_summary,plan_summary,0.664,plan_summary,True,True
+q45,ai,Which members are we ringing this week?,plan_summary,list_members,0.5738,unknown,False,False
+q46,ai,give me a quick rundown of the current plan,plan_summary,plan_summary,0.7054,plan_summary,True,True
+q47,ai,How many staff minutes does the plan take up?,plan_summary,plan_summary,0.6925,plan_summary,True,True
+q48,ai,What if we only had $800 to spend?,what_if_budget,what_if_budget,0.7692,what_if_budget,True,True
+q49,ai,how many extra members would 2k more buy us,what_if_budget,what_if_budget,0.5237,what_if_budget,True,True
+q50,ai,Could we retain more with a 6000 budget?,what_if_budget,what_if_budget,0.7791,what_if_budget,True,True
+q51,ai,Simulate the plan at half the current spend,what_if_budget,what_if_budget,0.5155,what_if_budget,True,True
+q52,ai,if budget drops to 1000 what do we lose?,what_if_budget,what_if_budget,0.8292,what_if_budget,True,True
+q53,ai,"Is another $1,500 worth it?",what_if_budget,what_if_budget,0.4924,what_if_budget,True,True
+q54,ai,Tell me a joke about squats,unknown,unknown,0.0803,unknown,True,True
+q55,ai,What time does the pool close on Sundays?,unknown,unknown,0.2488,unknown,True,True
+q56,ai,What does churn mean?,unknown,list_members,0.3104,unknown,False,True
+q57,ai,Delete member M0012,unknown,member_actions,0.6411,member_risk,False,False
+q58,ai,"thanks, that helps",unknown,unknown,0.129,unknown,True,True
+q59,ai,How do I add a new instructor?,unknown,graph_impact,0.5191,graph_impact,False,False
+q60,ai,What is the capital of France?,unknown,unknown,0.0882,unknown,True,True
+q61,ai,Which machine should I use for legs?,unknown,unknown,0.0493,unknown,True,True
+q62,ai,hello,unknown,unknown,0.2297,unknown,True,True
