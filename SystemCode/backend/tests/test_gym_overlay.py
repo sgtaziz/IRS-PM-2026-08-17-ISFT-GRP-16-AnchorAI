@@ -80,3 +80,46 @@ def test_roles_and_revoking_a_generated_event(built, client, login, graph_down):
     classes = {c["id"]: c for c in client.get("/api/admin/gym", headers=admin).json()["classes"]}
     assert classes["K04"]["status"] == "active"
     assert client.delete("/api/admin/gym/events/E002", headers=admin).status_code == 404
+
+
+def test_failed_reload_stays_stale_and_is_audited(built, client, login, engine, monkeypatch):
+    from neo4j.exceptions import ClientError
+
+    from anchorai.knowledge import reload as kg
+
+    monkeypatch.setattr(kg, "get_driver", lambda: object())
+    monkeypatch.setattr(kg, "neo4j_available", lambda _: True)
+
+    def half_loaded(*_):
+        raise ClientError("boom")
+
+    monkeypatch.setattr(kg, "load_graph", half_loaded)
+    manager = login("manager")
+    r = client.post("/api/admin/kg/reload", headers=manager)
+    assert r.status_code == 503
+    assert client.get("/api/admin/kg/status", headers=manager).json()["stale"] is True
+    with Session(engine) as session:
+        assert "kg.reload_failed" in session.exec(select(AuditLog.action)).all()
+
+
+def test_names_are_stripped_and_unique(built, client, login, graph_down):
+    manager = login("manager")
+    blank = {"name": "   ", "club_id": "C1"}
+    assert client.post("/api/admin/gym/instructors", json=blank, headers=manager).status_code == 422
+    existing = {"name": " sam rivera ", "club_id": "C1"}
+    assert (
+        client.post("/api/admin/gym/instructors", json=existing, headers=manager).status_code == 409
+    )
+
+
+def test_suppression_needs_the_same_entity():
+    tables = read_tables(FIXTURES)
+    stale_row = GymEvent(
+        id=1,
+        event_type="instructor_left",
+        entity_id="I02",
+        week_start=date.today(),
+        suppresses="E001",
+    )
+    eff = merge(tables, [], [], [], [stale_row])
+    assert "E001" in set(eff.events["event_id"])

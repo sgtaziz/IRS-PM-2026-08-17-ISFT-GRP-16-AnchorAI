@@ -74,8 +74,13 @@ def merge(
     )
 
     scenario = tables["events"]
-    hidden = {e.suppresses for e in events if e.active and e.suppresses}
-    kept = scenario[~scenario["event_id"].isin(hidden)].assign(note="", source=GENERATED)
+    # Match the entity and type too: after a rebuild the same id may be a different event.
+    hidden = {
+        (e.suppresses, e.entity_id, e.event_type) for e in events if e.active and e.suppresses
+    }
+    keys = zip(scenario["event_id"], scenario["entity_id"], scenario["event_type"])
+    visible = [k not in hidden for k in keys]
+    kept = scenario[visible].assign(note="", source=GENERATED)
     added = {event_id(e): e for e in events if e.active and not e.suppresses}
     added_frame = pd.DataFrame(
         [

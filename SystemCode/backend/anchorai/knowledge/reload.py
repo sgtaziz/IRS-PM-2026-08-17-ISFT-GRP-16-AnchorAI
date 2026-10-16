@@ -6,13 +6,17 @@ Takes about a second on the demo data, so callers wait for it instead of running
 import threading
 from datetime import UTC, datetime
 
+from neo4j.exceptions import Neo4jError
 from pydantic import BaseModel
+from sqlmodel import Session, func, select
 
+from anchorai.db.models import AuditLog
 from anchorai.discovery.scores import load_scores
+from anchorai.discovery.service import DataNotBuilt
 from anchorai.knowledge.entities import effective_tables
 from anchorai.knowledge.graph import GraphUnavailable, get_driver, neo4j_available
 from anchorai.knowledge.loader import load_graph
-from anchorai.knowledge.signals import compute_kg_facts, save_kg_facts
+from anchorai.knowledge.signals import compute_kg_facts, kg_facts_path, save_kg_facts
 from anchorai.scenario.tables import generated_dir
 
 
@@ -33,8 +37,27 @@ _lock = threading.Lock()
 _status = KgStatus()
 
 
-def status() -> KgStatus:
-    return _status.model_copy()
+def edits_unapplied(session: Session) -> bool:
+    """True when a gym edit was saved after the cached KG facts were written (survives restarts)."""
+    last_edit = session.exec(
+        select(func.max(AuditLog.ts)).where(AuditLog.action.like("gym.%"))
+    ).one()
+    if last_edit is None:
+        return False
+    path = kg_facts_path()
+    if not path.exists():
+        return True
+    if last_edit.tzinfo is None:
+        last_edit = last_edit.replace(tzinfo=UTC)
+    return last_edit.timestamp() > path.stat().st_mtime
+
+
+def status(session: Session) -> KgStatus:
+    current = _status.model_copy()
+    if not current.stale and edits_unapplied(session):
+        current.stale = True
+        current.error = "Edits were saved after the graph was last loaded"
+    return current
 
 
 def reload_graph() -> dict[str, int]:
@@ -46,8 +69,11 @@ def reload_graph() -> dict[str, int]:
     try:
         counts = load_graph(driver, effective_tables(), scores)
         save_kg_facts(compute_kg_facts(driver))
-    except GraphUnavailable as e:
-        raise GraphDown("Neo4j went away during the reload") from e
+    except (*GraphUnavailable, Neo4jError) as e:
+        # The graph may be half loaded: callers keep it marked stale until a reload succeeds.
+        raise GraphDown(f"The graph reload failed ({type(e).__name__})") from e
+    except DataNotBuilt as e:
+        raise GraphDown(str(e)) from e
     return counts
 
 

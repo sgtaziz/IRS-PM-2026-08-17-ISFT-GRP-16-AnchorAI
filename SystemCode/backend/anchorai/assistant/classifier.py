@@ -1,3 +1,5 @@
+import threading
+
 """Intent detection by embedding similarity to each intent's example centroid, plus the slot rule."""
 
 from collections.abc import Callable
@@ -107,6 +109,9 @@ def sentence_encoder(model_name: str) -> Encoder:
     return lambda texts: model.encode(texts, normalize_embeddings=True)
 
 
+_names_lock = threading.Lock()
+
+
 @lru_cache
 def get_classifier() -> IntentClassifier:
     specs, threshold = load_intents()
@@ -118,4 +123,7 @@ def get_classifier() -> IntentClassifier:
 def refresh_names() -> None:
     """Pick up added or renamed instructors and classes without reloading the embedding model."""
     if get_classifier.cache_info().currsize:
-        get_classifier().instructors, get_classifier().classes = name_lookup()
+        classifier = get_classifier()
+        instructors, classes = name_lookup()
+        with _names_lock:
+            classifier.instructors, classifier.classes = instructors, classes

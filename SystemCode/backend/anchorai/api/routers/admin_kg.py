@@ -14,8 +14,8 @@ Manager = Annotated[User, Depends(require_role("manager", "admin"))]
 
 
 @router.get("/status", response_model=KgStatus)
-def status(_: Manager):
-    return reload.status()
+def status(session: SessionDep, _: Manager):
+    return reload.status(session)
 
 
 @router.post("/reload", response_model=KgStatus)
@@ -25,6 +25,16 @@ def reload_graph(session: SessionDep, user: Manager):
     except DataNotBuilt as e:
         raise HTTPException(503, str(e)) from None
     if result.stale:
+        record_audit(
+            session,
+            user,
+            "kg.reload_failed",
+            "knowledge_graph",
+            None,
+            None,
+            {"error": result.error},
+        )
+        session.commit()
         raise HTTPException(
             503, f"{result.error}. Saved edits will apply once the knowledge graph is reloaded."
         )

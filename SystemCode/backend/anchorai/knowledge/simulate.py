@@ -8,7 +8,7 @@ from sqlmodel import Session
 
 from anchorai.discovery import service as member_data
 from anchorai.knowledge import entities as effective_entities
-from anchorai.knowledge import queries
+from anchorai.knowledge import queries, reload
 from anchorai.knowledge.entities import EventType
 from anchorai.knowledge.graph import read
 from anchorai.knowledge.signals import ANCHOR_SHARE_THRESHOLD
@@ -47,6 +47,7 @@ class Simulation(BaseModel):
     high_risk: int
     newly_flagged: int
     members: list[AffectedMember]
+    graph_out_of_date: bool = False
 
 
 def entities(session: Session | None = None) -> Entities:
@@ -139,4 +140,5 @@ def simulate(session: Session, event_type: EventType, entity_id: str) -> Simulat
         high_risk=sum(m.risk_band == "high" for m in members),
         newly_flagged=sum(bool(m.new_rules) for m in members),
         members=members,
+        graph_out_of_date=reload.status(session).stale,
     )

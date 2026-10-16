@@ -5,9 +5,12 @@ revoking an added one just deactivates it. Recording an event for an entity whos
 event was revoked adds a new event (with its own week and note) alongside the suppression.
 """
 
+import threading
 from datetime import date
+from functools import wraps
+from typing import Annotated
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StringConstraints
 from sqlmodel import Session
 
 from anchorai.db.audit import record_audit
@@ -29,13 +32,28 @@ class Conflict(RosterError):
     pass
 
 
+Name = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=80)]
+_write_lock = threading.Lock()
+
+
+def _serialised(fn):
+    """One edit at a time, so ids, duplicate checks and event checks can't race."""
+
+    @wraps(fn)
+    def wrapper(*args, **kwargs):
+        with _write_lock:
+            return fn(*args, **kwargs)
+
+    return wrapper
+
+
 class InstructorIn(BaseModel):
-    name: str = Field(min_length=1, max_length=80)
+    name: Name
     club_id: str
 
 
 class ClassIn(BaseModel):
-    name: str = Field(min_length=1, max_length=80)
+    name: Name
     club_id: str
     instructor_id: str
 
@@ -148,14 +166,21 @@ def _require_present(eff: ent.Effective, instructor) -> None:
         raise Conflict(f"{instructor['name']} has left; reinstate them first")
 
 
+def _require_new_name(frame, name: str, noun: str) -> None:
+    if name.casefold() in set(frame["name"].str.casefold()):
+        raise Conflict(f"A {noun} named {name} already exists")
+
+
 def _check_club(club_id: str) -> None:
     if club_id not in set(member_data.get_data().tables["members"]["club_id"]):
         raise UnknownEntity(f"Unknown club {club_id}")
 
 
+@_serialised
 def add_instructor(session: Session, actor: User, body: InstructorIn) -> str:
     _check_club(body.club_id)
     eff = ent.effective(session)
+    _require_new_name(eff.instructors, body.name, "instructor")
     row = GymInstructor(
         instructor_id=ent.next_id(ent.INSTRUCTOR_PREFIX, list(eff.instructors["instructor_id"])),
         name=body.name.strip(),
@@ -171,9 +196,11 @@ def add_instructor(session: Session, actor: User, body: InstructorIn) -> str:
     return row.instructor_id
 
 
+@_serialised
 def add_class(session: Session, actor: User, body: ClassIn) -> str:
     _check_club(body.club_id)
     eff = ent.effective(session)
+    _require_new_name(eff.classes, body.name, "class")
     instructor = _instructor_row(eff, body.instructor_id)
     if instructor["club_id"] != body.club_id:
         raise Conflict(f"{instructor['name']} works at {instructor['club_id']}, not {body.club_id}")
@@ -194,6 +221,7 @@ def add_class(session: Session, actor: User, body: ClassIn) -> str:
     return row.class_id
 
 
+@_serialised
 def reassign_class(session: Session, actor: User, class_id: str, body: ReassignIn) -> None:
     eff = ent.effective(session)
     match = eff.classes[eff.classes["class_id"] == class_id]
@@ -222,6 +250,7 @@ def reassign_class(session: Session, actor: User, class_id: str, body: ReassignI
     session.commit()
 
 
+@_serialised
 def record_event(session: Session, actor: User, body: EventIn, today: date | None = None) -> str:
     eff = ent.effective(session)
     frame, column, noun = (
@@ -255,6 +284,7 @@ def record_event(session: Session, actor: User, body: EventIn, today: date | Non
     return ent.event_id(row)
 
 
+@_serialised
 def revoke_event(session: Session, actor: User, event_id: str) -> None:
     eff = ent.effective(session)
     match = eff.events[eff.events["event_id"] == event_id]

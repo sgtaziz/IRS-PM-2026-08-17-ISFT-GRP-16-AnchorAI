@@ -11,7 +11,7 @@ from anchorai.assistant.slots import Slots
 from anchorai.db.models import Plan, PlanItem
 from anchorai.discovery import service as member_data
 from anchorai.features import LABELS
-from anchorai.knowledge import queries
+from anchorai.knowledge import queries, reload
 from anchorai.knowledge.entities import effective
 from anchorai.knowledge.graph import GraphUnavailable, read
 from anchorai.knowledge.signals import graph_signals
@@ -206,6 +206,12 @@ def graph_impact(session: Session, slots: Slots) -> ToolResult:
             ("instructor" if e.event_type == "instructor_left" else "class", e.entity_id)
             for e in events.itertuples()
         ]
+    if reload.status(session).stale:
+        lines.add(
+            "The knowledge graph is out of date: recent roster edits are not in it yet",
+            "event",
+            "knowledge_graph",
+        )
     try:
         for kind, entity_id in targets:
             event = events[events["entity_id"] == entity_id]
