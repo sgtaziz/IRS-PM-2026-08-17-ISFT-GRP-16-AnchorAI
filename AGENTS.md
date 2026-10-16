@@ -132,6 +132,7 @@ npm run build                                # type-check + build
   - Change them only with agreement from all three streams.
   - Make the change in its own commit, e.g. `feat(schemas): add channel to PlanItem`, and update every consumer in the same PR.
 - Until real data exists, build against the fixtures in `tests/fixtures/`, which have the same columns.
+- Track what streams need from each other (blockers, reviews, decisions, deliverables) in `docs/HANDOFFS.md`. Add a row to the section of the stream that has to act; that stream moves it to **Done** when it lands. Check your own section at the daily sync.
 
 ## Tests
 
