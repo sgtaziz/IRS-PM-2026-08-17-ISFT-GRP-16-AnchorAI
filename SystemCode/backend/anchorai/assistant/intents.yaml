@@ -1,0 +1,102 @@
+# Intents for the staff assistant: chosen in notebooks/c_intent_classifier.ipynb.
+# threshold: below this cosine similarity to every intent centroid, the assistant says it doesn't know.
+# member_slots: [min, max] member ids the question must mention (or get from page context) for the intent to apply.
+# unknown_examples: out-of-scope questions used only to tune the threshold, never as a class.
+threshold: 0.275
+intents:
+  member_risk:
+    description: 'Why a member is at risk: churn score, drivers, segment'
+    member_slots:
+    - 1
+    - 1
+    examples:
+    - Why is M0155 at risk?
+    - How likely is member 1043 to cancel?
+    - What's driving M0042's churn risk?
+    - Is M2210 likely to leave soon?
+    - Explain the churn score for member 88
+    - What are the risk factors for M0310?
+    - How risky is M1500?
+    - Why does the model think M0007 will quit?
+    - Tell me about member 2001's chance of leaving
+    - What makes M0999 a high-risk member?
+  member_actions:
+    description: 'What to offer a member and why: rule trace, allowed and blocked offers'
+    member_slots:
+    - 1
+    - 1
+    examples:
+    - What should we offer M0155?
+    - Which offer is best for member 1043?
+    - Why was M0042 given a free PT session?
+    - What can we do to keep M2210?
+    - Why did M0310 get a discount?
+    - Which rules fired for member 88?
+    - Is M1500 allowed any offers this week?
+    - Why can't we contact M0007 right now?
+    - What's the recommended action for M0999?
+    - How should staff approach member 2001?
+  compare_members:
+    description: Why one member is prioritised over another
+    member_slots:
+    - 2
+    - 9
+    examples:
+    - Why is M1043 on the list but not M2210?
+    - Compare M0155 and M0042
+    - What's the difference between member 88 and member 310?
+    - Why did M1500 get an offer and M0007 didn't?
+    - Why is M0999 higher risk than M2001?
+    - 'M0155 vs M0042: who should we call first?'
+    - How do M0310 and M1043 differ?
+    - Why was 1043 picked over 2210?
+    - Explain why M0088 ranks above M0420
+    - Is M2001 or M0999 more likely to leave?
+  graph_impact:
+    description: Who is affected by an instructor leaving or a class being cancelled
+    examples:
+    - Who is affected by Maya Chen leaving?
+    - Which members attended the cancelled HIIT class?
+    - What happens if Sam Rivera leaves?
+    - Which members lost their instructor?
+    - Who goes to Omar's classes?
+    - If we cancel the Yoga class, who is affected?
+    - Show members hit by the instructor departure
+    - Which members are at risk because a class was cancelled?
+    - What's the impact of Priya Nair leaving the club?
+    - Who will be affected if the Spin class stops?
+  plan_summary:
+    description: What is in the current weekly plan
+    examples:
+    - What's in this week's plan?
+    - How many members are we contacting this week?
+    - How much of the budget does the plan use?
+    - Summarise the current retention plan
+    - Which offers are in the plan?
+    - How many staff hours does this week's plan need?
+    - Who is on this week's call list?
+    - What's the expected number of members retained?
+    - Has the plan been approved yet?
+    - Give me an overview of the weekly plan
+  what_if_budget:
+    description: How the plan would change with a different budget
+    examples:
+    - What if the budget were $2000?
+    - What would happen with a budget of 5000?
+    - How many more members could we keep with $1,000 more?
+    - What if we cut the budget to $500?
+    - If we doubled the budget, how many more members would stay?
+    - Run the plan with a $3k budget
+    - What does a 1500 dollar budget buy us?
+    - How would the plan change with half the budget?
+    - Is it worth spending $4000 instead of $2000?
+    - What's the retention gain from an extra 800 dollars?
+unknown_examples:
+- What's the weather tomorrow?
+- Write me a poem about gyms
+- What's the wifi password?
+- How do I reset my password?
+- Who won the football last night?
+- Book me a squash court for Friday
+- What time does the gym open?
+- Translate this into Spanish
