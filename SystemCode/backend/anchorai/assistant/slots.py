@@ -27,9 +27,13 @@ NOT_MEMBER_AFTER = re.compile(
 )
 WORD_NUMBERS = {"three": 3, "five": 5, "ten": 10, "fifteen": 15, "twenty": 20}
 _COUNT = "|".join(["\\d{1,3}", *WORD_NUMBERS])
+# "next 3 weeks" is a time span, not a member count.
+_NOT_TIME = r"(?!\s*(?:weeks?|months?|days?|years?|hours?|minutes?|mins?)\b)"
 # "top 10", "first five", "10 riskiest"; the number is taken out so it never reads as a member id.
 COUNT = [
-    re.compile(rf"\b(?:top|first|next|worst|riskiest|highest)\s+({_COUNT})\b", re.IGNORECASE),
+    re.compile(
+        rf"\b(?:top|first|next|worst|riskiest|highest)\s+({_COUNT})\b{_NOT_TIME}", re.IGNORECASE
+    ),
     re.compile(rf"\b({_COUNT})\s+(?:highest|riskiest|worst|top|most)\b", re.IGNORECASE),
     re.compile(rf"\b({_COUNT})\s+(?:members|people|customers)\b", re.IGNORECASE),
 ]
@@ -87,11 +91,10 @@ def extract_slots(
         slots.limit = WORD_NUMBERS.get(word) or int(word)
         return match.group(0).replace(match.group(1), " COUNT ")
 
-    if not slots.amount:
-        for pattern in COUNT:
-            if pattern.search(rest):
-                rest = pattern.sub(take_count, rest, count=1)
-                break
+    for pattern in COUNT:
+        if pattern.search(rest):
+            rest = pattern.sub(take_count, rest, count=1)
+            break
 
     if club := CLUB.search(rest):
         slots.club_id = (club.group(1) or club.group(2)).upper()

@@ -1,7 +1,7 @@
-import threading
-
 """Intent detection by embedding similarity to each intent's example centroid, plus the slot rule."""
 
+import re
+import threading
 from collections.abc import Callable
 from dataclasses import dataclass
 from functools import lru_cache
@@ -17,6 +17,13 @@ from anchorai.config import get_settings
 
 INTENTS_FILE = Path(__file__).parent / "intents.yaml"
 UNKNOWN = "unknown"
+# The assistant only reads. "Delete member M0012" is out of scope however close it sounds to a
+# member question.
+WRITE_REQUEST = re.compile(
+    r"^\W*(?:(?:please|pls|can you|could you)\s+)?"
+    r"(?:delete|remove|erase|update|change|edit|modify|rename|disable)\b",
+    re.IGNORECASE,
+)
 Encoder = Callable[[list[str]], np.ndarray]
 
 
@@ -86,6 +93,8 @@ class IntentClassifier:
 
     def classify(self, text: str, context_member_id: str | None = None) -> Prediction:
         slots, normalised = extract_slots(text, self.instructors, self.classes)
+        if WRITE_REQUEST.search(text):
+            return Prediction(intent=UNKNOWN, score=0.0, slots=slots)
         sims = self.centroids @ self.encode([normalised])[0]
         named = slots.member_ids
         # The page's member fills in when the question names none, or is the second member of a
@@ -110,20 +119,32 @@ def sentence_encoder(model_name: str) -> Encoder:
 
 
 _names_lock = threading.Lock()
+_build_lock = threading.Lock()
 
 
 @lru_cache
-def get_classifier() -> IntentClassifier:
+def _build() -> IntentClassifier:
     specs, threshold = load_intents()
     instructors, classes = name_lookup()
     encode = sentence_encoder(get_settings().assistant_embedding_model)
-    return IntentClassifier(encode, specs, threshold, instructors, classes)
+    classifier = IntentClassifier(encode, specs, threshold, instructors, classes)
+    # Roster edits made while the model was loading called refresh_names with nothing to refresh.
+    refresh_names(classifier)
+    return classifier
 
 
-def refresh_names() -> None:
+def get_classifier() -> IntentClassifier:
+    # The lock makes concurrent first calls (warm-up and a request) share one model load.
+    with _build_lock:
+        return _build()
+
+
+def refresh_names(classifier: IntentClassifier | None = None) -> None:
     """Pick up added or renamed instructors and classes without reloading the embedding model."""
-    if get_classifier.cache_info().currsize:
-        classifier = get_classifier()
-        instructors, classes = name_lookup()
-        with _names_lock:
-            classifier.instructors, classifier.classes = instructors, classes
+    if classifier is None:
+        if not _build.cache_info().currsize:
+            return
+        classifier = _build()
+    instructors, classes = name_lookup()
+    with _names_lock:
+        classifier.instructors, classifier.classes = instructors, classes
