@@ -1,14 +1,23 @@
 <script setup lang="ts">
-import { Ban, CircleCheck, Lightbulb, ShieldAlert } from 'lucide-vue-next'
+import { Ban, CircleCheck, Lightbulb, MessageSquareText, ShieldAlert } from 'lucide-vue-next'
 import vTooltip from 'primevue/tooltip'
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import type { RuleOutcome } from '../api/types'
 import { channelLabel, humanize, ruleCode } from '../labels'
 import { useGlossaryStore } from '../stores/glossary'
+import MessageDraftDialog from './MessageDraftDialog.vue'
 
 const props = defineProps<{ outcome: RuleOutcome }>()
 const glossary = useGlossaryStore()
 onMounted(glossary.load)
+
+const drafting = ref<{ offerId: string; channel: string } | null>(null)
+const draftOpen = computed({
+  get: () => drafting.value !== null,
+  set: (open) => {
+    if (!open) drafting.value = null
+  },
+})
 
 const blocked = computed(() => Object.entries(props.outcome.blocked))
 
@@ -68,6 +77,9 @@ const KIND_STYLE: Record<Kind, { icon: typeof Lightbulb; cls: string }> = {
             <span class="font-semibold text-ink-800">{{ glossary.offer(p.offer_id) }}</span>
             <span class="text-ink-500"> · {{ channelLabel(p.channel) }}</span>
           </span>
+          <button type="button" class="draft-btn" @click="drafting = { offerId: p.offer_id, channel: p.channel }">
+            <MessageSquareText :size="14" aria-hidden="true" />Draft message
+          </button>
           <span v-tooltip.top="ruleTip(p.rule_id)" class="id-chip" tabindex="0" role="note" :aria-label="ruleTip(p.rule_id)">{{ ruleCode(p.rule_id) }}</span>
         </li>
       </ul>
@@ -108,6 +120,13 @@ const KIND_STYLE: Record<Kind, { icon: typeof Lightbulb; cls: string }> = {
         </li>
       </ol>
     </section>
+    <MessageDraftDialog
+      v-if="drafting"
+      v-model:visible="draftOpen"
+      :member-id="outcome.member_id"
+      :offer-id="drafting.offerId"
+      :channel="drafting.channel"
+    />
   </div>
 </template>
 
@@ -115,6 +134,9 @@ const KIND_STYLE: Record<Kind, { icon: typeof Lightbulb; cls: string }> = {
 .heading { margin: 0 0 0.6rem; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--color-ink-500); }
 .offer { display: flex; align-items: center; gap: 0.6rem; padding: 0.55rem 0.75rem; border-radius: 0.6rem; font-size: 0.875rem; }
 .offer.allowed { background: var(--color-success-soft); border: 1px solid var(--color-success-line); }
+.draft-btn { display: inline-flex; align-items: center; gap: 0.3rem; flex: none; padding: 0.2rem 0.55rem; border: 1px solid var(--color-success-line); border-radius: 999px; background: transparent; font: inherit; font-size: 0.75rem; font-weight: 600; color: var(--color-success-ink); cursor: pointer; }
+.draft-btn:hover { background: var(--color-success-line); }
+.draft-btn:focus-visible { outline: 2px solid var(--color-brand-500); outline-offset: 2px; }
 .offer.blocked { background: var(--color-danger-soft); border: 1px solid var(--color-danger-line); }
 .firing { position: relative; display: flex; gap: 0.75rem; }
 .firing:not(:last-child)::before { content: ''; position: absolute; left: 0.8rem; top: 1.75rem; bottom: 0.15rem; width: 1px; background: var(--color-ink-200); }
