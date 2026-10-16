@@ -11,10 +11,10 @@
 
 ## Warning signs: derive rules (10 min)
 
-3. A regular who came twice a week drops to once a week or less this month. Would you act on that? After how long? *(D01: `avg_class_frequency_total >= 2`, `trend_ratio <= 0.5`)*
-4. When are new members most at risk: the first month, the first three months, or later? *(D02: `lifetime <= 3`)*
+3. A regular who came twice a week drops by a fifth or more this month. Would you act on that? After how long? *(D01: `avg_class_frequency_total >= 2`, `trend_ratio <= 0.8`)*
+4. When are new members most at risk: the first month, the first three months, or later? *(D02: `lifetime <= 1`)*
 5. How low does attendance have to fall before you treat someone as disengaged? *(D03)*
-6. Do members on 6- or 12-month contracts leave at renewal? How far ahead of the end date would you reach out? *(D04: `month_to_end_contract <= 1`)*
+6. Do members on 6- or 12-month contracts leave at renewal? How far ahead of the end date would you reach out? *(No rule yet: the Kaggle data shows no renewal risk, so a contract-ending rule was dropped. An interview could bring it back.)*
 7. When an instructor leaves, do their regulars follow them out? Can you give an example? How long after does it show? *(D07, KG `lost_anchor_instructor`)*
 8. Same question for a cancelled class or time slot. *(D08)*
 
