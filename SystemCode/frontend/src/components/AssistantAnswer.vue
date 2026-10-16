@@ -4,6 +4,7 @@ import vTooltip from 'primevue/tooltip'
 import { computed, nextTick, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import type { Evidence } from '../api/types'
+import { useAuthStore } from '../stores/auth'
 
 const props = defineProps<{ answer: string; evidence: Evidence[] }>()
 
@@ -21,7 +22,16 @@ const KIND_LABELS: Record<Evidence['kind'], string> = {
   plan: 'Weekly plan',
 }
 
+const PAGE_NAMES: Record<Evidence['kind'], string> = {
+  member: 'the member',
+  rule: 'the rule',
+  offer: 'the offers page',
+  event: 'the knowledge graph',
+  plan: 'the plan',
+}
+
 const router = useRouter()
+const auth = useAuthStore()
 const open = ref(false)
 const highlighted = ref<string | null>(null)
 const sources = ref<HTMLElement | null>(null)
@@ -66,13 +76,18 @@ const blocks = computed(() => {
   return out
 })
 
+// Where a source opens, if the viewer's role may see that page.
 function link(e: Evidence) {
-  return e.kind === 'member' && e.ref ? `/members/${encodeURIComponent(e.ref)}` : null
+  if (e.kind === 'member' && e.ref) return `/members/${encodeURIComponent(e.ref)}`
+  if (e.kind === 'rule' && e.ref && auth.hasRole(['admin'])) return `/admin/rules?rule=${encodeURIComponent(e.ref)}`
+  if (e.kind === 'offer' && auth.hasRole(['admin'])) return '/admin/offers'
+  if (e.kind === 'event' && auth.hasRole(['manager', 'admin'])) return '/graph'
+  return null
 }
 
 function tip(id: string) {
   const e = byId.value.get(id)!
-  const action = link(e) ? `\nClick to open ${e.ref}` : '\nClick to see it in the sources'
+  const action = link(e) ? `\nClick to open ${PAGE_NAMES[e.kind]}` : '\nClick to see it in the sources'
   return { value: `${KIND_LABELS[e.kind]} · ${e.text}${action}`, class: 'cite-tip' }
 }
 

@@ -13,7 +13,8 @@ import Textarea from 'primevue/textarea'
 import ToggleSwitch from 'primevue/toggleswitch'
 import vTooltip from 'primevue/tooltip'
 import { useToast } from 'primevue/usetoast'
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { api } from '../api/client'
 import type { Rule, RuleOutcome, RuleReport, RuleSet, RuleVersion, RuleVersionDetail, Vocabulary } from '../api/types'
 import ConfirmAction from '../components/ConfirmAction.vue'
@@ -44,6 +45,7 @@ const vocab = useAsync(() => api<Vocabulary>('/rules/vocabulary'))
 const versions = useAsync(() => api<RuleVersion[]>('/rules/versions'))
 const toast = useToast()
 const tab = ref('rules')
+const highlightRule = useRoute().query.rule
 const failed = (summary: string, e: unknown) => {
   if (isStale(e)) {
     toast.add({ severity: 'warn', summary: 'Rules changed since you opened them', detail: 'Reloaded the latest version. Review it and try again.', life: 7000 })
@@ -62,6 +64,8 @@ onMounted(async () => {
   vocab.run()
   await rules.run()
   await loadYaml()
+  await nextTick()
+  document.querySelector('.rule-hl')?.scrollIntoView({ block: 'center', behavior: 'smooth' })
 })
 
 const editorOpen = ref(false)
@@ -274,7 +278,7 @@ function test() {
                     </Column>
                     <Column field="description" header="Rule" sortable>
                       <template #body="{ data }">
-                        <div class="flex min-w-80 flex-col gap-1 whitespace-normal" :class="{ 'opacity-55': !data.enabled }">
+                        <div class="flex min-w-80 flex-col gap-1 whitespace-normal" :class="{ 'opacity-55': !data.enabled, 'rule-hl': data.id === highlightRule }">
                           <span class="font-medium text-ink-800">{{ data.description }}</span>
                           <span class="flex flex-wrap items-baseline gap-x-2 text-xs text-ink-500">
                             <span v-tooltip.top="data.id" class="id-chip">{{ ruleCode(data.id) }}</span>
@@ -475,6 +479,7 @@ function test() {
 .banner.warn { background: var(--color-warn-soft); border-color: var(--color-warn-line); color: var(--color-warn-ink); }
 .banner.error { background: var(--color-danger-soft); border-color: var(--color-danger-line); color: var(--color-danger-ink); }
 .cond { padding: 0.1rem 0.4rem; border-radius: 5px; font-size: 0.75rem; white-space: nowrap; color: var(--color-ink-700); background: var(--color-ink-100); }
+.rule-hl { padding: 0.4rem 0.6rem; margin: -0.4rem -0.6rem; border-radius: 0.5rem; background: var(--color-brand-100); }
 .tab-label { display: inline-flex; align-items: center; gap: 0.4rem; }
 :deep(.yaml) { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.5; tab-size: 2; white-space: pre; overflow-x: auto; }
 .yaml-view { margin: 0; max-height: 60vh; overflow: auto; padding: 1rem; border-radius: 0.75rem; background: var(--color-ink-50); border: 1px solid var(--color-ink-200); color: var(--color-ink-800); font: 0.8125rem/1.5 var(--font-mono); }

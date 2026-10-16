@@ -31,6 +31,15 @@ const INTENT_LABELS: Record<string, string> = {
   what_if_budget: 'What-if budget',
   unknown: 'Not understood',
 }
+const TOOL_LABELS: Record<string, string> = {
+  member_risk: 'Churn model',
+  member_actions: 'Rule trace',
+  compare_members: 'Churn model + rule trace',
+  graph_impact: 'Knowledge graph',
+  list_members: 'Member ranking',
+  plan_summary: 'Weekly plan',
+  what_if_budget: 'Plan optimiser',
+}
 const EXAMPLE_MEMBER = 'M0155'
 
 const store = useAssistantStore()
@@ -147,6 +156,7 @@ watch(
                 <AssistantAnswer :answer="t.reply.answer" :evidence="t.reply.evidence" />
                 <div class="meta">
                   <span class="intent">{{ INTENT_LABELS[t.reply.intent] ?? t.reply.intent }}</span>
+                  <span v-if="t.reply.tool" title="The data source the answer came from">via {{ TOOL_LABELS[t.reply.tool] ?? t.reply.tool }}</span>
                   <span v-if="t.reply.follow_up">Follow-up</span>
                   <span v-if="!t.reply.grounded" class="warn">No evidence found</span>
                   <span v-else-if="!t.reply.llm_used" class="warn" title="The language model is offline, so the evidence is shown as is">
