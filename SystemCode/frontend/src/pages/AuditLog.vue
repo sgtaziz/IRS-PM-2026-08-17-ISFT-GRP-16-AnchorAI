@@ -29,11 +29,22 @@ function onPage(e: DataTablePageEvent) {
   page.run()
 }
 
-// The table pages on the server, so export asks for every row that matches the filters (API max 200).
+// The table pages on the server, so export walks every page that matches the filters.
 async function exportCsv() {
-  const all = await api<AuditPage>(`/admin/audit${query({ action: action.value, username: username.value, limit: 200 })}`)
-  const cell = (v: unknown) => `"${String(v ?? '').replaceAll('"', '""')}"`
-  const rows = all.items.map((r) => [r.ts, r.username, r.action, r.entity, r.entity_id, change(r)].map(cell).join(','))
+  const items: AuditRow[] = []
+  for (let from = 0; ; from += 200) {
+    const batch = await api<AuditPage>(
+      `/admin/audit${query({ action: action.value, username: username.value, limit: 200, offset: from })}`,
+    )
+    items.push(...batch.items)
+    if (items.length >= batch.total || !batch.items.length) break
+  }
+  // Prefix cells a spreadsheet would run as a formula (=, +, -, @).
+  const cell = (v: unknown) => {
+    const text = String(v ?? '')
+    return `"${(/^[=+\-@]/.test(text) ? `'${text}` : text).replaceAll('"', '""')}"`
+  }
+  const rows = items.map((r) => [r.ts, r.username, r.action, r.entity, r.entity_id, change(r)].map(cell).join(','))
   const csv = ['when,who,action,entity,entity_id,change', ...rows].join('\n')
   const link = document.createElement('a')
   link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }))

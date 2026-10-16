@@ -61,7 +61,9 @@ def list_audit(
     if username:
         query = query.where(AuditLog.username == username)
     total = session.exec(select(func.count()).select_from(query.subquery())).one()
-    rows = session.exec(query.order_by(AuditLog.ts.desc()).offset(offset).limit(limit)).all()
+    rows = session.exec(
+        query.order_by(AuditLog.ts.desc(), AuditLog.id.desc()).offset(offset).limit(limit)
+    ).all()
     return AuditPage(
         items=[AuditRow.model_validate(r, from_attributes=True) for r in rows],
         total=total,

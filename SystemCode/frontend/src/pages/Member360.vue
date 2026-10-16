@@ -25,9 +25,9 @@ const memberId = computed(() => String(route.params.id))
 const detail = useAsync((id: string) => api<MemberDetail>(`/members/${id}`))
 
 // Stream B's panels; until their endpoints exist the panel says so instead of failing.
-const ruleTrace = useAsync((id: string) => api<RuleOutcome>(`/rules/trace/${id}`))
+const ruleTrace = useAsync((id: string) => api<RuleOutcome>(`/rules/trace/${encodeURIComponent(id)}`))
 const similarCases = useAsync((id: string) => api<unknown[]>(`/plan/similar-cases/${id}`))
-const egoGraph = useAsync((id: string) => api<EgoGraphData>(`/graph/ego/${id}`))
+const egoGraph = useAsync((id: string) => api<EgoGraphData>(`/graph/ego/${encodeURIComponent(id)}`))
 const contacts = useAsync((id: string) => api<unknown[]>(`/outcomes?member_id=${encodeURIComponent(id)}`))
 const panels = [
   { title: 'Similar past cases', owner: 'Stream B', state: similarCases },

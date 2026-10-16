@@ -16,7 +16,7 @@ import { useAsync } from '../composables/useAsync'
 const KIND_SEVERITY = { derive: 'info', playbook: 'success', guardrail: 'danger' } as const
 
 const rules = useAsync(() => api<RuleSet>('/rules'))
-const trace = useAsync((id: string) => api<RuleOutcome>(`/rules/trace/${id}`))
+const trace = useAsync((id: string) => api<RuleOutcome>(`/rules/trace/${encodeURIComponent(id)}`))
 const memberId = ref('M0155')
 onMounted(rules.run)
 

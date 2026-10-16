@@ -4,7 +4,7 @@ import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
 import Tag from 'primevue/tag'
 import { useToast } from 'primevue/usetoast'
-import { nextTick, ref } from 'vue'
+import { nextTick, reactive, ref } from 'vue'
 import { api } from '../api/client'
 import type { AssistantReply, Evidence } from '../api/types'
 import { errorMessage } from '../composables/useAsync'
@@ -44,7 +44,7 @@ async function ask(question = text.value) {
   question = question.trim()
   if (!question || busy.value) return
   text.value = ''
-  const turn: Turn = { question, reply: null, error: null, rated: null }
+  const turn = reactive<Turn>({ question, reply: null, error: null, rated: null })
   turns.value.push(turn)
   busy.value = true
   try {
@@ -56,7 +56,6 @@ async function ask(question = text.value) {
     turn.error = errorMessage(e)
   } finally {
     busy.value = false
-    turns.value = [...turns.value]
     await nextTick()
     log.value?.lastElementChild?.scrollIntoView({ behavior: 'smooth', block: 'end' })
   }
@@ -76,7 +75,6 @@ async function rate(turn: Turn, rating: 1 | -1) {
       }),
     })
     turn.rated = rating
-    turns.value = [...turns.value]
   } catch (e) {
     toast.add({ severity: 'error', summary: 'Feedback not saved', detail: errorMessage(e), life: 4000 })
   }

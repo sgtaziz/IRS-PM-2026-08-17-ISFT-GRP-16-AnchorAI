@@ -20,10 +20,12 @@ const entities = useAsync(() => api<GraphEntities>('/graph/entities'))
 const sim = useAsync((event_type: EventType, entity_id: string) =>
   api<Simulation>('/graph/simulate', { method: 'POST', body: JSON.stringify({ event_type, entity_id }) }),
 )
-const ego = useAsync((id: string) => api<EgoGraphData>(`/graph/ego/${id}`))
+const ego = useAsync((id: string) => api<EgoGraphData>(`/graph/ego/${encodeURIComponent(id)}`))
 
 const target = ref<string | null>(null)
 const memberId = ref('')
+// The member whose graph is shown; the input can be edited without changing the link.
+const shown = ref('')
 onMounted(entities.run)
 
 const options = computed(() => {
@@ -50,6 +52,7 @@ function simulate() {
 
 function showMember(id: string) {
   memberId.value = id
+  shown.value = id
   ego.run(id)
 }
 
@@ -58,7 +61,7 @@ function offers(m: AffectedMember) {
 }
 
 function onSelect(type: string, id: string) {
-  if (type === 'Member' && id !== memberId.value) showMember(id)
+  if (type === 'Member' && id !== shown.value) showMember(id)
 }
 </script>
 
@@ -137,7 +140,7 @@ function onSelect(type: string, id: string) {
         </form>
         <PageState :loading="ego.loading.value" :error="ego.error.value" :empty="!ego.data.value" empty-text="Pick a member from the table, or type an id.">
           <EgoGraph v-if="ego.data.value" :graph="ego.data.value" @select="onSelect" />
-          <RouterLink v-if="ego.data.value" :to="`/members/${memberId}`" class="open">Open Member 360</RouterLink>
+          <RouterLink v-if="ego.data.value" :to="`/members/${encodeURIComponent(shown)}`" class="open">Open {{ shown }} in Member 360</RouterLink>
         </PageState>
       </template>
     </Card>
