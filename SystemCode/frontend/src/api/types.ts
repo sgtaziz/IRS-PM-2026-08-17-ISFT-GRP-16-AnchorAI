@@ -407,6 +407,7 @@ export interface Simulation {
   high_risk: number
   newly_flagged: number
   members: AffectedMember[]
+  graph_out_of_date: boolean
 }
 
 // Mirrors anchorai/knowledge/roster.py and reload.py.

@@ -127,6 +127,8 @@ async function submit() {
     mode.value = null
   } catch (e) {
     formError.value = errorMessage(e)
+    // The edit may have landed before the error; show the real state before anyone retries.
+    roster.run()
   } finally {
     busy.value = false
   }

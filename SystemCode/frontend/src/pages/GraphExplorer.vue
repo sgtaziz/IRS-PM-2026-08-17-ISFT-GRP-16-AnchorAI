@@ -119,6 +119,9 @@ function onSelect(type: string, id: string) {
               <p class="m-0 mb-4 flex items-center gap-2 rounded-lg bg-warn-soft px-3.5 py-2.5 text-sm font-medium text-warn-ink">
                 <TriangleAlert :size="16" class="shrink-0" aria-hidden="true" /> If {{ sim.data.value.label }}
               </p>
+              <p v-if="sim.data.value.graph_out_of_date" class="m-0 mb-4 flex items-center gap-2 rounded-lg bg-warn-soft px-3.5 py-2.5 text-sm text-warn-ink">
+                <TriangleAlert :size="16" class="shrink-0" aria-hidden="true" /> The knowledge graph is out of date, so these counts may miss recent roster edits. Reload it below.
+              </p>
               <div class="mb-5 grid gap-3 sm:grid-cols-3">
                 <KpiTile label="Members affected" :value="sim.data.value.affected.toLocaleString()" :icon="Users" />
                 <KpiTile label="High risk" :value="sim.data.value.high_risk.toLocaleString()" tone="warn" :icon="TriangleAlert" />
