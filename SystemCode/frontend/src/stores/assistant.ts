@@ -14,6 +14,8 @@ export interface Turn {
   rated: 1 | -1 | null
   // True while the answer text is still arriving.
   streaming: boolean
+  // The stream broke after the answer had started, so the text may be cut short.
+  interrupted: boolean
 }
 
 const HISTORY_TURNS = 4
@@ -25,6 +27,7 @@ export const useAssistantStore = defineStore('assistant', () => {
   let nextId = 0
   // Bumped by reset, so a reply that arrives after "New chat" or logout is dropped.
   let generation = 0
+  let controller: AbortController | null = null
 
   /** The member a question that names none is about: the open page's, or the chat's last one. */
   function focus(pageMember: string | null): string | null {
@@ -33,10 +36,10 @@ export const useAssistantStore = defineStore('assistant', () => {
     return last?.reply?.slots.member_ids.at(-1) ?? pageMember
   }
 
-  async function stream(turn: Turn, body: string) {
+  async function stream(turn: Turn, body: string, signal: AbortSignal) {
     let finished = false
     turn.reply = null
-    await apiStream('/assistant/chat/stream', { method: 'POST', body }, (event, data) => {
+    await apiStream('/assistant/chat/stream', { method: 'POST', body, signal }, (event, data) => {
       if (event === 'meta') {
         turn.reply = { ...(data as AssistantStreamMeta), answer: '', grounded: false, llm_used: false }
       } else if (event === 'delta' && turn.reply) {
@@ -57,24 +60,31 @@ export const useAssistantStore = defineStore('assistant', () => {
       .slice(-HISTORY_TURNS)
       .map((t) => ({ question: t.question, answer: t.reply!.answer, intent: t.reply!.intent, slots: t.reply!.slots }))
     const memberId = focus(pageMember)
-    const turn = reactive<Turn>({ id: nextId++, question, pageMember, reply: null, error: null, rated: null, streaming: false })
+    const turn = reactive<Turn>({ id: nextId++, question, pageMember, reply: null, error: null, rated: null, streaming: false, interrupted: false })
     turns.value.push(turn)
     busy.value = true
     const started = generation
     const body = JSON.stringify({ message: question, member_id: memberId, history })
+    controller = new AbortController()
+    const { signal } = controller
     try {
       try {
         turn.streaming = true
-        await stream(turn, body)
+        await stream(turn, body, signal)
       } catch (e) {
-        // The server's own errors (auth, 503) would repeat on /chat; a broken stream may not.
+        if (signal.aborted) return
+        // The server's own errors (auth, 503) would repeat on /chat.
         if (e instanceof ApiError) throw e
+        // Once the answer has started, a resend would run (and bill) the LLM twice.
+        if (turn.reply) {
+          turn.interrupted = true
+          return
+        }
         turn.streaming = false
-        turn.reply = null
-        turn.reply = await api<AssistantReply>('/assistant/chat', { method: 'POST', body })
+        turn.reply = await api<AssistantReply>('/assistant/chat', { method: 'POST', body, signal })
       }
     } catch (e) {
-      turn.error = errorMessage(e)
+      if (!signal.aborted) turn.error = errorMessage(e)
     } finally {
       turn.streaming = false
       if (started === generation) busy.value = false
@@ -98,6 +108,7 @@ export const useAssistantStore = defineStore('assistant', () => {
   }
 
   function reset() {
+    controller?.abort()
     generation++
     busy.value = false
     turns.value = []

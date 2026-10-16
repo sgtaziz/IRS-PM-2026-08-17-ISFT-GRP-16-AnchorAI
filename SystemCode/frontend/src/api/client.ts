@@ -58,7 +58,7 @@ export async function apiText(path: string, init?: RequestInit): Promise<string>
   return (await request(path, init)).text()
 }
 
-/** POST and read a server-sent event stream, calling `onEvent` for each event as it arrives. */
+/** POST and read a server-sent event stream, calling `onEvent` for each event as it arrives. Pass `signal` in `init` to cancel. */
 export async function apiStream(
   path: string,
   init: RequestInit,
@@ -68,18 +68,23 @@ export async function apiStream(
   if (!res.body) throw new Error('This browser cannot read streamed responses')
   const reader = res.body.pipeThrough(new TextDecoderStream()).getReader()
   let buffer = ''
-  for (;;) {
-    const { done, value } = await reader.read()
-    if (done) break
-    buffer += value
-    let end: number
-    while ((end = buffer.indexOf('\n\n')) >= 0) {
-      const block = buffer.slice(0, end)
-      buffer = buffer.slice(end + 2)
-      const event = /^event: (.+)$/m.exec(block)?.[1]
-      const data = /^data: (.+)$/m.exec(block)?.[1]
-      if (event && data) onEvent(event, JSON.parse(data))
+  try {
+    for (;;) {
+      const { done, value } = await reader.read()
+      if (done) break
+      buffer += value
+      let end: number
+      while ((end = buffer.indexOf('\n\n')) >= 0) {
+        const block = buffer.slice(0, end)
+        buffer = buffer.slice(end + 2)
+        const event = /^event: (.+)$/m.exec(block)?.[1]
+        const data = /^data: (.+)$/m.exec(block)?.[1]
+        if (event && data) onEvent(event, JSON.parse(data))
+      }
     }
+  } finally {
+    // Closing the connection early (abort or error) lets the server stop reading from the LLM.
+    reader.cancel().catch(() => {})
   }
 }
 

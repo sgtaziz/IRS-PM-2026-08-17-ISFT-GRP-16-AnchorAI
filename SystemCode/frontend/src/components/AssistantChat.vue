@@ -158,7 +158,8 @@ watch(
                   <span class="intent">{{ INTENT_LABELS[t.reply.intent] ?? t.reply.intent }}</span>
                   <span v-if="t.reply.tool" title="The data source the answer came from">via {{ TOOL_LABELS[t.reply.tool] ?? t.reply.tool }}</span>
                   <span v-if="t.reply.follow_up">Follow-up</span>
-                  <span v-if="!t.reply.grounded" class="warn">No evidence found</span>
+                  <span v-if="t.interrupted" class="warn">Connection lost — answer may be incomplete</span>
+                  <span v-else-if="!t.reply.grounded" class="warn">No evidence found</span>
                   <span v-else-if="!t.reply.llm_used" class="warn" title="The language model is offline, so the evidence is shown as is">
                     Language model offline
                   </span>
