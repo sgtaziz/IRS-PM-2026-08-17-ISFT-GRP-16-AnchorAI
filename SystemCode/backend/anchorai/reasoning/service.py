@@ -1,0 +1,66 @@
+"""Rule base and traces for the API: active rule version from the DB, facts from Stream A."""
+
+import threading
+from typing import Any
+
+from pydantic import BaseModel
+from sqlmodel import Session, select
+
+from anchorai import catalog
+from anchorai.db.models import RuleVersion
+from anchorai.discovery import service as member_data
+from anchorai.reasoning.engine import load_rule_files, load_rules, run
+from anchorai.reasoning.facts import KNOWN_FACTS, build_facts
+from anchorai.reasoning.models import Rule, RuleOutcome
+from anchorai.reasoning.validate import Issue, validate
+from anchorai.schemas import Channel
+
+
+class RuleSet(BaseModel):
+    version: int | None
+    rules: list[Rule]
+    issues: list[Issue]
+
+
+_lock = threading.Lock()
+_facts: tuple[Any, dict[str, dict[str, Any]]] | None = None
+
+
+def active_rules(session: Session) -> tuple[int | None, list[Rule]]:
+    """The active DB rule version, or the rule files when the DB has none."""
+    version = session.exec(
+        select(RuleVersion).where(RuleVersion.is_active).order_by(RuleVersion.version.desc())
+    ).first()
+    if version is None:
+        return None, load_rule_files()
+    return version.version, load_rules(version.yaml_text)
+
+
+def check(session: Session, rules: list[Rule]) -> list[Issue]:
+    offers = [o.offer_id for o in catalog.list_offers(session)]
+    return validate(rules, KNOWN_FACTS, offers, [c.value for c in Channel])
+
+
+def rule_set(session: Session) -> RuleSet:
+    version, rules = active_rules(session)
+    return RuleSet(version=version, rules=rules, issues=check(session, rules))
+
+
+def all_facts() -> dict[str, dict[str, Any]]:
+    """Facts for every member, rebuilt when Stream A's data is rebuilt."""
+    global _facts
+    data = member_data.get_data()
+    key = data.stamp
+    with _lock:
+        if _facts is None or _facts[0] != key:
+            facts = build_facts(data.table, data.features, data.tables["interventions"])
+            _facts = (key, facts)
+        return _facts[1]
+
+
+def trace(session: Session, member_id: str) -> RuleOutcome | None:
+    facts = all_facts().get(member_id)
+    if facts is None:
+        return None
+    _, rules = active_rules(session)
+    return run(rules, facts, member_id)

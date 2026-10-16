@@ -1,20 +1,30 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from anchorai.api.deps import require_role
+from anchorai.api.deps import SessionDep, require_role
+from anchorai.discovery.service import DataNotBuilt
+from anchorai.reasoning import service
+from anchorai.reasoning.models import RuleOutcome
+from anchorai.reasoning.service import RuleSet
 
 router = APIRouter()
 
 
-@router.get("")
-def list_rules():
-    raise HTTPException(501, "TODO Stream C: load reasoning/rules/*.yaml")
+@router.get("", response_model=RuleSet)
+def list_rules(session: SessionDep):
+    return service.rule_set(session)
 
 
 @router.put("/{rule_id}", dependencies=[Depends(require_role("admin"))])
 def update_rule(rule_id: str, rule: dict):
-    raise HTTPException(501, "TODO Stream C: validate + save rule, return conflicts found")
+    raise HTTPException(501, "Rule editing arrives with the rules admin page (W40)")
 
 
-@router.post("/trace/{member_id}")
-def trace(member_id: str):
-    raise HTTPException(501, "TODO Stream C: run engine for one member, return RuleFiring list")
+@router.get("/trace/{member_id}", response_model=RuleOutcome)
+def trace(member_id: str, session: SessionDep):
+    try:
+        outcome = service.trace(session, member_id)
+    except DataNotBuilt as e:
+        raise HTTPException(503, str(e)) from None
+    if outcome is None:
+        raise HTTPException(404, f"Unknown member {member_id}")
+    return outcome
