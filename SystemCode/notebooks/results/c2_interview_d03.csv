@@ -1,0 +1,4 @@
+rule,members,churn_rate,long_timers,long_timer_churn
+visits < 0.5 (old D03),404,0.562,61,0.033
+and fell: trend < 0.8 (new D03),249,0.831,15,0.133
+always low (excluded),155,0.129,46,0.0

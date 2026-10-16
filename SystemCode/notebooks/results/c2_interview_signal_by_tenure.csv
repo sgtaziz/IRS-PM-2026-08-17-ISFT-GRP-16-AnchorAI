@@ -1,0 +1,4 @@
+,members,churn_rate,auc_trend,auc_visits_this_month
+new (0-1),1055.0,0.612,0.807,0.755
+mid (2-5),1407.0,0.141,0.857,0.803
+long (6+),738.0,0.007,0.99,0.787
