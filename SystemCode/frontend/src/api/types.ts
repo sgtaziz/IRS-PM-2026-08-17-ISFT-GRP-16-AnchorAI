@@ -262,3 +262,109 @@ export interface EgoGraph {
   nodes: GraphElement[]
   edges: GraphElement[]
 }
+
+// Mirrors anchorai/reasoning/models.py, validate.py and service.py.
+export type RuleKind = 'derive' | 'playbook' | 'guardrail'
+
+export interface Rule {
+  id: string
+  kind: RuleKind
+  salience: number
+  description: string
+  when: string[]
+  then: { assert?: Record<string, unknown> | null; propose?: Proposal | null; block?: 'all' | string[] | null }
+  source: string
+  enabled: boolean
+}
+
+export interface RuleIssue {
+  rule_id: string
+  severity: 'error' | 'warning'
+  message: string
+}
+
+export interface RuleSet {
+  version: number | null
+  rules: Rule[]
+  issues: RuleIssue[]
+}
+
+// Mirrors anchorai/assistant/slots.py, tools.py and service.py.
+export interface Slots {
+  member_ids: string[]
+  amount: number | null
+  instructor_ids: string[]
+  class_ids: string[]
+}
+
+export interface Evidence {
+  id: string
+  text: string
+  kind: 'member' | 'rule' | 'offer' | 'event' | 'plan'
+  ref: string | null
+}
+
+export interface AssistantReply {
+  intent: string
+  score: number
+  slots: Slots
+  tool: string | null
+  evidence: Evidence[]
+  answer: string
+  grounded: boolean
+  llm_used: boolean
+}
+
+// Mirrors anchorai/knowledge/simulate.py.
+export type EventType = 'instructor_left' | 'class_cancelled'
+
+export interface GraphEntity {
+  id: string
+  name: string
+  club_id: string
+  detail: string
+  has_event: boolean
+}
+
+export interface GraphEntities {
+  instructors: GraphEntity[]
+  classes: GraphEntity[]
+}
+
+export interface AffectedMember {
+  member_id: string
+  churn_prob: number
+  risk_band: RiskBand
+  share: number | null
+  new_rules: string[]
+  allowed: Proposal[]
+}
+
+export interface Simulation {
+  event_type: EventType
+  entity_id: string
+  label: string
+  affected: number
+  high_risk: number
+  newly_flagged: number
+  members: AffectedMember[]
+}
+
+// Mirrors anchorai/db/audit.py.
+export interface AuditRow {
+  id: number
+  ts: string
+  username: string
+  action: string
+  entity: string
+  entity_id: string | null
+  before: Record<string, unknown> | null
+  after: Record<string, unknown> | null
+}
+
+export interface AuditPage {
+  items: AuditRow[]
+  total: number
+  actions: string[]
+  usernames: string[]
+}
