@@ -95,36 +95,47 @@ def _template(session: Session, member_id: str, offer_id: str, channel: Channel)
     facts = reasoning.all_facts()[member_id]
     offer = next(o for o in catalog.list_offers(session) if o.offer_id == offer_id)
     months = int(facts["lifetime"])
-    thanks = (
-        f"Thank you for {months} month{'s' if months != 1 else ''} with us."
-        if months
-        else "Welcome to the gym."
-    )
+    if not months:
+        thanks = "Welcome to the gym."
+    elif months < 3:
+        thanks = "We hope you're enjoying your first months with us."
+    else:
+        thanks = f"Thank you for {months} months with us."
     change = ""
     if facts.get("lost_anchor_instructor"):
         change = "We know a familiar instructor has moved on, and we'd like to help you settle in."
     elif facts.get("class_cancelled"):
         change = "We're sorry a class you enjoy has been cancelled."
-    eligibility = f" ({offer.eligibility.rstrip('.')})" if offer.eligibility else ""
+    # Eligibility is a staff criterion ("Members without PT in the last 90 days"), so it stays in the evidence only.
+    pitch = f"We'd like to offer you: {offer.name}."
     ask = {
         "sms": "Reply here or ask at the front desk to take it up.",
         "email": "Just reply to this email or ask at the front desk and we'll set it up.",
         "call": "Would you like to take this up?",
         "in_person": "Ask if they would like to take it up today.",
     }[channel.value]
+    if offer_id == "checkin_message":
+        # This message is the check-in itself, so it asks after the member rather than offering one.
+        pitch = "We wanted to check in and see how your training is going."
+        ask = {
+            "sms": "If there's anything we can help with, just reply here.",
+            "email": "If there's anything we can help with, just reply to this email.",
+        }.get(channel.value, "Ask if there's anything the gym can help with.")
     evidence = _evidence(session, member_id, offer_id, channel)
     subject = None
 
     if channel is Channel.SMS:
-        text = f"Hi! {thanks} We'd like to offer you: {offer.name}{eligibility}. {ask}"
+        text = f"Hi! {thanks} {pitch} {ask}"
         if len(text) > SMS_LIMIT:
-            text = f"Hi! We'd like to offer you: {offer.name}. {ask}"
+            text = f"Hi! {pitch} {ask}"
     elif channel is Channel.EMAIL:
-        subject = f"Something for you: {offer.name}"
+        subject = (
+            "Checking in" if offer_id == "checkin_message" else f"Something for you: {offer.name}"
+        )
         parts = [
             "Hi,",
             " ".join(p for p in (thanks, change) if p),
-            f"We'd like to offer you: {offer.name}{eligibility}.",
+            pitch,
             ask,
             "Best wishes,\nYour gym team",
         ]
@@ -134,7 +145,7 @@ def _template(session: Session, member_id: str, offer_id: str, channel: Channel)
             "Hi, this is from your gym. Do you have a minute?",
             thanks,
             change,
-            f"We'd like to offer you: {offer.name}{eligibility}.",
+            pitch,
             ask,
             "Thanks for your time, and see you at the gym.",
         ]
@@ -143,7 +154,7 @@ def _template(session: Session, member_id: str, offer_id: str, channel: Channel)
         lines = [
             thanks,
             change,
-            f"Offer: {offer.name}{eligibility}.",
+            f"Offer: {offer.name}.",
             "Mention only what the offer includes; don't promise anything extra.",
             ask,
         ]
