@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import cytoscape, { type Core } from 'cytoscape'
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import type { EgoGraph } from '../api/types'
+import type { EgoGraph, EventType } from '../api/types'
+import { EVENT_LABELS, humanize } from '../labels'
 
-const props = defineProps<{ graph: EgoGraph }>()
+const props = withDefaults(defineProps<{ graph: EgoGraph; height?: string }>(), { height: '360px' })
 const emit = defineEmits<{ select: [type: string, id: string] }>()
 
 const el = ref<HTMLDivElement | null>(null)
@@ -11,12 +12,21 @@ let cy: Core | null = null
 
 // Colour by node type, with the label in the node, so meaning never rests on colour alone.
 const COLORS: Record<string, string> = {
-  Member: '#2f6fb5',
-  Club: '#5b6778',
-  Class: '#3f9c6d',
-  Instructor: '#8a5cc4',
-  Event: '#c0392b',
-  Offer: '#d4881c',
+  Member: '#1f60ea',
+  Club: '#687389',
+  Class: '#14a3a0',
+  Instructor: '#7c5cff',
+  Event: '#d92d4b',
+  Offer: '#f2a33a',
+}
+
+// Raw graph labels are codes ("C2", "instructor_left", "MEMBER_OF"); show readable ones.
+function readable(e: EgoGraph['nodes'][number]) {
+  const d = e.data
+  if (d.source) return { data: { ...d, label: humanize(d.type).toLowerCase() } }
+  if (d.type === 'Club') return { data: { ...d, label: `Club ${d.label}` } }
+  if (d.type === 'Event') return { data: { ...d, label: EVENT_LABELS[d.label as EventType] ?? humanize(String(d.label)) } }
+  return e
 }
 
 function draw() {
@@ -24,33 +34,46 @@ function draw() {
   if (!el.value) return
   cy = cytoscape({
     container: el.value,
-    elements: [...props.graph.nodes, ...props.graph.edges],
-    layout: { name: 'cose', animate: false, padding: 20 },
+    elements: [...props.graph.nodes, ...props.graph.edges].map(readable),
+    layout: { name: 'cose', animate: false, padding: 24 },
+    // A small neighbourhood would otherwise be zoomed until its labels look oversized.
+    maxZoom: 1.4,
+    minZoom: 0.3,
     style: [
       {
         selector: 'node',
         style: {
           label: 'data(label)',
-          'background-color': (n) => COLORS[n.data('type')] ?? '#999',
-          color: '#1c2430',
-          'font-size': 10,
+          'background-color': (n) => COLORS[n.data('type')] ?? '#98a2b6',
+          color: '#222a3c',
+          'font-size': 11,
+          'font-family': 'Inter, ui-sans-serif, system-ui, sans-serif',
+          'font-weight': 500,
           'text-valign': 'bottom',
-          'text-margin-y': 4,
-          width: 22,
-          height: 22,
+          'text-margin-y': 5,
+          'text-background-color': '#ffffff',
+          'text-background-opacity': 0.85,
+          'text-background-padding': '2px',
+          'text-background-shape': 'roundrectangle',
+          'border-width': 2,
+          'border-color': '#ffffff',
+          width: 24,
+          height: 24,
         },
       },
-      { selector: 'node[risk_band = "high"]', style: { 'border-width': 3, 'border-color': '#c0392b' } },
+      { selector: 'node[risk_band = "high"]', style: { 'border-width': 3, 'border-color': '#d92d4b' } },
+      { selector: 'node[type = "Member"]', style: { width: 30, height: 30, 'font-weight': 700 } },
       {
         selector: 'edge',
         style: {
           label: 'data(type)',
-          'font-size': 7,
-          color: '#5b6778',
+          'font-size': 8,
+          color: '#98a2b6',
+          'text-rotation': 'autorotate',
           width: 1.5,
-          'line-color': '#c3cbd6',
+          'line-color': '#cbd2de',
           'target-arrow-shape': 'triangle',
-          'target-arrow-color': '#c3cbd6',
+          'target-arrow-color': '#cbd2de',
           'curve-style': 'bezier',
         },
       },
@@ -69,17 +92,22 @@ onBeforeUnmount(() => cy?.destroy())
 
 <template>
   <div>
-    <div ref="el" class="ego" role="img" :aria-label="`Graph with ${graph.nodes.length} nodes and ${graph.edges.length} links`" />
-    <ul class="legend">
-      <li v-for="(color, type) in COLORS" :key="type"><span :style="{ background: color }" />{{ type }}</li>
-      <li><span class="ring" />High-risk member</li>
+    <div ref="el" class="ego" :style="{ height }" role="img" :aria-label="`Graph with ${graph.nodes.length} nodes and ${graph.edges.length} links`" />
+    <ul class="m-0 mt-3 flex list-none flex-wrap gap-x-4 gap-y-1.5 p-0 text-xs text-ink-600">
+      <li v-for="(color, type) in COLORS" :key="type" class="flex items-center gap-1.5">
+        <span class="size-2.5 rounded-full" :style="{ background: color }" />{{ type }}
+      </li>
+      <li class="flex items-center gap-1.5"><span class="size-2.5 rounded-full border-2 border-risk-high" />High-risk member</li>
     </ul>
   </div>
 </template>
 
 <style scoped>
-.ego { height: 320px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
-.legend { list-style: none; padding: 0; margin: 0.5rem 0 0; display: flex; flex-wrap: wrap; gap: 0.25rem 0.9rem; font-size: 0.8rem; color: var(--muted); }
-.legend span { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 0.3rem; vertical-align: middle; }
-.legend .ring { border: 2px solid #c0392b; background: transparent; }
+.ego {
+  border: 1px solid var(--color-ink-200);
+  border-radius: 0.75rem;
+  background-color: var(--color-ink-50);
+  background-image: radial-gradient(var(--color-ink-200) 1px, transparent 1px);
+  background-size: 16px 16px;
+}
 </style>
