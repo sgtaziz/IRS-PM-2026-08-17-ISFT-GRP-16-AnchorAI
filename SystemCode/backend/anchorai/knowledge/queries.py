@@ -22,6 +22,16 @@ WITH m, collect(DISTINCT peer) AS peers
 RETURN m.member_id AS member_id, reduce(s = 0.0, p IN peers | s + p.churn_prob) / size(peers) AS cohort_risk
 """
 
+MEMBERS_BY_INSTRUCTOR = """
+MATCH (m:Member)-[:ATTENDS]->(:Class)-[:TAUGHT_BY]->(i:Instructor {instructor_id: $instructor_id})
+RETURN DISTINCT m.member_id AS member_id, m.churn_prob AS churn_prob, m.risk_band AS risk_band
+"""
+
+MEMBERS_BY_CLASS = """
+MATCH (m:Member)-[:ATTENDS]->(k:Class {class_id: $class_id})
+RETURN DISTINCT m.member_id AS member_id, m.churn_prob AS churn_prob, m.risk_band AS risk_band
+"""
+
 EGO = """
 MATCH (m:Member {member_id: $member_id})
 RETURN m,

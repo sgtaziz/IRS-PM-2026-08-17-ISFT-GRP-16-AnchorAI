@@ -6,7 +6,13 @@ from anchorai.config import get_settings
 
 def get_client() -> OpenAI:
     s = get_settings()
-    return OpenAI(base_url=s.llm_base_url, api_key=s.llm_api_key)
+    # One retry and a timeout, so a slow or dead endpoint degrades the assistant instead of hanging it.
+    return OpenAI(
+        base_url=s.llm_base_url,
+        api_key=s.llm_api_key,
+        timeout=s.llm_timeout_seconds,
+        max_retries=1,
+    )
 
 
 def chat(messages: list[dict], **kwargs) -> str:
