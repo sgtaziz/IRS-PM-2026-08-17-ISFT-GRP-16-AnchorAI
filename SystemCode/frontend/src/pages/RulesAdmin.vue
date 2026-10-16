@@ -337,7 +337,7 @@ function test() {
                     <template #empty>
                       <EmptyState :icon="FlaskConical" compact text="Run the rule base on a member to see the firing trace." />
                     </template>
-                    <RuleTrace v-if="trace.data.value" :outcome="trace.data.value" />
+                    <RuleTrace v-if="trace.data.value" :outcome="trace.data.value" :draftable="false" />
                   </PageState>
                 </SectionCard>
               </div>
@@ -390,7 +390,7 @@ function test() {
                     <template #empty>
                       <EmptyState :icon="FlaskConical" compact text="Run the draft on a member to see which rules would fire." />
                     </template>
-                    <RuleTrace v-if="yamlTrace.data.value" :outcome="yamlTrace.data.value" />
+                    <RuleTrace v-if="yamlTrace.data.value" :outcome="yamlTrace.data.value" :draftable="false" />
                   </PageState>
                 </SectionCard>
               </div>

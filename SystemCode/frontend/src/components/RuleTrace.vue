@@ -7,7 +7,7 @@ import { channelLabel, humanize, ruleCode } from '../labels'
 import { useGlossaryStore } from '../stores/glossary'
 import MessageDraftDialog from './MessageDraftDialog.vue'
 
-const props = defineProps<{ outcome: RuleOutcome }>()
+const props = withDefaults(defineProps<{ outcome: RuleOutcome; draftable?: boolean }>(), { draftable: true })
 const glossary = useGlossaryStore()
 onMounted(glossary.load)
 
@@ -77,7 +77,7 @@ const KIND_STYLE: Record<Kind, { icon: typeof Lightbulb; cls: string }> = {
             <span class="font-semibold text-ink-800">{{ glossary.offer(p.offer_id) }}</span>
             <span class="text-ink-500"> · {{ channelLabel(p.channel) }}</span>
           </span>
-          <button type="button" class="draft-btn" @click="drafting = { offerId: p.offer_id, channel: p.channel }">
+          <button v-if="draftable" type="button" class="draft-btn" @click="drafting = { offerId: p.offer_id, channel: p.channel }">
             <MessageSquareText :size="14" aria-hidden="true" />Draft message
           </button>
           <span v-tooltip.top="ruleTip(p.rule_id)" class="id-chip" tabindex="0" role="note" :aria-label="ruleTip(p.rule_id)">{{ ruleCode(p.rule_id) }}</span>

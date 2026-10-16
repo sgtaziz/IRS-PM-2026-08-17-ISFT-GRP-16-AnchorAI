@@ -5,7 +5,8 @@ import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
 import SelectButton from 'primevue/selectbutton'
 import Textarea from 'primevue/textarea'
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { useConfirm } from 'primevue/useconfirm'
 import { api } from '../api/client'
 import type { Channel, MessageDraft } from '../api/types'
 import { errorMessage } from '../composables/useAsync'
@@ -15,8 +16,11 @@ import { useGlossaryStore } from '../stores/glossary'
 const props = defineProps<{ visible: boolean; memberId: string; offerId: string; channel: string }>()
 const emit = defineEmits<{ 'update:visible': [boolean] }>()
 const glossary = useGlossaryStore()
+const confirm = useConfirm()
 
-const CHANNELS: Channel[] = ['sms', 'email', 'call', 'in_person']
+const ALL_CHANNELS: Channel[] = ['sms', 'email', 'call', 'in_person']
+const channels = computed(() => glossary.data?.offer_channels[props.offerId] ?? ALL_CHANNELS)
+const offPlaybook = computed(() => channel.value !== props.channel)
 const channel = ref<Channel>('sms')
 const draft = ref<MessageDraft | null>(null)
 const subject = ref('')
@@ -53,12 +57,34 @@ watch(
   () => props.visible,
   (open) => {
     if (!open) return
-    channel.value = CHANNELS.includes(props.channel as Channel) ? (props.channel as Channel) : 'sms'
+    channel.value = channels.value.includes(props.channel as Channel) ? (props.channel as Channel) : channels.value[0]
     draft.value = null
     generate()
   },
   { immediate: true },
 )
+
+const edited = computed(() => draft.value !== null && (text.value !== draft.value.text || subject.value !== (draft.value.subject ?? '')))
+
+// Regenerating or switching channel replaces the text, so ask before discarding edits.
+function guard(action: () => void) {
+  if (!edited.value) return action()
+  confirm.require({
+    header: 'Discard your edits?',
+    message: 'Your changes to this message will be replaced by a new draft.',
+    acceptProps: { label: 'Discard and continue', severity: 'danger' },
+    rejectProps: { label: 'Keep editing', severity: 'secondary', outlined: true },
+    accept: action,
+  })
+}
+
+function switchChannel(c: Channel | null) {
+  if (!c || c === channel.value) return
+  guard(() => {
+    channel.value = c
+    generate()
+  })
+}
 
 async function copy() {
   const full = channel.value === 'email' && subject.value ? `Subject: ${subject.value}\n\n${text.value}` : text.value
@@ -82,14 +108,19 @@ async function copy() {
   >
     <div class="flex flex-col gap-4">
       <SelectButton
-        v-model="channel"
-        :options="CHANNELS.map((c) => ({ value: c, label: channelLabel(c) }))"
+        :model-value="channel"
+        :options="channels.map((c) => ({ value: c, label: channelLabel(c) }))"
         option-label="label"
         option-value="value"
         :allow-empty="false"
         aria-label="Channel"
-        @update:model-value="generate"
+        @update:model-value="switchChannel"
       />
+
+      <div v-if="offPlaybook" class="flex items-start gap-2 rounded-lg border border-warn-line bg-warn-soft p-3 text-sm text-warn-ink">
+        <TriangleAlert :size="16" class="mt-0.5 shrink-0" aria-hidden="true" />
+        <span>The playbook proposes this offer by {{ channelLabel(props.channel).toLowerCase() }}, not {{ channelLabel(channel).toLowerCase() }}.</span>
+      </div>
 
       <div v-if="error" class="flex items-start gap-2 rounded-lg border border-danger-line bg-danger-soft p-3 text-sm text-danger-ink" role="alert">
         <TriangleAlert :size="16" class="mt-0.5 shrink-0" aria-hidden="true" />
@@ -128,7 +159,7 @@ async function copy() {
       <p class="m-0 text-xs text-ink-500">Not sent. Copy it into your messaging tool and check it first.</p>
     </div>
     <template #footer>
-      <Button label="Regenerate" severity="secondary" text :disabled="loading" @click="generate">
+      <Button label="Regenerate" severity="secondary" text :disabled="loading" @click="guard(generate)">
         <template #icon><RefreshCw :size="16" aria-hidden="true" /></template>
       </Button>
       <Button :label="copied ? 'Copied' : 'Copy'" :disabled="loading || !draft" @click="copy">
