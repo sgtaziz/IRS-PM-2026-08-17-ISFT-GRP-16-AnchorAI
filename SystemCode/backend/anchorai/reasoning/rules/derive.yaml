@@ -4,16 +4,16 @@
 - id: D01_falling_regular
   kind: derive
   salience: 50
-  description: A regular class-goer whose visits this month dropped to half their usual rate or less
-  when: ["avg_class_frequency_total >= 2", "trend_ratio <= 0.5"]
+  description: A regular class-goer whose visits this month fell to 80% of their usual rate or less (127 members, c_rules)
+  when: ["avg_class_frequency_total >= 2", "trend_ratio <= 0.8"]
   then: {assert: {falling_regular: true}}
   source: team assumption
 
 - id: D02_new_member
   kind: derive
   salience: 50
-  description: In their first three months (the early-attrition window)
-  when: ["lifetime <= 3"]
+  description: In their first two months, where churn is 50-82% and falls below base rate by month 3 (c_rules)
+  when: ["lifetime <= 1"]
   then: {assert: {new_member: true}}
   source: team assumption
 
@@ -23,14 +23,6 @@
   description: Barely visiting this month
   when: ["avg_class_frequency_current_month < 0.5"]
   then: {assert: {disengaged: true}}
-  source: team assumption
-
-- id: D04_contract_ending
-  kind: derive
-  salience: 50
-  description: A 6- or 12-month contract ends within a month
-  when: ["contract_period >= 6", "month_to_end_contract <= 1"]
-  then: {assert: {contract_ending: true}}
   source: team assumption
 
 - id: D05_high_value_at_risk
