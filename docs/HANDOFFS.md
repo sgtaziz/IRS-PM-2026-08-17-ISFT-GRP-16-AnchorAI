@@ -22,6 +22,7 @@ What each stream needs from the others: blockers, reviews, decisions and promise
 | 3 | C | review | The `built` test fixture moved from `tests/test_api_stream_a.py` into `tests/conftest.py`, so other streams' tests can reuse it | Touches A's test file | open | 2026-10-16 |
 | 4 | C | review | Rule-trace and ego-graph responses are now typed in `Member360.vue` (`RuleOutcome`, `EgoGraph` in `src/api/types.ts`) | Touches A's page | open | 2026-10-16 |
 | 5 | C | review | C1–C5 landed on `main` without a cross-stream review: auth and app DB, rule engine, rule base, knowledge graph | AGENTS.md requires one review from another stream (A or B) | open | 2026-10-16 |
+| 14 | C | deliver | Write ~10 questions a gym manager or staff member might ask the assistant, in your own words, each tagged with an intent (`member_risk`, `member_actions`, `compare_members`, `graph_impact`, `plan_summary`, `what_if_budget`) or `unknown` | E8 needs a test set the assistant's author never saw; the current one (`notebooks/c_intent_classifier.ipynb`) is optimistic | open | 2026-10-16 |
 
 ## Stream B: Decision & Optimisation
 
@@ -31,6 +32,7 @@ What each stream needs from the others: blockers, reviews, decisions and promise
 | 7 | C | decision | What shape do you want for KG spillover weights? (`member_id, class_id, weight` per class cohort, or member–member pairs) | The GA's spillover term; C builds it once B decides | open | 2026-10-16 |
 | 8 | C | deliver | `demo` seed layer: one approved past week with assignments and logged outcomes | Dashboards, audit log and the assistant's plan questions are empty without it | open | 2026-10-16 |
 | 9 | C | deliver | `POST /api/plan` and `Explanation` | Assistant intents about plans (C4, W30) | open | 2026-10-16 |
+| 15 | C | deliver | Write ~10 questions a gym manager or staff member might ask the assistant, in your own words, each tagged with an intent (`member_risk`, `member_actions`, `compare_members`, `graph_impact`, `plan_summary`, `what_if_budget`) or `unknown` | E8 needs a test set the assistant's author never saw; the current one (`notebooks/c_intent_classifier.ipynb`) is optimistic | open | 2026-10-16 |
 
 ## Stream C: Knowledge & Interaction
 
