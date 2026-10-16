@@ -173,7 +173,7 @@ function onSelect(type: string, id: string) {
           <template #empty>
             <EmptyState :icon="Users" compact text="Pick a member from the table, or type an ID." />
           </template>
-          <EgoGraph v-if="ego.data.value" :graph="ego.data.value" height="420px" @select="onSelect" />
+          <EgoGraph v-if="ego.data.value" :graph="ego.data.value" height="480px" @select="onSelect" />
           <RouterLink v-if="ego.data.value" :to="`/members/${encodeURIComponent(shown)}`" class="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold no-underline">
             Open {{ shown }} in Member 360 <ArrowRight :size="15" aria-hidden="true" />
           </RouterLink>
