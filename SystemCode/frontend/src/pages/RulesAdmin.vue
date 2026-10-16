@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { CircleCheck, FileCode2, FlaskConical, History, ListChecks, Pencil, Play, Plus, RotateCcw, Save, ScrollText, Trash2, TriangleAlert } from 'lucide-vue-next'
+import { CircleCheck, FileCode2, GitCompare, FlaskConical, History, ListChecks, Pencil, Play, Plus, RotateCcw, Save, ScrollText, Trash2, TriangleAlert } from 'lucide-vue-next'
 import Button from 'primevue/button'
 import Column from 'primevue/column'
 import Dialog from 'primevue/dialog'
 import InputText from 'primevue/inputtext'
+import Select from 'primevue/select'
 import Tab from 'primevue/tab'
 import TabList from 'primevue/tablist'
 import TabPanel from 'primevue/tabpanel'
@@ -26,6 +27,7 @@ import RuleEditorDialog from '../components/RuleEditorDialog.vue'
 import RuleTrace from '../components/RuleTrace.vue'
 import SectionCard from '../components/SectionCard.vue'
 import { errorMessage, useAsync } from '../composables/useAsync'
+import { collapse, diffLines, ruleChanges, type DiffChunk } from '../diff'
 import { dateTime } from '../format'
 import { channelLabel, humanize, RULE_KIND_LABELS, ruleCode } from '../labels'
 import { draftText, isStale, saveText, validateText } from '../rulesApi'
@@ -226,6 +228,41 @@ async function activate(v: RuleVersion) {
     failed('Could not activate', e)
   }
 }
+
+const yamlCache = new Map<number, string>()
+async function yamlOf(version: number) {
+  const hit = yamlCache.get(version)
+  if (hit !== undefined) return hit
+  const text = (await api<RuleVersionDetail>(`/rules/versions/${version}`)).yaml_text
+  yamlCache.set(version, text)
+  return text
+}
+
+const compareTarget = ref<number | null>(null)
+const compareBase = ref<number | null>(null)
+const expanded = ref(new Set<number>())
+const compare = useAsync(async (target: number, base: number) => {
+  const [before, after] = await Promise.all([yamlOf(base), yamlOf(target)])
+  return { chunks: collapse(diffLines(before, after)), changes: ruleChanges(before, after), same: before === after }
+})
+const baseOptions = computed(() =>
+  (versions.data.value ?? [])
+    .filter((v) => v.version !== compareTarget.value)
+    .map((v) => ({ value: v.version, label: `Version ${v.version}${v.is_active ? ' (active)' : ''}` })),
+)
+function openCompare(v: RuleVersion) {
+  const all = versions.data.value ?? []
+  const active = all.find((x) => x.is_active && x.version !== v.version)
+  compareTarget.value = v.version
+  compareBase.value = (active ?? all.find((x) => x.version !== v.version))?.version ?? null
+}
+watch([compareTarget, compareBase], () => {
+  expanded.value = new Set()
+  if (compareTarget.value != null && compareBase.value != null) compare.run(compareTarget.value, compareBase.value)
+})
+const MARK = { add: '+', del: '-', same: ' ' } as const
+const MARK_LABEL = { add: 'Added', del: 'Removed', same: 'Unchanged' } as const
+const hiddenCount = (c: DiffChunk) => c.skipped?.length ?? 0
 
 function action(r: Rule) {
   const t = r.then
@@ -431,6 +468,9 @@ function test() {
                           <td>
                             <div class="flex justify-end gap-1">
                               <Button label="View YAML" size="small" text @click="view(v)" />
+                              <Button label="Compare" :aria-label="`Compare version ${v.version}`" size="small" text :disabled="versions.data.value.length < 2" @click="openCompare(v)">
+                                <template #icon><GitCompare :size="14" /></template>
+                              </Button>
                               <ConfirmAction
                                 v-if="!v.is_active"
                                 label="Activate"
@@ -445,6 +485,42 @@ function test() {
                       </tbody>
                     </table>
                   </div>
+                </PageState>
+              </SectionCard>
+
+              <SectionCard v-if="compareTarget != null" class="mt-5" :title="`Version ${compareTarget} compared with`" subtitle="Lines marked + are in the selected version only, lines marked - are in the base only." :icon="GitCompare">
+                <div class="toolbar mb-4">
+                  <label class="field min-w-56">
+                    <span>Base version</span>
+                    <Select v-model="compareBase" :options="baseOptions" option-label="label" option-value="value" fluid />
+                  </label>
+                  <Button label="Close" severity="secondary" text @click="compareTarget = null" />
+                </div>
+                <PageState :loading="compare.loading.value" :error="compare.error.value" :empty="!!compare.data.value?.same" empty-text="These two versions have identical YAML." @retry="compare.run(compareTarget, compareBase!)">
+                  <template v-if="compare.data.value">
+                    <p class="m-0 mb-3 text-sm text-ink-700" aria-live="polite">
+                      Rules: {{ compare.data.value.changes.added.length }} added, {{ compare.data.value.changes.removed.length }} removed, {{ compare.data.value.changes.changed.length }} changed.
+                    </p>
+                    <ul v-if="compare.data.value.changes.added.length + compare.data.value.changes.removed.length + compare.data.value.changes.changed.length" class="m-0 mb-4 flex list-none flex-wrap gap-2 p-0">
+                      <li v-for="id in compare.data.value.changes.added" :key="`a${id}`" class="chip diff-add"><span class="sr-only">Added </span>+ {{ ruleCode(id) }}</li>
+                      <li v-for="id in compare.data.value.changes.removed" :key="`r${id}`" class="chip diff-del"><span class="sr-only">Removed </span>- {{ ruleCode(id) }}</li>
+                      <li v-for="id in compare.data.value.changes.changed" :key="`c${id}`" class="chip diff-chg"><span class="sr-only">Changed </span>~ {{ ruleCode(id) }}</li>
+                    </ul>
+                    <div class="diff" role="group" :aria-label="`Line diff of version ${compareBase} against version ${compareTarget}`">
+                      <template v-for="(chunk, ci) in compare.data.value.chunks" :key="ci">
+                        <button v-if="chunk.skipped && !expanded.has(ci)" type="button" class="diff-skip" @click="expanded = new Set(expanded).add(ci)">
+                          … {{ hiddenCount(chunk) }} unchanged {{ hiddenCount(chunk) === 1 ? 'line' : 'lines' }}
+                        </button>
+                        <div
+                          v-for="(line, li) in chunk.lines ?? chunk.skipped"
+                          v-show="!chunk.skipped || expanded.has(ci)"
+                          :key="li"
+                          class="diff-line"
+                          :class="`diff-${line.kind}`"
+                        ><span class="diff-mark" aria-hidden="true">{{ MARK[line.kind] }}</span><span><span class="sr-only">{{ MARK_LABEL[line.kind] }}: </span>{{ line.text }}</span></div>
+                      </template>
+                    </div>
+                  </template>
                 </PageState>
               </SectionCard>
             </TabPanel>
@@ -494,5 +570,14 @@ function test() {
 .rule-hl { padding: 0.4rem 0.6rem; margin: -0.4rem -0.6rem; border-radius: 0.5rem; background: var(--color-brand-100); }
 .tab-label { display: inline-flex; align-items: center; gap: 0.4rem; }
 :deep(.yaml) { font-family: var(--font-mono); font-size: 0.8125rem; line-height: 1.5; tab-size: 2; white-space: pre; overflow-x: auto; }
+.chip { padding: 0.15rem 0.6rem; border-radius: 999px; font: 600 0.75rem var(--font-mono); }
+.diff { max-height: 60vh; overflow: auto; border-radius: 0.75rem; border: 1px solid var(--color-ink-200); background: var(--color-ink-50); font: 0.8125rem/1.5 var(--font-mono); }
+.diff-line { display: flex; gap: 0.75rem; padding: 0 1rem; white-space: pre; color: var(--color-ink-800); }
+.diff-mark { flex: none; width: 1ch; font-weight: 700; }
+.diff-add { background: var(--color-success-soft); color: var(--color-success-ink); }
+.diff-del { background: var(--color-danger-soft); color: var(--color-danger-ink); }
+.diff-chg { background: var(--color-warn-soft); color: var(--color-warn-ink); }
+.diff-skip { display: block; width: 100%; padding: 0.2rem 1rem; border: 0; text-align: left; font: inherit; cursor: pointer; color: var(--color-ink-500); background: var(--color-ink-100); }
+.diff-skip:hover { color: var(--color-ink-800); }
 .yaml-view { margin: 0; max-height: 60vh; overflow: auto; padding: 1rem; border-radius: 0.75rem; background: var(--color-ink-50); border: 1px solid var(--color-ink-200); color: var(--color-ink-800); font: 0.8125rem/1.5 var(--font-mono); }
 </style>
