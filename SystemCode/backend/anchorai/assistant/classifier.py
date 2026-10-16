@@ -67,11 +67,17 @@ class IntentClassifier:
     def _normalise(self, text: str) -> str:
         return extract_slots(text, self.instructors, self.classes)[1]
 
+    def accepts(self, intent: str, n_members: int) -> bool:
+        """Slot rule: an intent whose member-id requirement isn't met can't be the answer."""
+        spec = next((s for s in self.specs if s.name == intent), None)
+        if spec is None:
+            return False
+        return not spec.member_slots or spec.member_slots[0] <= n_members <= spec.member_slots[1]
+
     def _best(self, sims: np.ndarray, n_members: int) -> tuple[int, float]:
-        # Slot rule: an intent whose member-id requirement isn't met can't be the answer.
         sims = sims.copy()
         for i, spec in enumerate(self.specs):
-            if spec.member_slots and not spec.member_slots[0] <= n_members <= spec.member_slots[1]:
+            if not self.accepts(spec.name, n_members):
                 sims[i] = -1.0
         best = int(sims.argmax())
         return best, float(sims[best])

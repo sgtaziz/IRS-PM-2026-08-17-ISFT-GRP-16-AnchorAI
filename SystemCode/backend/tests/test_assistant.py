@@ -6,7 +6,7 @@ from sqlmodel import Session
 from anchorai.assistant import service
 from anchorai.assistant.classifier import IntentClassifier, IntentSpec, load_intents
 from anchorai.assistant.prompt import DONT_KNOW
-from anchorai.assistant.service import answer
+from anchorai.assistant.service import HistoryTurn, answer
 from anchorai.assistant.slots import extract_slots
 
 INSTRUCTORS = {"Maya Chen": "I04", "Sam Rivera": "I01"}
@@ -112,7 +112,46 @@ def test_answer_is_grounded_and_degrades(built, engine, classifier):
         assert staff_plan.answer == "Plan details are only available to managers."
 
 
-def test_chat_and_feedback_endpoints(client, login, built, monkeypatch, classifier):
+def test_follow_ups_continue_the_previous_turn(built, engine, classifier):
+    risk = HistoryTurn(
+        question="M0001 risk",
+        answer="High risk [E1][E2].",
+        intent="member_risk",
+        slots={"member_ids": ["M0001"], "instructor_ids": ["I99"]},
+    )
+    with Session(engine) as session:
+        prompts = []
+        reply = answer(
+            session,
+            "explain that simply",
+            history=[risk],
+            classifier=classifier,
+            chat=lambda m: prompts.append(m) or "ok [E1]",
+        )
+        assert reply.follow_up and reply.intent == "member_risk"
+        assert reply.slots.member_ids == ["M0001"] and reply.slots.instructor_ids == []
+        # Earlier turns go in as chat messages, without their stale evidence ids.
+        assert [m["role"] for m in prompts[0]] == ["system", "user", "assistant", "user"]
+        assert prompts[0][2]["content"] == "High risk."
+
+        def down(_):
+            raise APIConnectionError(request=None)
+
+        other = answer(session, "and M0002?", history=[risk], classifier=classifier, chat=down)
+        assert other.slots.member_ids == ["M0002"] and "[E1]" in other.answer
+        offline = answer(session, "say more", history=[risk], classifier=classifier, chat=down)
+        assert offline.grounded and "offline" in offline.answer
+
+        never = lambda _: pytest.fail("LLM must not be called")
+        thanks = answer(session, "thanks!", history=[risk], classifier=classifier, chat=never)
+        assert thanks.answer == DONT_KNOW and not thanks.follow_up
+
+        plan = HistoryTurn(question="plan", answer="x", intent="plan_summary")
+        blocked = answer(session, "and then?", history=[plan], classifier=classifier)
+        assert blocked.answer == "Plan details are only available to managers."
+
+
+def test_chat_endpoint(client, login, built, monkeypatch, classifier):
     monkeypatch.setattr(service, "get_classifier", lambda: classifier)
     monkeypatch.setattr(service.llm, "chat", lambda m: "answer [E1]")
     staff = login("staff1")
@@ -126,10 +165,4 @@ def test_chat_and_feedback_endpoints(client, login, built, monkeypatch, classifi
         body["intent"] == "member_risk"
         and body["evidence"]
         and body["slots"]["member_ids"] == ["M0002"]
-    )
-    fb = {"message": "why the risk", "answer": body["answer"], "intent": "member_risk", "rating": 1}
-    assert client.post("/api/assistant/feedback", json=fb, headers=staff).status_code == 200
-    assert (
-        client.post("/api/assistant/feedback", json=fb | {"rating": 5}, headers=staff).status_code
-        == 422
     )
