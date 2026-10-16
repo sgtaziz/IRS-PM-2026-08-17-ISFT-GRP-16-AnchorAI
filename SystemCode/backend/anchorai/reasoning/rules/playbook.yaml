@@ -1,35 +1,65 @@
-# Example rule format. Conditions are evaluated against working-memory facts.
-# salience: higher fires first. kind: derive | playbook | guardrail.
-# source: where the knowledge came from (interview / publication / team assumption). Keep this honest.
-
-- id: D01_falling_regular
-  kind: derive
-  salience: 50
-  description: A historically regular member whose recent visits dropped by half or more
-  when:
-    - "visits_prev_12w_per_week >= 2"
-    - "visit_trend_ratio <= 0.5"
-  then:
-    assert: { engagement_pattern: falling_regular }
-  source: team assumption, to validate with club manager interview
+# Playbooks: which offer, through which channel. Higher salience is preferred.
 
 - id: P01_new_member_onboarding
   kind: playbook
   salience: 40
-  description: New members in the first-90-day cliff who are slipping get a trainer onboarding call
-  when:
-    - "tenure_days <= 90"
-    - "visit_trend_ratio < 0.7"
-  then:
-    propose: { offer_id: free_pt_session, channel: call }
-  source: HFA 2025 benchmarking report (first-90-day attrition)
+  description: New and slipping members get a trainer onboarding session
+  when: ["new_member == true", "trend_ratio < 0.8"]
+  then: {propose: {offer_id: free_pt_session, channel: call}}
+  source: team assumption
 
-- id: G01_contact_fatigue
-  kind: guardrail
-  salience: 100
-  description: Never contact a member more than once in 30 days
-  when:
-    - "days_since_last_contact < 30"
-  then:
-    block: all
-  source: team policy (hard constraint in proposal)
+- id: P02_falling_regular_pt
+  kind: playbook
+  salience: 40
+  description: Falling regulars get a personal training session to rebuild the habit
+  when: ["falling_regular == true"]
+  then: {propose: {offer_id: free_pt_session, channel: in_person}}
+  source: team assumption
+
+- id: P03_disrupted_checkin
+  kind: playbook
+  salience: 45
+  description: Members whose class routine was disrupted get a personal check-in about alternatives
+  when: ["routine_disrupted == true"]
+  then: {propose: {offer_id: checkin_message, channel: sms}}
+  source: team assumption
+
+- id: P04_social_class_pass
+  kind: playbook
+  salience: 30
+  description: Social members at medium or high risk get a bring-a-friend class pass
+  when: ["social_member == true", "risk_band in [medium, high]"]
+  then: {propose: {offer_id: class_pass, channel: sms}}
+  source: team assumption
+
+- id: P05_month_to_month_discount
+  kind: playbook
+  salience: 30
+  description: High-risk month-to-month members get a discounted month
+  when: ["contract_period == 1", "risk_band == high"]
+  then: {propose: {offer_id: discount_1m, channel: call}}
+  source: team assumption
+
+- id: P06_high_value_pt
+  kind: playbook
+  salience: 35
+  description: High-value members at high risk get a personal training session
+  when: ["high_value_at_risk == true"]
+  then: {propose: {offer_id: free_pt_session, channel: call}}
+  source: team assumption
+
+- id: P07_disengaged_checkin
+  kind: playbook
+  salience: 20
+  description: Disengaged members get a low-cost check-in message
+  when: ["disengaged == true", "risk_band in [medium, high]"]
+  then: {propose: {offer_id: checkin_message, channel: sms}}
+  source: team assumption
+
+- id: P08_medium_risk_checkin
+  kind: playbook
+  salience: 10
+  description: Any other medium-risk member gets a check-in email
+  when: ["risk_band == medium"]
+  then: {propose: {offer_id: checkin_message, channel: email}}
+  source: team assumption

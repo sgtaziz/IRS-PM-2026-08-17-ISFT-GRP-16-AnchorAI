@@ -1,0 +1,33 @@
+# Guardrails: hard limits. They block proposals; the optimiser never sees blocked offers.
+
+- id: G01_contact_fatigue
+  kind: guardrail
+  salience: 100
+  description: Never contact a member more than once in 30 days
+  when: ["days_since_last_contact < 30"]
+  then: {block: all}
+  source: team policy (hard constraint in the proposal)
+
+- id: G02_offer_cap
+  kind: guardrail
+  salience: 100
+  description: At most two offers per member in 90 days
+  when: ["offers_last_90d >= 2"]
+  then: {block: all}
+  source: team policy (default constraint max_offers_per_member_per_90d)
+
+- id: G03_discount_eligibility
+  kind: guardrail
+  salience: 100
+  description: The discounted month is for month-to-month members only
+  when: ["contract_period != 1"]
+  then: {block: [discount_1m]}
+  source: offer catalogue eligibility
+
+- id: G04_low_risk_no_paid_offers
+  kind: guardrail
+  salience: 90
+  description: Do not spend paid offers on low-risk members
+  when: ["risk_band == low"]
+  then: {block: [free_pt_session, class_pass, discount_1m]}
+  source: team assumption
