@@ -52,7 +52,7 @@ uv run anchorai setup
 
 1. **`data build`** (about 20 s). It builds the data tables from the Kaggle CSV, segments members, trains the calibrated churn model and the T-learner, then writes the outputs to `SystemCode/data/generated/`.
 2. **`db reset`**. It creates `SystemCode/data/app.db`, applies migrations, and seeds demo users, the rule base, offers, the staff roster and constraints, plus the demo layer.
-3. **`kg load`**. It loads the knowledge graph into Neo4j.
+3. **`kg load`**. It loads the knowledge graph into Neo4j and caches the graph signals (lost instructor, cancelled class, cohort risk) to `SystemCode/data/generated/kg_facts.parquet` for the rule engine. If Neo4j is not running, this step is skipped with a warning: the app still works, but rules on graph signals don't fire and graph panels show as unavailable. Start Neo4j and run `uv run anchorai kg load` to add them.
 
 You can run each step on its own:
 
@@ -106,4 +106,5 @@ cd SystemCode/frontend && npm run build        # type-check and production build
 | Pages show "Data tables are not built yet" (HTTP 503) | Run `uv run anchorai data build` |
 | Login fails for demo users | Run `uv run anchorai db reset` |
 | Graph panels or assistant show "unavailable" | Start Neo4j or the LLM endpoint; the rest of the app keeps working |
+| `docker compose up` fails with "failed to add the host <=> sandbox pair interfaces: operation not supported" | The kernel was updated but not rebooted, so Docker's network module is missing. Reboot |
 | Port 8000 or 5173 is in use | Stop the other process, or pass `--port` to uvicorn and change `vite.config.ts` |

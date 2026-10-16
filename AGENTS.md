@@ -46,6 +46,7 @@ cd SystemCode/backend
 uv sync                                      # install (creates .venv, Python 3.12)
 uv run anchorai setup                        # fresh clone -> data, migrated + seeded DB, KG loaded
 uv run anchorai db reset                     # back to a clean seeded demo DB
+uv run anchorai kg load                      # reload the knowledge graph and cache its rule facts
 uv run anchorai data build                   # regenerate data tables, segments, churn scores, uplift (~20 s)
 uv run uvicorn anchorai.api.main:app --reload   # API on :8000, docs at /docs
 uv run pytest -q                             # tests
