@@ -7,6 +7,8 @@ from anchorai.api.deps import ANY_ROLE, require_role
 from anchorai.api.routers import (
     admin_audit,
     admin_data,
+    admin_gym,
+    admin_kg,
     admin_offers,
     assistant,
     auth,
@@ -77,4 +79,16 @@ app.include_router(
     prefix="/api/admin/users",
     tags=["admin users (Stream C)"],
     dependencies=admin_only,
+)
+app.include_router(
+    admin_gym.router,
+    prefix="/api/admin/gym",
+    tags=["admin gym (Stream C)"],
+    dependencies=manager_up,
+)
+app.include_router(
+    admin_kg.router,
+    prefix="/api/admin/kg",
+    tags=["admin kg (Stream C)"],
+    dependencies=manager_up,
 )

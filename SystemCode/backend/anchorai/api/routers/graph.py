@@ -29,9 +29,9 @@ def ego(member_id: str):
 
 
 @router.get("/entities", response_model=Entities, dependencies=manager_up)
-def entities():
+def entities(session: SessionDep):
     try:
-        return simulate.entities()
+        return simulate.entities(session)
     except DataNotBuilt as e:
         raise HTTPException(503, str(e)) from None
 
