@@ -42,6 +42,7 @@ What each stream needs from the others: blockers, reviews, decisions and promise
 | # | Requested by | Kind | Item | Why it matters | Status | Added |
 |---|---|---|---|---|---|---|
 | 13 | B | deliver | `graph_signals(facts)` strings for `Explanation.graph_signals` | Done in `anchorai/knowledge/signals.py`; B to confirm it fits | answered | 2026-10-16 |
+| 19 | A | blocker | `tests/test_gym_overlay.py::test_failed_reload_stays_stale_and_is_audited` reads the developer's real `app.db`: `anchorai/knowledge/entities.py:109` opens `Session(get_engine())` instead of the test engine | Fails with `no such table: gym_instructors` on any clone that has not run `db upgrade`; tests must not touch the real DB | open | 2026-10-16 |
 
 ## Done
 
