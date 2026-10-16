@@ -137,7 +137,7 @@ async function cite(id: string) {
 .answer strong { font-weight: 600; color: var(--color-ink-900); }
 .cites { white-space: nowrap; margin-left: 0.15rem; }
 .cite {
-  --c: var(--color-brand-600);
+  --c: var(--color-ev-member);
   display: inline-flex; align-items: center; justify-content: center;
   min-width: 1.2rem; height: 1.1rem; padding: 0 0.3rem; margin: 0 0.08rem;
   font: 600 0.68rem/1 var(--font-sans); vertical-align: 0.15em;
@@ -145,14 +145,14 @@ async function cite(id: string) {
   border: 1px solid color-mix(in srgb, var(--c) 30%, transparent); border-radius: 999px;
   cursor: pointer; transition: background 0.15s, color 0.15s;
 }
-.cite:hover, .cite:focus-visible { background: var(--c); color: #fff; }
+.cite:hover, .cite:focus-visible { background: var(--c); color: var(--color-card); }
 .cite:focus-visible { outline: 2px solid var(--c); outline-offset: 1px; }
 .cite.static { cursor: default; vertical-align: baseline; flex: none; }
-.k-member { --c: #1f60ea; }
-.k-rule { --c: #6d4ae8; }
-.k-offer { --c: #0b8a5c; }
-.k-event { --c: #c46a00; }
-.k-plan { --c: #0e8b88; }
+.k-member { --c: var(--color-ev-member); }
+.k-rule { --c: var(--color-ev-rule); }
+.k-offer { --c: var(--color-ev-offer); }
+.k-event { --c: var(--color-ev-event); }
+.k-plan { --c: var(--color-ev-plan); }
 .sources { margin-top: 0.6rem; font-size: 0.8rem; }
 .toggle { display: inline-flex; align-items: center; gap: 0.3rem; background: none; border: 0; padding: 0.15rem 0; color: var(--color-ink-500); cursor: pointer; font: 500 0.78rem var(--font-sans); }
 .toggle:hover { color: var(--color-brand-700); }

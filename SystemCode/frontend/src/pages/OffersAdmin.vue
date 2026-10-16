@@ -173,7 +173,7 @@ const skillOptions = () => (catalog.data.value?.skills ?? []).map((s) => ({ labe
             </Column>
             <Column field="active" header="Status">
               <template #body="{ data }">
-                <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold" :class="data.active ? 'bg-success-soft text-[#0b7a53]' : 'bg-ink-100 text-ink-500'">
+                <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold" :class="data.active ? 'bg-success-soft text-success-ink' : 'bg-ink-100 text-ink-500'">
                   <span class="size-1.5 rounded-full" :class="data.active ? 'bg-success' : 'bg-ink-400'" />{{ data.active ? 'Active' : 'Inactive' }}
                 </span>
               </template>

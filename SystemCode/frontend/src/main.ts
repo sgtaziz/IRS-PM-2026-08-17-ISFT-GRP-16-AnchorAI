@@ -8,8 +8,9 @@ import App from './App.vue'
 import { setUnauthorizedHandler } from './api/client'
 import { router } from './router'
 import { useAuthStore } from './stores/auth'
+import { useThemeStore } from './stores/theme'
 import './style.css'
-import { AnchorPreset } from './theme'
+import { AnchorPreset, DARK_CLASS } from './theme'
 
 const app = createApp(App)
   .use(createPinia())
@@ -17,11 +18,13 @@ const app = createApp(App)
   .use(PrimeVue, {
     theme: {
       preset: AnchorPreset,
-      options: { darkModeSelector: false, cssLayer: { name: 'primevue', order: 'theme, base, primevue, components, utilities' } },
+      options: { darkModeSelector: `.${DARK_CLASS}`, cssLayer: { name: 'primevue', order: 'theme, base, primevue, components, utilities' } },
     },
   })
   .use(ToastService)
   .use(ConfirmationService)
+
+useThemeStore()
 
 setUnauthorizedHandler(() => {
   useAuthStore().logout()

@@ -165,7 +165,7 @@ onMounted(() => {
   <div class="page">
     <PageHeader title="Members" subtitle="Every member with their current churn risk. Click a row to open the member's 360 view.">
       <template #actions>
-        <span v-if="members.data.value" class="rounded-full bg-white px-3 py-1.5 text-sm font-medium text-ink-600 ring-1 ring-ink-200">
+        <span v-if="members.data.value" class="rounded-full bg-card px-3 py-1.5 text-sm font-medium text-ink-600 ring-1 ring-ink-200">
           {{ members.data.value.total.toLocaleString() }} members match
         </span>
       </template>
@@ -229,7 +229,7 @@ onMounted(() => {
       </Button>
     </form>
 
-    <div class="rounded-card border border-ink-200 bg-white p-4 shadow-card sm:p-5">
+    <div class="rounded-card border border-ink-200 bg-card p-4 shadow-card sm:p-5">
       <PageState :error="members.error.value" @retry="load">
         <DataTableX
           :value="members.data.value?.items ?? []"
@@ -298,7 +298,7 @@ onMounted(() => {
   align-items: end;
   margin-bottom: 1.25rem;
   padding: 1rem 1.25rem;
-  background: #fff;
+  background: var(--color-card);
   border: 1px solid var(--color-ink-200);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);

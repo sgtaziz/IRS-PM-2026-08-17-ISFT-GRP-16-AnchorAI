@@ -8,6 +8,7 @@ import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ApiError } from '../api/client'
 import AppLogo from '../components/AppLogo.vue'
+import ThemeToggle from '../components/ThemeToggle.vue'
 import { useAuthStore } from '../stores/auth'
 
 const POINTS = [
@@ -42,7 +43,7 @@ async function submit() {
 </script>
 
 <template>
-  <div class="grid min-h-dvh bg-white lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
+  <div class="grid min-h-dvh bg-card lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
     <aside class="relative hidden overflow-hidden bg-navy-900 p-12 text-white lg:flex lg:flex-col xl:p-16">
       <div class="pointer-events-none absolute -top-40 -right-40 size-[36rem] rounded-full bg-brand-600/30 blur-3xl" aria-hidden="true" />
       <div class="pointer-events-none absolute -bottom-48 -left-24 size-[30rem] rounded-full bg-[#14a3a0]/20 blur-3xl" aria-hidden="true" />
@@ -59,15 +60,16 @@ async function submit() {
             </span>
             <div>
               <p class="m-0 font-semibold text-white">{{ p.title }}</p>
-              <p class="m-0 mt-0.5 text-sm text-ink-300">{{ p.text }}</p>
+              <p class="m-0 mt-0.5 text-sm text-[#cbd2de]">{{ p.text }}</p>
             </div>
           </li>
         </ul>
       </div>
-      <p class="relative m-0 text-xs text-ink-400">NUS-ISS Intelligent Reasoning Systems · pseudonymous demo data</p>
+      <p class="relative m-0 text-xs text-[#98a2b6]">NUS-ISS Intelligent Reasoning Systems · pseudonymous demo data</p>
     </aside>
 
-    <main class="flex items-center justify-center px-5 py-12 sm:px-8">
+    <main class="relative flex items-center justify-center px-5 py-12 sm:px-8">
+      <div class="absolute top-4 right-4"><ThemeToggle /></div>
       <form class="flex w-full max-w-sm flex-col gap-5" @submit.prevent="submit">
         <AppLogo class="mb-4 lg:hidden" :size="36" />
         <div>

@@ -84,7 +84,7 @@ const SOURCES = [
   flex-direction: column;
   min-height: 0;
   padding: 1rem 1.25rem 1rem;
-  background: #fff;
+  background: var(--color-card);
   border: 1px solid var(--color-ink-200);
   border-radius: var(--radius-card);
   box-shadow: var(--shadow-card);
@@ -100,17 +100,17 @@ const SOURCES = [
 @media (max-width: 639.98px) {
   .chat-panel { padding: 0.75rem; }
 }
-.rail-card { padding: 1rem 1.1rem; background: #fff; border: 1px solid var(--color-ink-200); border-radius: var(--radius-card); }
+.rail-card { padding: 1rem 1.1rem; background: var(--color-card); border: 1px solid var(--color-ink-200); border-radius: var(--radius-card); }
 .rail-title { margin: 0 0 0.75rem; font-size: 0.8125rem; font-weight: 600; color: var(--color-ink-900); }
 .legend-dot {
-  --c: var(--color-brand-600);
+  --c: var(--color-ev-member);
   display: inline-grid; place-items: center; min-width: 1.2rem; height: 1.1rem; padding: 0 0.3rem; border-radius: 999px;
   font-size: 0.65rem; font-weight: 700; color: var(--c);
   background: color-mix(in srgb, var(--c) 10%, transparent); border: 1px solid color-mix(in srgb, var(--c) 30%, transparent);
 }
-.k-member { --c: #1f60ea; }
-.k-rule { --c: #6d4ae8; }
-.k-offer { --c: #0b8a5c; }
-.k-event { --c: #c46a00; }
-.k-plan { --c: #0e8b88; }
+.k-member { --c: var(--color-ev-member); }
+.k-rule { --c: var(--color-ev-rule); }
+.k-offer { --c: var(--color-ev-offer); }
+.k-event { --c: var(--color-ev-event); }
+.k-plan { --c: var(--color-ev-plan); }
 </style>

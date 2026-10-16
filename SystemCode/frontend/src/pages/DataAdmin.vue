@@ -173,8 +173,8 @@ const fairness = computed(() => {
 const STATE_STYLE: Record<string, { label: string; cls: string }> = {
   idle: { label: 'Idle', cls: 'bg-ink-100 text-ink-600' },
   running: { label: 'Running', cls: 'bg-brand-50 text-brand-700' },
-  done: { label: 'Up to date', cls: 'bg-success-soft text-[#0b7a53]' },
-  failed: { label: 'Failed', cls: 'bg-danger-soft text-[#b4183a]' },
+  done: { label: 'Up to date', cls: 'bg-success-soft text-success-ink' },
+  failed: { label: 'Failed', cls: 'bg-danger-soft text-danger-ink' },
 }
 const stateStyle = (s: string | undefined) => STATE_STYLE[s ?? 'idle'] ?? STATE_STYLE.idle
 </script>
@@ -207,7 +207,7 @@ const stateStyle = (s: string | undefined) => STATE_STYLE[s ?? 'idle'] ?? STATE_
                 type="file"
                 accept=".csv,text/csv"
                 :disabled="uploading"
-                class="block w-full rounded-lg border border-dashed border-ink-300 bg-ink-50 p-2 text-sm text-ink-600 file:mr-3 file:cursor-pointer file:rounded-md file:border-0 file:bg-white file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-ink-800 file:shadow-card file:ring-1 file:ring-ink-200"
+                class="block w-full rounded-lg border border-dashed border-ink-300 bg-ink-50 p-2 text-sm text-ink-600 file:mr-3 file:cursor-pointer file:rounded-md file:border-0 file:bg-card file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-ink-800 file:shadow-card file:ring-1 file:ring-ink-200"
                 @change="upload"
               />
             </label>

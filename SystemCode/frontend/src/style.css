@@ -2,6 +2,8 @@
 @import 'tailwindcss';
 @import 'tailwindcss-primeui';
 
+@custom-variant dark (&:where(.app-dark, .app-dark *));
+
 @theme {
   --font-sans: 'Inter', 'Inter Variable', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
@@ -41,6 +43,23 @@
   --color-danger: #d92d4b;
   --color-danger-soft: #fde8ec;
 
+  --color-success-ink: #0b7a53;
+  --color-success-line: #bfe8d6;
+  --color-warn-ink: #8a5300;
+  --color-warn-line: #f5d9a6;
+  --color-danger-ink: #b4183a;
+  --color-danger-line: #f6c3cd;
+  --color-violet-soft: #efeafe;
+  --color-violet-ink: #5b3cc4;
+
+  --color-card: #ffffff;
+
+  --color-ev-member: #1f60ea;
+  --color-ev-rule: #6d4ae8;
+  --color-ev-offer: #0b8a5c;
+  --color-ev-event: #c46a00;
+  --color-ev-plan: #0e8b88;
+
   --color-risk-low: #0f9d6b;
   --color-risk-medium: #d98a00;
   --color-risk-high: #d92d4b;
@@ -56,7 +75,6 @@
 }
 
 :root {
-  color-scheme: light;
   --app-bg: var(--color-ink-50);
   --sidebar-w: 16.5rem;
   --sidebar-w-collapsed: 4.5rem;
@@ -77,6 +95,65 @@
 @media (min-width: 1024px) {
   :root { --main-pt: 2rem; --main-px: 2rem; --main-pb: 2rem; }
 }
+
+/*
+ * Dark mode: the same token names, re-pointed. The ink scale flips so "ink-50 is the faintest tint
+ * and ink-900 the strongest text" stays true on a dark background; tints become translucent.
+ */
+:root.app-dark {
+  color-scheme: dark;
+  --app-bg: #0b1120;
+  --color-card: #131b2e;
+
+  --color-ink-50: #182236;
+  --color-ink-100: #1d283d;
+  --color-ink-200: #26324a;
+  --color-ink-300: #34415c;
+  --color-ink-400: #56637d;
+  --color-ink-500: #8b96ab;
+  --color-ink-600: #a6b0c2;
+  --color-ink-700: #c3cad7;
+  --color-ink-800: #dbe0e8;
+  --color-ink-900: #eef1f6;
+  --color-ink-950: #f7f8fb;
+
+  --color-brand-50: rgb(52 126 246 / 0.14);
+  --color-brand-100: rgb(52 126 246 / 0.22);
+  --color-brand-200: rgb(89 161 251 / 0.38);
+  --color-brand-300: #6aa9fc;
+  --color-brand-700: #8ec3ff;
+  --color-brand-800: #bcdaff;
+  --color-brand-900: #d9eaff;
+
+  --color-success: #2fc28c;
+  --color-success-soft: rgb(47 194 140 / 0.14);
+  --color-success-ink: #6ee0b4;
+  --color-success-line: rgb(47 194 140 / 0.35);
+  --color-warn: #f0a83a;
+  --color-warn-soft: rgb(240 168 58 / 0.14);
+  --color-warn-ink: #f7c77a;
+  --color-warn-line: rgb(240 168 58 / 0.35);
+  --color-danger: #f2557a;
+  --color-danger-soft: rgb(242 85 122 / 0.15);
+  --color-danger-ink: #ff9bb3;
+  --color-danger-line: rgb(242 85 122 / 0.38);
+  --color-violet-soft: rgb(139 108 255 / 0.18);
+  --color-violet-ink: #c2b2ff;
+
+  --color-ev-member: #6aa9fc;
+  --color-ev-rule: #a993ff;
+  --color-ev-offer: #3fd09a;
+  --color-ev-event: #f5ac4a;
+  --color-ev-plan: #3fc9c4;
+
+  --color-risk-low: #2fc28c;
+  --color-risk-medium: #f0a83a;
+  --color-risk-high: #f2557a;
+
+  --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3);
+  --shadow-raised: 0 6px 20px -6px rgb(0 0 0 / 0.55), 0 1px 3px rgb(0 0 0 / 0.3);
+}
+:root.app-dark ::selection { background: rgb(52 126 246 / 0.4); }
 
 /* Big monitors at 100% scaling: grow the whole rem scale instead of leaving tiny text in a sea of space. */
 @media (min-width: 1880px) {

@@ -31,8 +31,8 @@ watch([action, username], () => {
 const actionOptions = computed(() => (page.data.value?.actions ?? []).map((a) => ({ label: humanize(a), value: a })))
 
 const ACTION_TONES: Record<string, string> = {
-  delete: 'bg-danger-soft text-[#b4183a]',
-  create: 'bg-success-soft text-[#0b7a53]',
+  delete: 'bg-danger-soft text-danger-ink',
+  create: 'bg-success-soft text-success-ink',
   login: 'bg-ink-100 text-ink-600',
 }
 const actionTone = (a: string) => ACTION_TONES[a.split('.').at(-1) ?? ''] ?? 'bg-brand-50 text-brand-800'

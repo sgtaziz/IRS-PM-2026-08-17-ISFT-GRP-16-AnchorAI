@@ -10,6 +10,7 @@ import { useRoute, useRouter } from 'vue-router'
 import AppLogo from './components/AppLogo.vue'
 import AssistantChat from './components/AssistantChat.vue'
 import MemberSearch from './components/MemberSearch.vue'
+import ThemeToggle from './components/ThemeToggle.vue'
 import { initials, ROLE_LABELS } from './labels'
 import { groupOf, NAV_GROUPS, NAV_ICONS } from './nav'
 import { routes } from './router'
@@ -94,7 +95,7 @@ function logout() {
         <RouterLink :to="auth.homeRoute" class="rounded-lg" aria-label="AnchorAI home">
           <AppLogo tone="light" :wordmark="!collapsed" />
         </RouterLink>
-        <button type="button" class="icon-btn grid text-ink-300 lg:hidden" aria-label="Close menu" @click="menuOpen = false">
+        <button type="button" class="icon-btn grid text-[#cbd2de] lg:hidden" aria-label="Close menu" @click="menuOpen = false">
           <X :size="18" />
         </button>
       </div>
@@ -154,6 +155,7 @@ function logout() {
         <RouterLink :to="auth.homeRoute" class="md:hidden" aria-label="AnchorAI home"><AppLogo :size="28" /></RouterLink>
         <div class="ml-auto flex min-w-0 items-center gap-2 sm:gap-3">
           <div class="w-10 sm:w-64 xl:w-80"><MemberSearch v-if="auth.isAuthenticated" /></div>
+          <ThemeToggle />
           <button
             v-if="auth.user"
             type="button"
@@ -230,19 +232,20 @@ function logout() {
   position: sticky; top: 0; z-index: 40; display: flex; flex-direction: column; flex: none;
   width: var(--sidebar-w); height: 100dvh;
   background: linear-gradient(180deg, var(--color-navy-900), var(--color-navy-950));
-  color: var(--color-ink-300);
+  color: #cbd2de;
   transition: width 0.2s ease;
 }
 .collapsed .sidebar { width: var(--sidebar-w-collapsed); }
+:global(.app-dark) .sidebar { border-right: 1px solid rgb(255 255 255 / 0.06); background: linear-gradient(180deg, #0a1428, #070d1c); }
 .group-label {
   margin: 0 0 0.25rem; padding: 0 0.75rem; font-size: 0.6875rem; font-weight: 600;
-  letter-spacing: 0.08em; text-transform: uppercase; color: color-mix(in srgb, var(--color-ink-400) 80%, transparent);
+  letter-spacing: 0.08em; text-transform: uppercase; color: rgb(152 162 182 / 0.8);
 }
 .collapsed .group-label { height: 1px; margin: 0.25rem 0.75rem 0.5rem; padding: 0; overflow: hidden; color: transparent; background: rgb(255 255 255 / 0.08); }
 .nav-link {
   position: relative; display: flex; align-items: center; gap: 0.75rem; height: 2.25rem; padding: 0 0.75rem;
   border: 0; border-radius: 0.5rem; background: none; cursor: pointer;
-  color: var(--color-ink-300); font: 500 0.875rem/1 var(--font-sans); text-decoration: none; white-space: nowrap;
+  color: #cbd2de; font: 500 0.875rem/1 var(--font-sans); text-decoration: none; white-space: nowrap;
   transition: background 0.15s, color 0.15s;
 }
 .nav-link:hover { background: rgb(255 255 255 / 0.06); color: #fff; }
@@ -259,7 +262,7 @@ function logout() {
 .topbar {
   position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 1rem;
   height: var(--topbar-h); padding: 0 1rem; border-bottom: 1px solid var(--color-ink-200);
-  background: color-mix(in srgb, #fff 86%, transparent); backdrop-filter: saturate(1.4) blur(10px);
+  background: color-mix(in srgb, var(--color-card) 86%, transparent); backdrop-filter: saturate(1.4) blur(10px);
 }
 @media (min-width: 640px) { .topbar { padding: 0 1.5rem; } }
 @media (min-width: 1024px) { .topbar { padding: 0 2rem; } }
@@ -286,13 +289,13 @@ function logout() {
   .menu-open .sidebar { transform: none; box-shadow: 0 0 40px rgb(0 0 0 / 0.3); }
   .collapsed .nav-text { display: inline; }
   .collapsed .nav-link { justify-content: flex-start; padding: 0 0.75rem; }
-  .collapsed .group-label { height: auto; margin: 0 0 0.25rem; padding: 0 0.75rem; color: color-mix(in srgb, var(--color-ink-400) 80%, transparent); background: none; }
+  .collapsed .group-label { height: auto; margin: 0 0 0.25rem; padding: 0 0.75rem; color: rgb(152 162 182 / 0.8); background: none; }
 }
 
 .assistant-fab {
   position: fixed; right: 1.5rem; bottom: 1.5rem; z-index: 50; display: grid; place-items: center;
   width: 3.5rem; height: 3.5rem; border: 0; border-radius: 999px; cursor: pointer; color: #fff;
-  background: linear-gradient(135deg, var(--color-brand-500), var(--color-brand-800));
+  background: linear-gradient(135deg, #347ef6, #1a3fac);
   box-shadow: var(--shadow-fab); transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 .assistant-fab:hover { transform: translateY(-2px) scale(1.03); }

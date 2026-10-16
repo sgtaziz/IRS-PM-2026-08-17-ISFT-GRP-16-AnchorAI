@@ -18,9 +18,9 @@ import { channelLabel, humanize, RULE_KIND_LABELS, ruleCode } from '../labels'
 import { useGlossaryStore } from '../stores/glossary'
 
 const KIND_STYLE = {
-  derive: 'bg-[#efeafe] text-[#5b3cc4]',
-  playbook: 'bg-success-soft text-[#0b7a53]',
-  guardrail: 'bg-danger-soft text-[#b4183a]',
+  derive: 'bg-violet-soft text-violet-ink',
+  playbook: 'bg-success-soft text-success-ink',
+  guardrail: 'bg-danger-soft text-danger-ink',
 } as const
 
 const rules = useAsync(() => api<RuleSet>('/rules'))
@@ -49,7 +49,7 @@ function test() {
   <div class="page">
     <PageHeader title="Rules" subtitle="Forward-chaining rule base. Guardrails fire first, then higher salience, then more specific rules.">
       <template #actions>
-        <span v-if="rules.data.value?.version" class="rounded-full bg-white px-3 py-1.5 text-sm font-medium text-ink-600 ring-1 ring-ink-200">
+        <span v-if="rules.data.value?.version" class="rounded-full bg-card px-3 py-1.5 text-sm font-medium text-ink-600 ring-1 ring-ink-200">
           Version {{ rules.data.value.version }}
         </span>
       </template>
@@ -135,8 +135,8 @@ function test() {
 
 <style scoped>
 .banner { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.5rem; padding: 0.75rem 1rem; border-radius: 0.75rem; font-size: 0.875rem; border: 1px solid; }
-.banner.ok { background: var(--color-success-soft); border-color: #bfe8d6; color: #0b6a48; }
-.banner.warn { background: var(--color-warn-soft); border-color: #f5d9a6; color: #7a4800; }
-.banner.error { background: var(--color-danger-soft); border-color: #f6c3cd; color: #9b1530; }
+.banner.ok { background: var(--color-success-soft); border-color: var(--color-success-line); color: var(--color-success-ink); }
+.banner.warn { background: var(--color-warn-soft); border-color: var(--color-warn-line); color: var(--color-warn-ink); }
+.banner.error { background: var(--color-danger-soft); border-color: var(--color-danger-line); color: var(--color-danger-ink); }
 .cond { padding: 0.1rem 0.4rem; border-radius: 5px; font-size: 0.75rem; white-space: nowrap; color: var(--color-ink-700); background: var(--color-ink-100); }
 </style>

@@ -5,7 +5,7 @@ withDefaults(defineProps<{ title?: string; subtitle?: string; icon?: Component; 
 </script>
 
 <template>
-  <section class="flex min-w-0 flex-col rounded-card border border-ink-200 bg-white shadow-card">
+  <section class="flex min-w-0 flex-col rounded-card border border-ink-200 bg-card shadow-card">
     <header v-if="title || $slots.actions" class="flex items-start gap-3 px-5 pt-4" :class="flush ? 'pb-4' : 'pb-1'">
       <span v-if="icon" class="mt-0.5 grid size-8 shrink-0 place-items-center rounded-lg bg-brand-50 text-brand-600">
         <component :is="icon" :size="17" aria-hidden="true" />

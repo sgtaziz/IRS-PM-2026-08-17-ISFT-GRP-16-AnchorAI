@@ -109,7 +109,7 @@ function onSelect(type: string, id: string) {
               <EmptyState :icon="Network" title="No simulation yet" text="Pick an event to see who it would affect and which rules they would trigger." />
             </template>
             <template v-if="sim.data.value">
-              <p class="m-0 mb-4 flex items-center gap-2 rounded-lg bg-warn-soft px-3.5 py-2.5 text-sm font-medium text-[#7a4800]">
+              <p class="m-0 mb-4 flex items-center gap-2 rounded-lg bg-warn-soft px-3.5 py-2.5 text-sm font-medium text-warn-ink">
                 <TriangleAlert :size="16" class="shrink-0" aria-hidden="true" /> If {{ sim.data.value.label }}
               </p>
               <div class="mb-5 grid gap-3 sm:grid-cols-3">

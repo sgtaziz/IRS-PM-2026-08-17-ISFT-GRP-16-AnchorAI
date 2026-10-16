@@ -50,9 +50,9 @@ function effect(text: string): { kind: Kind; text: string } {
 }
 
 const KIND_STYLE: Record<Kind, { icon: typeof Lightbulb; cls: string }> = {
-  derive: { icon: Lightbulb, cls: 'bg-[#efeafe] text-[#5b3cc4]' },
-  playbook: { icon: CircleCheck, cls: 'bg-success-soft text-[#0b7a53]' },
-  guardrail: { icon: ShieldAlert, cls: 'bg-danger-soft text-[#b4183a]' },
+  derive: { icon: Lightbulb, cls: 'bg-violet-soft text-violet-ink' },
+  playbook: { icon: CircleCheck, cls: 'bg-success-soft text-success-ink' },
+  guardrail: { icon: ShieldAlert, cls: 'bg-danger-soft text-danger-ink' },
 }
 </script>
 
@@ -114,8 +114,8 @@ const KIND_STYLE: Record<Kind, { icon: typeof Lightbulb; cls: string }> = {
 <style scoped>
 .heading { margin: 0 0 0.6rem; font-size: 0.75rem; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--color-ink-500); }
 .offer { display: flex; align-items: center; gap: 0.6rem; padding: 0.55rem 0.75rem; border-radius: 0.6rem; font-size: 0.875rem; }
-.offer.allowed { background: color-mix(in srgb, var(--color-success-soft) 70%, #fff); border: 1px solid #c9ecdc; }
-.offer.blocked { background: color-mix(in srgb, var(--color-danger-soft) 60%, #fff); border: 1px solid #f7d0d8; }
+.offer.allowed { background: var(--color-success-soft); border: 1px solid var(--color-success-line); }
+.offer.blocked { background: var(--color-danger-soft); border: 1px solid var(--color-danger-line); }
 .firing { position: relative; display: flex; gap: 0.75rem; }
 .firing:not(:last-child)::before { content: ''; position: absolute; left: 0.8rem; top: 1.75rem; bottom: 0.15rem; width: 1px; background: var(--color-ink-200); }
 .step { display: grid; place-items: center; flex: none; width: 1.6rem; height: 1.6rem; border-radius: 999px; }

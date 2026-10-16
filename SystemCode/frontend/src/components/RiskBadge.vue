@@ -6,9 +6,9 @@ import { probability } from '../format'
 const props = defineProps<{ band: RiskBand; prob?: number }>()
 
 const TONES: Record<RiskBand, string> = {
-  high: 'bg-danger-soft text-[#b4183a] ring-[#f6c3cd]',
-  medium: 'bg-warn-soft text-[#9a5c00] ring-[#f5d9a6]',
-  low: 'bg-success-soft text-[#0b7a53] ring-[#bfe8d6]',
+  high: 'bg-danger-soft text-danger-ink ring-danger-line',
+  medium: 'bg-warn-soft text-warn-ink ring-warn-line',
+  low: 'bg-success-soft text-success-ink ring-success-line',
 }
 const DOTS: Record<RiskBand, string> = { high: 'bg-risk-high', medium: 'bg-risk-medium', low: 'bg-risk-low' }
 

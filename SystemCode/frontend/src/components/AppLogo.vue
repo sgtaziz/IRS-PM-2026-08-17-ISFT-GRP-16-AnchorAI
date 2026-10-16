@@ -16,7 +16,7 @@ withDefaults(defineProps<{ wordmark?: boolean; tone?: 'light' | 'dark'; size?: n
       class="text-[1.15rem] font-bold tracking-tight whitespace-nowrap"
       :class="tone === 'light' ? 'text-white' : 'text-ink-900'"
     >
-      Anchor<span :class="tone === 'light' ? 'text-brand-300' : 'text-brand-600'">AI</span>
+      Anchor<span :class="tone === 'light' ? 'text-brand-300' : 'text-brand-600 dark:text-brand-400'">AI</span>
     </span>
   </span>
 </template>

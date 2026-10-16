@@ -57,13 +57,13 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 <template>
   <button
     type="button"
-    class="flex h-10 w-full items-center gap-2.5 rounded-lg border border-ink-200 bg-ink-50 px-3 text-left text-sm text-ink-500 transition hover:border-ink-300 hover:bg-white"
+    class="flex h-10 w-full items-center gap-2.5 rounded-lg border border-ink-200 bg-ink-50 px-3 text-left text-sm text-ink-500 transition hover:border-ink-300 hover:bg-card"
     :aria-keyshortcuts="isMac ? 'Meta+K' : 'Control+K'"
     @click="open = true"
   >
     <Search :size="16" class="shrink-0" aria-hidden="true" />
     <span class="flex-1 truncate">Search members…</span>
-    <kbd class="hidden rounded-md border border-ink-200 bg-white px-1.5 py-0.5 font-sans text-[0.6875rem] font-semibold text-ink-500 sm:inline">{{ shortcut }}</kbd>
+    <kbd class="hidden rounded-md border border-ink-200 bg-card px-1.5 py-0.5 font-sans text-[0.6875rem] font-semibold text-ink-500 sm:inline">{{ shortcut }}</kbd>
   </button>
   <Dialog
     v-model:visible="open"

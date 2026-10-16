@@ -7,14 +7,14 @@ defineProps<{ icon: Component; title: string; text: string; features: string[]; 
 </script>
 
 <template>
-  <section class="relative overflow-hidden rounded-card border border-ink-200 bg-white shadow-card">
+  <section class="relative overflow-hidden rounded-card border border-ink-200 bg-card shadow-card">
     <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(60rem_20rem_at_100%_0%,var(--color-brand-50),transparent_70%)]" aria-hidden="true" />
     <div class="relative grid gap-8 p-6 md:p-10 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] lg:items-center">
       <div class="flex flex-col items-start gap-4">
         <span class="grid size-14 place-items-center rounded-2xl bg-brand-600 text-white shadow-raised">
           <component :is="icon" :size="28" aria-hidden="true" />
         </span>
-        <span class="inline-flex items-center gap-1.5 rounded-full bg-warn-soft px-2.5 py-1 text-xs font-semibold text-[#9a5c00]">
+        <span class="inline-flex items-center gap-1.5 rounded-full bg-warn-soft px-2.5 py-1 text-xs font-semibold text-warn-ink">
           <Hammer :size="13" aria-hidden="true" /> In development · {{ owner }}
         </span>
         <h2 class="m-0 text-xl font-semibold text-ink-900 md:text-2xl">{{ title }}</h2>
@@ -34,7 +34,7 @@ defineProps<{ icon: Component; title: string; text: string; features: string[]; 
     </div>
   </section>
   <div class="mt-5 grid gap-5 opacity-70 md:grid-cols-3" aria-hidden="true">
-    <div v-for="n in 3" :key="n" class="rounded-card border border-dashed border-ink-200 bg-white/60 p-5">
+    <div v-for="n in 3" :key="n" class="rounded-card border border-dashed border-ink-200 bg-card/60 p-5">
       <div class="mb-4 h-3 w-1/3 rounded-full bg-ink-100" />
       <div v-for="r in 4" :key="r" class="mb-3 flex items-center gap-3">
         <div class="size-7 shrink-0 rounded-lg bg-ink-100" />

@@ -196,7 +196,7 @@ function ask() {
                         <p class="m-0 text-sm font-semibold text-ink-800">{{ i.treated && i.offer_id ? glossary.offer(i.offer_id) : 'No offer (control)' }}</p>
                         <p class="m-0 text-xs text-ink-500">Week of {{ date(i.week_start) }}<template v-if="i.channel"> · {{ channelLabel(i.channel) }}</template></p>
                       </div>
-                      <span class="shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold" :class="i.stayed ? 'bg-success-soft text-[#0b7a53]' : 'bg-danger-soft text-[#b4183a]'">
+                      <span class="shrink-0 rounded-full px-2.5 py-0.5 text-xs font-semibold" :class="i.stayed ? 'bg-success-soft text-success-ink' : 'bg-danger-soft text-danger-ink'">
                         {{ i.stayed ? 'Stayed' : 'Left' }}
                       </span>
                     </li>

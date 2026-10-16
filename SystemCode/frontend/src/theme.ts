@@ -31,6 +31,10 @@ const ink = {
   950: '#0b1020',
 }
 
+// The app toggles `.app-dark` on <html>; PrimeVue then sets color-scheme, which picks a side of light-dark().
+export const DARK_CLASS = 'app-dark'
+const ld = (light: string, dark: string) => `light-dark(${light}, ${dark})`
+
 export const AnchorPreset = definePreset(Aura, {
   primitive: {
     borderRadius: { none: '0', xs: '4px', sm: '6px', md: '8px', lg: '10px', xl: '14px' },
@@ -39,24 +43,35 @@ export const AnchorPreset = definePreset(Aura, {
     primary: { ...brand, color: brand[600], hoverColor: brand[700], activeColor: brand[800], contrastColor: '#ffffff' },
     surface: ink,
     focusRing: { width: '2px', style: 'solid', color: brand[500], offset: '2px', shadow: 'none' },
-    text: { color: ink[800], hoverColor: ink[900], mutedColor: ink[500], hoverMutedColor: ink[600] },
-    content: { borderColor: ink[200], hoverBackground: ink[50] },
-    highlight: { background: brand[50], focusBackground: brand[100], color: brand[800], focusColor: brand[900] },
+    text: {
+      color: ld(ink[800], '#dbe0e8'),
+      hoverColor: ld(ink[900], '#eef1f6'),
+      mutedColor: ld(ink[500], '#8b96ab'),
+      hoverMutedColor: ld(ink[600], '#a6b0c2'),
+    },
+    content: { background: ld('#ffffff', '#131b2e'), borderColor: ld(ink[200], '#26324a'), hoverBackground: ld(ink[50], '#1b2539') },
+    highlight: {
+      background: ld(brand[50], 'rgba(52, 126, 246, 0.16)'),
+      focusBackground: ld(brand[100], 'rgba(52, 126, 246, 0.24)'),
+      color: ld(brand[800], brand[200]),
+      focusColor: ld(brand[900], brand[100]),
+    },
     formField: {
       paddingX: '0.75rem',
       paddingY: '0.5rem',
-      borderColor: ink[300],
-      hoverBorderColor: ink[400],
-      color: ink[800],
-      placeholderColor: ink[400],
+      background: ld('#ffffff', '#0f1626'),
+      borderColor: ld(ink[300], '#34415c'),
+      hoverBorderColor: ld(ink[400], '#56637d'),
+      color: ld(ink[800], '#dbe0e8'),
+      placeholderColor: ld(ink[400], '#6b7790'),
       shadow: '0 1px 2px 0 rgba(21, 27, 43, 0.04)',
       sm: { fontSize: '0.8125rem', paddingX: '0.625rem', paddingY: '0.375rem' },
       focusRing: { width: '3px', style: 'solid', color: 'color-mix(in srgb, #347ef6 22%, transparent)', offset: '0', shadow: 'none' },
     },
     overlay: {
-      select: { shadow: '0 12px 32px -8px rgba(21, 27, 43, 0.18), 0 4px 8px -4px rgba(21, 27, 43, 0.08)' },
-      popover: { shadow: '0 12px 32px -8px rgba(21, 27, 43, 0.18), 0 4px 8px -4px rgba(21, 27, 43, 0.08)' },
-      modal: { shadow: '0 24px 64px -12px rgba(11, 16, 32, 0.32)' },
+      select: { background: ld('#ffffff', '#172033'), borderColor: ld(ink[200], '#2c3852'), shadow: '0 12px 32px -8px rgba(21, 27, 43, 0.18), 0 4px 8px -4px rgba(21, 27, 43, 0.08)' },
+      popover: { background: ld('#ffffff', '#172033'), borderColor: ld(ink[200], '#2c3852'), shadow: '0 12px 32px -8px rgba(21, 27, 43, 0.18), 0 4px 8px -4px rgba(21, 27, 43, 0.08)' },
+      modal: { background: ld('#ffffff', '#151d30'), borderColor: ld(ink[200], '#2c3852'), shadow: '0 24px 64px -12px rgba(11, 16, 32, 0.32)' },
     },
   },
   components: {
@@ -71,16 +86,22 @@ export const AnchorPreset = definePreset(Aura, {
     },
     datatable: {
       header: { background: 'transparent', borderWidth: '0', padding: '0 0 0.75rem 0' },
-      headerCell: { background: '{surface.50}', selectedBackground: '{surface.100}', color: '{text.muted.color}', selectedColor: '{primary.700}', padding: '0.625rem 0.875rem' },
+      headerCell: {
+        background: ld(ink[50], '#182236'),
+        selectedBackground: ld(ink[100], '#1d283d'),
+        color: '{text.muted.color}',
+        selectedColor: ld(brand[700], brand[300]),
+        padding: '0.625rem 0.875rem',
+      },
       columnTitle: { fontWeight: '600' },
       bodyCell: { padding: '0.625rem 0.875rem' },
-      row: { stripedBackground: '{surface.50}' },
+      row: { stripedBackground: ld(ink[50], '#182236') },
     },
     tag: {
       root: { fontSize: '0.75rem', fontWeight: '600', padding: '0.2rem 0.55rem', borderRadius: '999px' },
     },
     tooltip: {
-      root: { background: ink[900], color: '#ffffff', borderRadius: '{border.radius.md}', padding: '0.5rem 0.65rem', maxWidth: '20rem' },
+      root: { background: ld(ink[900], '#2a3550'), color: '#ffffff', borderRadius: '{border.radius.md}', padding: '0.5rem 0.65rem', maxWidth: '20rem' },
     },
     dialog: { header: { padding: '1.25rem 1.5rem 0.75rem' }, content: { padding: '0 1.5rem 1.25rem' }, title: { fontSize: '1.125rem' } },
     drawer: { header: { padding: '1rem 1.25rem' }, content: { padding: '0 1.25rem 1.25rem' } },
