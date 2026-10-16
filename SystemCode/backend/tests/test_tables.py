@@ -19,3 +19,10 @@ def test_integrity_rejects_dangling_foreign_key():
     tables["attendance"].loc[0, "class_id"] = "K99"
     with pytest.raises(SchemaError, match="attendance.class_id"):
         check_integrity(tables)
+
+
+def test_integrity_rejects_attendance_without_visits():
+    tables = read_tables(FIXTURES)
+    tables["attendance"].loc[0, "visits_per_week"] = 0.0
+    with pytest.raises(SchemaError, match="visits_per_week"):
+        check_integrity(tables)

@@ -131,6 +131,8 @@ def check_integrity(tables: dict[str, pd.DataFrame]) -> None:
         dangling = set(values) - set(tables[target][PRIMARY_KEYS[target][0]])
         if dangling:
             raise SchemaError(f"{name}.{column}: unknown {target} {sorted(dangling)[:5]}")
+    if (tables["attendance"]["visits_per_week"] <= 0).any():
+        raise SchemaError("attendance: every row needs visits_per_week > 0")
     events = tables["events"]
     if not events["event_type"].isin(EVENT_TYPES).all():
         raise SchemaError(f"events: event_type must be one of {EVENT_TYPES}")

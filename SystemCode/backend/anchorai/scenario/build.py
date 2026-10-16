@@ -104,7 +104,8 @@ def build_attendance(
     rows["weight"] /= rows.groupby("member_id")["weight"].transform("sum")
     freq = members.set_index("member_id")["avg_class_frequency_total"]
     rows["visits_per_week"] = (rows["weight"] * rows["member_id"].map(freq)).round(3)
-    return rows
+    # A member who never comes to class (or whose share rounds to nothing) does not attend it.
+    return rows[rows["visits_per_week"] > 0].reset_index(drop=True)
 
 
 def sigmoid(z: np.ndarray) -> np.ndarray:
