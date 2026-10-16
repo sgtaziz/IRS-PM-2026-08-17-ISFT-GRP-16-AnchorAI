@@ -6,11 +6,13 @@ import Tag from 'primevue/tag'
 import { computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from '../api/client'
-import type { EgoGraph, MemberDetail, RuleOutcome } from '../api/types'
+import type { EgoGraph as EgoGraphData, MemberDetail, RuleOutcome } from '../api/types'
 import ChartCard from '../components/ChartCard.vue'
 import KpiTile from '../components/KpiTile.vue'
+import EgoGraph from '../components/EgoGraph.vue'
 import PageState from '../components/PageState.vue'
 import RiskBadge from '../components/RiskBadge.vue'
+import RuleTrace from '../components/RuleTrace.vue'
 import { useAsync } from '../composables/useAsync'
 import { date, money, num, pct, probability } from '../format'
 import { useAuthStore } from '../stores/auth'
@@ -22,21 +24,21 @@ const memberId = computed(() => String(route.params.id))
 
 const detail = useAsync((id: string) => api<MemberDetail>(`/members/${id}`))
 
-// Panels owned by Streams B and C; until their endpoints exist the panel says so instead of failing.
+// Stream B's panels; until their endpoints exist the panel says so instead of failing.
 const ruleTrace = useAsync((id: string) => api<RuleOutcome>(`/rules/trace/${id}`))
 const similarCases = useAsync((id: string) => api<unknown[]>(`/plan/similar-cases/${id}`))
-const egoGraph = useAsync((id: string) => api<EgoGraph>(`/graph/ego/${id}`))
+const egoGraph = useAsync((id: string) => api<EgoGraphData>(`/graph/ego/${id}`))
 const contacts = useAsync((id: string) => api<unknown[]>(`/outcomes?member_id=${encodeURIComponent(id)}`))
 const panels = [
-  { title: 'Rule trace', owner: 'Stream C', state: ruleTrace },
   { title: 'Similar past cases', owner: 'Stream B', state: similarCases },
-  { title: 'Knowledge-graph neighbourhood', owner: 'Stream C', state: egoGraph },
   { title: 'Contact and outcome history', owner: 'Stream B', state: contacts },
 ]
 
 function load() {
   const id = memberId.value
   detail.run(id)
+  ruleTrace.run(id)
+  egoGraph.run(id)
   for (const p of panels) p.state.run(id)
 }
 watch(memberId, load, { immediate: true })
@@ -193,6 +195,28 @@ function ask() {
                   </tr>
                 </tbody>
               </table>
+            </PageState>
+          </template>
+        </Card>
+
+        <Card>
+          <template #title>Rule trace</template>
+          <template #content>
+            <PageState :loading="ruleTrace.loading.value" :error="ruleTrace.error.value" @retry="ruleTrace.run(memberId)">
+              <RuleTrace v-if="ruleTrace.data.value" :outcome="ruleTrace.data.value" />
+            </PageState>
+          </template>
+        </Card>
+
+        <Card>
+          <template #title>Knowledge-graph neighbourhood</template>
+          <template #content>
+            <PageState
+              :loading="egoGraph.loading.value"
+              :empty="!!egoGraph.error.value || !egoGraph.data.value"
+              :empty-text="egoGraph.error.value ?? 'Not in the knowledge graph.'"
+            >
+              <EgoGraph v-if="egoGraph.data.value" :graph="egoGraph.data.value" />
             </PageState>
           </template>
         </Card>
