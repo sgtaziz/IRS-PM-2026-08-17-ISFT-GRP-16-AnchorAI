@@ -28,7 +28,7 @@
 - id: D05_high_value_at_risk
   kind: derive
   salience: 50
-  description: High churn risk on a longer, higher-value contract
+  description: High churn risk on a higher monthly fee (month-to-month or 6-month contract)
   when: ["risk_band == high", "monthly_value >= 54"]
   then: {assert: {high_value_at_risk: true}}
   source: team assumption
