@@ -480,3 +480,12 @@ export interface AuditPage {
   actions: string[]
   usernames: string[]
 }
+
+// Mirrors anchorai/assistant/drafts.py.
+export interface MessageDraft {
+  text: string
+  subject: string | null
+  channel: Channel
+  source: 'llm' | 'template'
+  evidence: string[]
+}
