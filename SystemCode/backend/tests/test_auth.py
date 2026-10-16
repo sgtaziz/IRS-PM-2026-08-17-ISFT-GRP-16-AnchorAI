@@ -51,3 +51,12 @@ def test_tokens_missing_required_claims_are_rejected(client):
     for token in (no_exp, null_uid):
         r = client.get("/api/auth/me", headers={"Authorization": f"Bearer {token}"})
         assert r.status_code == 401
+
+
+def test_audit_log_is_admin_only(client, login):
+    admin = login("admin")
+    assert client.get("/api/admin/audit", headers=login("manager")).status_code == 403
+    page = client.get("/api/admin/audit", params={"action": "login"}, headers=admin).json()
+    assert (
+        page["total"] >= 1 and page["items"][0]["action"] == "login" and "login" in page["actions"]
+    )

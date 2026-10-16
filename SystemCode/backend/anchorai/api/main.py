@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from anchorai.api.deps import ANY_ROLE, require_role
 from anchorai.api.routers import (
+    admin_audit,
     admin_data,
     admin_offers,
     assistant,
@@ -62,5 +63,11 @@ app.include_router(
     admin_offers.router,
     prefix="/api/admin/offers",
     tags=["admin offers (Stream A)"],
+    dependencies=admin_only,
+)
+app.include_router(
+    admin_audit.router,
+    prefix="/api/admin/audit",
+    tags=["admin audit (Stream C)"],
     dependencies=admin_only,
 )
