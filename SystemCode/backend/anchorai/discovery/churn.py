@@ -1,7 +1,8 @@
 """Calibrated churn ensemble (PLAN.md A4, experiment E2).
 
-The test split is touched only by `evaluate`. Resampling happens inside each training
-fold (imblearn Pipeline), and calibration uses a held-out slice of the training split.
+Test labels are used only for the reported metrics. Resampling happens inside each training
+fold (imblearn Pipeline), calibration uses a held-out slice of the training split, and every
+training member is scored out-of-fold so no member's score has seen its own label.
 """
 
 from dataclasses import dataclass
@@ -158,6 +159,55 @@ def fit(
     return model
 
 
+def assign_folds(y: pd.Series, seed: int) -> pd.Series:
+    """Stratified fold number (0 .. CV_FOLDS - 1) for each training member."""
+    folds = pd.Series(-1, index=y.index, name="fold")
+    splitter = StratifiedKFold(CV_FOLDS, shuffle=True, random_state=seed)
+    for k, (_, held_out) in enumerate(splitter.split(np.zeros(len(y)), y)):
+        folds.iloc[held_out] = k
+    return folds
+
+
+@dataclass
+class CrossFit:
+    probabilities: pd.Series
+    contributions: pd.DataFrame
+
+
+def cross_fit(
+    x: pd.DataFrame,
+    y: pd.Series,
+    folds: pd.Series,
+    seed: int,
+    resampling: str = "class_weight",
+) -> CrossFit:
+    """Out-of-fold scores and drivers: each member comes from a model fitted without its fold."""
+    probabilities, contributions = [], []
+    for k in sorted(folds.unique()):
+        held = (folds == k).to_numpy()
+        model = fit(x[~held], y[~held], resampling, FEATURES, seed)
+        probabilities.append(pd.Series(model.predict_proba(x[held]), index=x.index[held]))
+        contributions.append(model.contributions(x[held]))
+    return CrossFit(
+        pd.concat(probabilities).reindex(x.index), pd.concat(contributions).reindex(x.index)
+    )
+
+
+def score_distribution(p: pd.Series, y: pd.Series) -> dict:
+    """Shape of a set of churn probabilities: band shares, spread and error at 0.5."""
+    bands = pd.cut(p, [-0.1, 0.3, 0.6, 1.1], labels=["low", "medium", "high"], right=False)
+    shares = bands.value_counts(normalize=True)
+    return {
+        "n": len(p),
+        "median": float(p.median()),
+        "low_share": float(shares["low"]),
+        "medium_share": float(shares["medium"]),
+        "high_share": float(shares["high"]),
+        "between_5_and_95": float(((p > 0.05) & (p < 0.95)).mean()),
+        "error_at_half": float(((p >= 0.5) != (y == 1)).mean()),
+    }
+
+
 def _fairness(y: np.ndarray, p: np.ndarray, threshold: float, groups: pd.Series) -> dict:
     rows = {}
     for name in sorted(groups.unique()):
@@ -250,7 +300,21 @@ def train(features: pd.DataFrame, churn: pd.Series, split: pd.Series, seed: int)
             "gender": _fairness(y_test, p_test, model.threshold, x_test["gender"].astype(int)),
         },
     }
-    probabilities = pd.Series(
-        model.predict_proba(features), index=features.index, name="churn_prob"
+    oof = cross_fit(x_train, y_train, assign_folds(y_train, seed), seed, chosen)
+    probabilities = (
+        pd.concat([oof.probabilities, pd.Series(p_test, index=x_test.index)])
+        .reindex(features.index)
+        .rename("churn_prob")
     )
-    return ChurnResult(model, probabilities, model.contributions(features), card)
+    contributions = pd.concat([oof.contributions, model.contributions(x_test)]).reindex(
+        features.index
+    )
+    card["scoring"] = {
+        "train": f"out-of-fold: scored by a model fitted on the other {CV_FOLDS - 1} folds",
+        "test": "final model fitted on the whole training split",
+    }
+    card["distribution"] = {
+        "train": score_distribution(probabilities[train_mask], churn[train_mask]),
+        "test": score_distribution(probabilities[test_mask], churn[test_mask]),
+    }
+    return ChurnResult(model, probabilities, contributions, card)

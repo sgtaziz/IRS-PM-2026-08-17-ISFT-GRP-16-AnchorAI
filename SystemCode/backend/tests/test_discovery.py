@@ -35,3 +35,21 @@ def test_test_labels_never_reach_the_churn_model():
     b = churn.train(features, shuffled, labels["split"], seed=1)
     np.testing.assert_array_equal(a.probabilities.to_numpy(), b.probabilities.to_numpy())
     assert a.card["test"]["f1"] != b.card["test"]["f1"]
+
+
+def test_training_scores_never_see_their_own_label():
+    m = _members()
+    features = build_features(m)
+    labels = m.set_index("member_id")
+    train = labels["split"] == "train"
+    x, y = features[train], labels.loc[train, "churn"]
+    folds = churn.assign_folds(y, seed=1)
+    flipped = y.copy()
+    who = y.index[0]
+    flipped[who] = 1 - flipped[who]
+
+    a = churn.cross_fit(x, y, folds, seed=1)
+    b = churn.cross_fit(x, flipped, folds, seed=1)
+    assert a.probabilities[who] == b.probabilities[who]
+    assert (a.contributions.loc[who] == b.contributions.loc[who]).all()
+    assert (a.probabilities != b.probabilities).any()
