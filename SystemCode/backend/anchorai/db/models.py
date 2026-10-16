@@ -149,3 +149,55 @@ class AppSetting(SQLModel, table=True):
     key: str = Field(primary_key=True)
     value: Any = Field(sa_column=Column(JSON, nullable=False))
     updated_at: datetime = Field(default_factory=utcnow)
+
+
+class GymInstructor(SQLModel, table=True):
+    """Instructor added in the app; the scenario tables only hold the generated ones."""
+
+    __tablename__ = "gym_instructors"
+
+    instructor_id: str = Field(primary_key=True)
+    name: str
+    club_id: str
+    created_by_id: int | None = Field(default=None, foreign_key="users.id")
+    created_at: datetime = Field(default_factory=utcnow)
+
+
+class GymClass(SQLModel, table=True):
+    """Class added in the app, with the instructor it started under."""
+
+    __tablename__ = "gym_classes"
+
+    class_id: str = Field(primary_key=True)
+    name: str
+    club_id: str
+    instructor_id: str
+    created_by_id: int | None = Field(default=None, foreign_key="users.id")
+    created_at: datetime = Field(default_factory=utcnow)
+
+
+class ClassInstructorOverride(SQLModel, table=True):
+    """Who teaches a class now, for generated and added classes alike."""
+
+    __tablename__ = "class_instructor_overrides"
+
+    class_id: str = Field(primary_key=True)
+    instructor_id: str
+    updated_by_id: int | None = Field(default=None, foreign_key="users.id")
+    updated_at: datetime = Field(default_factory=utcnow)
+
+
+class GymEvent(SQLModel, table=True):
+    """An event recorded in the app. With `suppresses` set it instead hides a generated event."""
+
+    __tablename__ = "gym_events"
+
+    id: int | None = Field(default=None, primary_key=True)
+    event_type: str
+    entity_id: str = Field(index=True)
+    week_start: date
+    note: str = ""
+    suppresses: str | None = None
+    active: bool = True
+    created_by_id: int | None = Field(default=None, foreign_key="users.id")
+    created_at: datetime = Field(default_factory=utcnow)
