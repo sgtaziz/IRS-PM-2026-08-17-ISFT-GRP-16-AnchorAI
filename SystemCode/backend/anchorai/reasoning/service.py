@@ -30,6 +30,8 @@ class Glossary(BaseModel):
     rules: dict[str, str]
     offers: dict[str, str]
     facts: dict[str, str]
+    # offer_id -> channels its catalogue entry allows, for active offers only
+    offer_channels: dict[str, list[str]]
 
 
 class InvalidRuleBase(RuntimeError):
@@ -74,6 +76,9 @@ def glossary(session: Session) -> Glossary:
         rules={r.id: r.description for r in rules},
         offers={o.offer_id: o.name for o in catalog.list_offers(session)},
         facts=facts,
+        offer_channels={
+            o.offer_id: list(o.channels) for o in catalog.list_offers(session) if o.active
+        },
     )
 
 

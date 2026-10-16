@@ -24,10 +24,12 @@ class Violation(BaseModel):
 
 
 class ItemCheck(ProposedItem):
+    # Rules only. Callers must also read `offer_active`, `channel_offered` and `on_playbook`.
     allowed: bool
     violations: list[Violation]
     on_playbook: bool
     channel_offered: bool
+    offer_active: bool
 
 
 class UnknownMember(LookupError):
@@ -66,6 +68,7 @@ def check_items(session: Session, items: list[ProposedItem]) -> list[ItemCheck]:
                 violations=violations,
                 on_playbook=any(p.offer_id == item.offer_id for p in outcome.proposals),
                 channel_offered=item.channel in offers[item.offer_id].channels,
+                offer_active=offers[item.offer_id].active,
             )
         )
     return results
