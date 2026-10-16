@@ -67,18 +67,28 @@ class IntentClassifier:
     def _normalise(self, text: str) -> str:
         return extract_slots(text, self.instructors, self.classes)[1]
 
-    def classify(self, text: str, context_member_id: str | None = None) -> Prediction:
-        slots, normalised = extract_slots(text, self.instructors, self.classes)
-        if not slots.member_ids and context_member_id:
-            slots.member_ids = [context_member_id]
-        sims = self.centroids @ self.encode([normalised])[0]
+    def _best(self, sims: np.ndarray, n_members: int) -> tuple[int, float]:
         # Slot rule: an intent whose member-id requirement isn't met can't be the answer.
-        n = len(slots.member_ids)
+        sims = sims.copy()
         for i, spec in enumerate(self.specs):
-            if spec.member_slots and not spec.member_slots[0] <= n <= spec.member_slots[1]:
+            if spec.member_slots and not spec.member_slots[0] <= n_members <= spec.member_slots[1]:
                 sims[i] = -1.0
         best = int(sims.argmax())
-        score = float(sims[best])
+        return best, float(sims[best])
+
+    def classify(self, text: str, context_member_id: str | None = None) -> Prediction:
+        slots, normalised = extract_slots(text, self.instructors, self.classes)
+        sims = self.centroids @ self.encode([normalised])[0]
+        named = slots.member_ids
+        # The page's member fills in when the question names none, or is the second member of a
+        # comparison ("compare with M0002" on M0001's page); keep whichever reading scores higher.
+        readings = [named]
+        if context_member_id and context_member_id not in named:
+            readings = [[context_member_id]] if not named else [named, [context_member_id, *named]]
+        best, score, members = max(
+            ((*self._best(sims, len(r)), r) for r in readings), key=lambda x: x[1]
+        )
+        slots.member_ids = members
         intent = self.specs[best].name if score >= self.threshold else UNKNOWN
         return Prediction(intent=intent, score=round(score, 4), slots=slots)
 

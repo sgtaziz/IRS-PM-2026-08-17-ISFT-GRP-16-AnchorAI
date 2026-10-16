@@ -5,7 +5,7 @@ from collections.abc import Callable
 from typing import Literal
 
 from openai import OpenAIError
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from sqlmodel import Session
 
 from anchorai.assistant import llm
@@ -18,6 +18,12 @@ from anchorai.db.models import AssistantFeedback, User
 
 log = logging.getLogger(__name__)
 Chat = Callable[[list[dict]], str]
+# Plan figures are manager-only in the API (PLAN 8.1); the assistant must not leak them to staff.
+MANAGER_INTENTS = {"plan_summary", "what_if_budget"}
+
+
+class AssistantUnavailable(RuntimeError):
+    pass
 
 
 class AssistantReply(BaseModel):
@@ -33,12 +39,12 @@ class AssistantReply(BaseModel):
 
 
 class FeedbackIn(BaseModel):
-    message: str
-    answer: str
-    intent: str | None = None
-    tool: str | None = None
+    message: str = Field(max_length=1000)
+    answer: str = Field(max_length=4000)
+    intent: str | None = Field(default=None, max_length=50)
+    tool: str | None = Field(default=None, max_length=50)
     rating: Literal[1, -1]
-    comment: str | None = None
+    comment: str | None = Field(default=None, max_length=1000)
 
 
 def _template(evidence: list[Evidence]) -> str:
@@ -49,10 +55,16 @@ def answer(
     session: Session,
     message: str,
     context_member_id: str | None = None,
+    role: str = "staff",
     classifier: IntentClassifier | None = None,
     chat: Chat = llm.chat,
 ) -> AssistantReply:
-    prediction = (classifier or get_classifier()).classify(message, context_member_id)
+    try:
+        classifier = classifier or get_classifier()
+    except OSError as e:
+        # The embedding model isn't downloaded and there's no network to fetch it.
+        raise AssistantUnavailable(f"Intent model unavailable: {e}") from e
+    prediction = classifier.classify(message, context_member_id)
     reply = AssistantReply(
         intent=prediction.intent,
         score=prediction.score,
@@ -66,6 +78,10 @@ def answer(
     if prediction.intent == UNKNOWN:
         return reply
 
+    if prediction.intent in MANAGER_INTENTS and role == "staff":
+        reply.answer = "Plan details are only available to managers."
+        return reply
+
     result = TOOLS[prediction.intent](session, prediction.slots)
     reply.tool, reply.evidence = result.tool, result.evidence
     if not result.evidence:
@@ -76,7 +92,7 @@ def answer(
     try:
         reply.answer = chat(build_messages(message, result.evidence)).strip() or DONT_KNOW
         reply.llm_used = True
-    except OpenAIError as e:
+    except (OpenAIError, IndexError, AttributeError) as e:
         # LLM down or misconfigured: still answer, straight from the evidence.
         log.warning("assistant LLM unavailable, using template answer: %s", e)
         reply.answer = _template(result.evidence)

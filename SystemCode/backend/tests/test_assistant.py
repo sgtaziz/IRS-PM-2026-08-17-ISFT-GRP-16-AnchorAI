@@ -23,6 +23,8 @@ CLASSES = {"HIIT": "K02", "Core": "K08"}
         ("Why was 1043 picked over 2210?", ["M1043", "M2210"], None),
         ("compare member 155 with M0155", ["M0155"], None),
         ("what's 2 plus 2", [], None),
+        ("top 10 members at risk in 2026", [], None),
+        ("week 42 plan for 12 months", [], None),
     ],
 )
 def test_money_never_becomes_a_member(text, members, amount):
@@ -34,8 +36,10 @@ def test_names_and_common_word_classes():
     slots, text = extract_slots("who goes to Maya's hiit class", INSTRUCTORS, CLASSES)
     assert slots.instructor_ids == ["I04"] and slots.class_ids == ["K02"]
     assert "INSTRUCTOR" in text and "CLASS" in text
-    # "core" in ordinary lower-case text is not the Core class.
+    # Common words aren't classes or instructors unless the question makes them so.
     assert extract_slots("our core problem is churn", INSTRUCTORS, CLASSES)[0].class_ids == []
+    assert extract_slots("Core members at risk?", INSTRUCTORS, CLASSES)[0].class_ids == []
+    assert extract_slots("i'm sam, from sales", INSTRUCTORS, CLASSES)[0].instructor_ids == []
 
 
 def bag_of_words(texts):
@@ -61,6 +65,9 @@ def test_slot_rule_and_threshold(classifier):
         "M0003"
     ]
     assert classifier.classify("weather tomorrow").intent == "unknown"
+    # On M0003's page, naming one more member makes a comparison of the two.
+    paired = classifier.classify("compare risk vs M0002", context_member_id="M0003")
+    assert paired.intent == "compare_members" and paired.slots.member_ids == ["M0003", "M0002"]
 
 
 def test_shipped_intents_load():
@@ -99,9 +106,10 @@ def test_answer_is_grounded_and_degrades(built, engine, classifier):
         assert answer(session, "weather", classifier=classifier, chat=never).answer == DONT_KNOW
         missing = answer(session, "M9999 risk", classifier=classifier, chat=never)
         assert missing.answer == "I couldn't find member M9999." and not missing.grounded
-        assert answer(session, "plan", classifier=classifier, chat=never).answer.startswith(
-            "No weekly plan"
-        )
+        plan = answer(session, "plan", role="manager", classifier=classifier, chat=never)
+        assert plan.answer.startswith("No weekly plan")
+        staff_plan = answer(session, "plan", role="staff", classifier=classifier, chat=never)
+        assert staff_plan.answer == "Plan details are only available to managers."
 
 
 def test_chat_and_feedback_endpoints(client, login, built, monkeypatch, classifier):

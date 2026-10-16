@@ -1,6 +1,7 @@
 """Deterministic tools behind each intent. Each returns evidence lines for the grounded prompt."""
 
 import json
+import math
 from typing import Any
 
 from pydantic import BaseModel
@@ -44,8 +45,10 @@ class _Lines:
         self.items.append(Evidence(id=f"E{len(self.items) + 1}", text=text, kind=kind, ref=ref))
 
 
-def probability(p: float) -> str:
+def probability(p: float | None) -> str:
     """Same rule as the web app (src/format.ts): a model probability never reads as 0% or 100%."""
+    if p is None or math.isnan(p):
+        return "unknown"
     shown = round(p * 100)
     return ">99%" if shown >= 100 else "<1%" if shown <= 0 else f"{shown}%"
 
@@ -143,6 +146,8 @@ def compare_members(session: Session, slots: Slots) -> ToolResult:
     if missing := _missing("compare_members", pair):
         return missing
     lines = _Lines()
+    if len(slots.member_ids) > 2:
+        lines.add(f"Only the first two members named are compared: {' and '.join(pair)}", "member")
     for member_id in pair:
         _score_lines(lines, member_id)
         _rule_lines(lines, session, member_id, detail=False)
@@ -155,7 +160,7 @@ def _affected(query: str, label: str, kind: str, ref: str, lines: _Lines, **para
     lines.add(f"{len(rows)} members attend {label}; {high} of them are high risk", kind, ref)
     for r in rows[:TOP_AFFECTED]:
         lines.add(
-            f"{r['member_id']} attends {label}: churn probability {probability(r['churn_prob'] or 0)}",
+            f"{r['member_id']} attends {label}: churn probability {probability(r['churn_prob'])}",
             "member",
             r["member_id"],
         )
