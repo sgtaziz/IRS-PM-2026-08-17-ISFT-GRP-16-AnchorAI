@@ -15,6 +15,7 @@ from anchorai.api.routers import (
     members,
     plan,
     rules,
+    users,
 )
 from anchorai.config import INSECURE_JWT_SECRETS, get_settings
 
@@ -69,5 +70,11 @@ app.include_router(
     admin_audit.router,
     prefix="/api/admin/audit",
     tags=["admin audit (Stream C)"],
+    dependencies=admin_only,
+)
+app.include_router(
+    users.router,
+    prefix="/api/admin/users",
+    tags=["admin users (Stream C)"],
     dependencies=admin_only,
 )
