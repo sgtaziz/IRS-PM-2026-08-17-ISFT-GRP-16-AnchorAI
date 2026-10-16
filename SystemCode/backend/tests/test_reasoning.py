@@ -83,14 +83,40 @@ def test_block_all_and_missing_facts():
 
 def test_conditions_parse_safely():
     assert parse_condition("segment in [New and slipping, 'x']").holds({"segment": "x"})
+    assert parse_condition("churn_prob > 1e-1").value == 0.1
     assert not parse_condition("churn_prob >= 0.5").holds({"churn_prob": "high"})
-    for bad in ["__import__('os') == 1", "x >= ", "a ~ 1", "a in 3", "a == [1]"]:
+    # Booleans and numbers never match each other, unlike Python's True == 1.
+    assert not parse_condition("group_visits == 1").holds({"group_visits": True})
+    assert not parse_condition("flag == true").holds({"flag": 1})
+    for bad in [
+        "__import__('os') == 1",
+        "x >= ",
+        "a ~ 1",
+        "a in 3",
+        "a == [1]",
+        "a > yes",
+        "d == 2026-01-01",
+    ]:
         with pytest.raises(ValueError):
             parse_condition(bad)
     with pytest.raises(ValidationError):
         load_rules(
             "- {id: x, kind: derive, description: d, when: [a > 1], then: {block: all}, source: s}"
         )
+    with pytest.raises(ValidationError):
+        load_rules(
+            "- {id: x, kind: guardrail, description: d, when: [a > 1], then: {block: []}, source: s}"
+        )
+
+
+def test_duplicate_ids_rejected_and_first_assertion_wins():
+    rule = "- {{id: {id}, kind: derive, salience: {s}, description: d, when: [a > 0], then: {{assert: {{tier: {v}}}}}, source: s}}\n"
+    with pytest.raises(ValueError, match="Duplicate"):
+        load_rules(rule.format(id="x", s=1, v="a") + rule.format(id="x", s=2, v="b"))
+    rules = load_rules(rule.format(id="hi", s=90, v="hot") + rule.format(id="lo", s=10, v="cold"))
+    out = run(rules, {"a": 1})
+    assert out.facts["tier"] == "hot"
+    assert out.firings[1].effect == "assert (kept existing tier)"
 
 
 def test_validator_finds_author_errors():
@@ -120,6 +146,18 @@ def test_validator_finds_author_errors():
   when: ["churn_prob < 0.2"]
   then: {assert: {tier: cool}}
   source: s
+- id: E
+  kind: derive
+  description: only ever churn_prob == 1, which F excludes
+  when: ["churn_prob >= 1", "churn_prob <= 1"]
+  then: {assert: {band: top}}
+  source: s
+- id: F
+  kind: derive
+  description: overwrites an input fact
+  when: ["churn_prob != 1"]
+  then: {assert: {band: other, risk_band: low}}
+  source: s
 """
     )
     messages = {
@@ -127,13 +165,15 @@ def test_validator_finds_author_errors():
     }
     assert ("A", "Contradicts") in messages and ("D", "Contradicts") not in messages
     assert {("C", "Unknown"), ("C", "Unreachable:")} <= messages
+    assert ("E", "Contradicts") not in messages
+    assert ("F", "Derive") in messages
 
 
-def test_rule_files_load(fixture_facts):
+def test_shipped_rule_base_is_valid(fixture_facts):
     rules = load_rule_files()
-    assert rules
-    for facts in fixture_facts.values():
-        run(rules, facts)
+    assert validate(rules, KNOWN_FACTS, OFFERS, CHANNELS) == []
+    outcomes = [run(rules, facts) for facts in fixture_facts.values()]
+    assert any(o.allowed for o in outcomes)
 
 
 @pytest.fixture
@@ -157,5 +197,6 @@ def test_trace_endpoint(client, login, built):
     body = r.json()
     assert body["member_id"] == "M0001" and {"firings", "allowed", "blocked"} <= set(body)
     assert client.get("/api/rules/trace/NOPE", headers=staff).status_code == 404
-    rules = client.get("/api/rules", headers=staff).json()
-    assert rules["rules"] and "issues" in rules
+    assert client.get("/api/rules", headers=staff).status_code == 403
+    rules = client.get("/api/rules", headers=login("admin")).json()
+    assert rules["rules"] and rules["issues"] == []

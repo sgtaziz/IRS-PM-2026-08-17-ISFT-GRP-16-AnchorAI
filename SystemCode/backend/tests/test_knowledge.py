@@ -80,6 +80,10 @@ def test_kg_facts_cache_and_rule_facts(tmp_path, built):
     lines = signals.graph_signals(by_member["M0002"])
     assert lines[0].startswith("100% of their class visits") and len(lines) == 2
 
+    # A data build after the graph load makes the cached facts stale.
+    (tmp_path / "model_card.json").write_text("{}")
+    assert signals.load_kg_facts(tmp_path) is None
+
 
 def test_ego_endpoint_degrades_when_graph_is_down(client, login, monkeypatch):
     def down(member_id):
