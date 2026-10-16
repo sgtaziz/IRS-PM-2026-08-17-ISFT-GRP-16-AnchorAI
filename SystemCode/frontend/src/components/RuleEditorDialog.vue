@@ -12,11 +12,11 @@ import { computed, reactive, ref, watch } from 'vue'
 import type { FactInfo, Rule, RuleKind, RuleReport, Vocabulary } from '../api/types'
 import { errorMessage } from '../composables/useAsync'
 import { channelLabel, humanize, RULE_KIND_LABELS } from '../labels'
-import { type ConditionRow, composeCondition, opsFor, OP_LABELS, parseAssertValue, parseCondition } from '../ruleForm'
-import { draftText, saveText, validateText } from '../rulesApi'
+import { assertValue, type ConditionRow, composeCondition, opsFor, OP_LABELS, parseCondition } from '../ruleForm'
+import { draftText, isStale, saveText, validateText } from '../rulesApi'
 
-const props = defineProps<{ visible: boolean; rule: Rule | null; rules: Rule[]; vocab: Vocabulary }>()
-const emit = defineEmits<{ 'update:visible': [boolean]; saved: [] }>()
+const props = defineProps<{ visible: boolean; rule: Rule | null; rules: Rule[]; vocab: Vocabulary; baseVersion: number | null }>()
+const emit = defineEmits<{ 'update:visible': [boolean]; saved: []; stale: [] }>()
 
 interface Form {
   id: string
@@ -26,7 +26,7 @@ interface Form {
   source: string
   enabled: boolean
   rows: ConditionRow[]
-  asserts: { name: string; value: string }[]
+  asserts: { name: string; value: string; original?: unknown }[]
   offerId: string
   channel: string
   blockAll: boolean
@@ -86,7 +86,7 @@ watch(
     form.source = r?.source ?? ''
     form.enabled = r?.enabled ?? true
     form.rows = (r?.when ?? []).map(parseCondition).filter((c): c is ConditionRow => c !== null)
-    form.asserts = Object.entries(r?.then.assert ?? {}).map(([name, v]) => ({ name, value: String(v) }))
+    form.asserts = Object.entries(r?.then.assert ?? {}).map(([name, v]) => ({ name, value: String(v), original: v }))
     form.offerId = r?.then.propose?.offer_id ?? ''
     form.channel = r?.then.propose?.channel ?? ''
     form.blockAll = r?.then.block ? r.then.block === 'all' : true
@@ -119,7 +119,10 @@ function changeFact(row: ConditionRow, fact: string) {
 }
 
 const asNumber = (row: ConditionRow) => (row.value === '' ? null : Number(row.value))
-const setNumber = (row: ConditionRow, v: number | null) => (row.value = v === null ? '' : String(v))
+const setNumber = (row: ConditionRow, v: number | null) => {
+  if (v !== asNumber(row)) row.value = v === null ? '' : String(v)
+}
+const locked = (row: ConditionRow) => row.original !== undefined && !factMap.value.has(row.fact)
 const setList = (row: ConditionRow, text: string) =>
   (row.list = text.split(',').map((s) => s.trim()).filter(Boolean))
 
@@ -134,7 +137,7 @@ const candidate = computed<Rule>(() => {
     enabled: form.enabled,
   }
   if (form.kind === 'derive') {
-    const assertion = Object.fromEntries(form.asserts.filter((a) => a.name.trim()).map((a) => [a.name.trim(), parseAssertValue(a.value)]))
+    const assertion = Object.fromEntries(form.asserts.filter((a) => a.name.trim()).map((a) => [a.name.trim(), assertValue(a.value, a.original)]))
     return { ...base, then: { assert: assertion } }
   }
   if (form.kind === 'playbook') return { ...base, then: { propose: { offer_id: form.offerId, channel: form.channel, rule_id: '' } } }
@@ -175,6 +178,7 @@ const missing = computed(() => {
   if (!r.description) return 'Describe the rule in a sentence.'
   if (!r.source) return 'Say where the rule comes from (source).'
   if (!r.when.length) return 'Add at least one condition.'
+  if (form.rows.some((row) => !locked(row) && (isList(row) ? !row.list.length : !row.value.trim()))) return 'Fill in every condition value.'
   if (!form.note.trim()) return 'Write a note for the version history.'
   return null
 })
@@ -184,11 +188,14 @@ async function save() {
   saving.value = true
   error.value = null
   try {
-    await saveText(draftText(fullSet.value), form.note.trim())
+    await saveText(draftText(fullSet.value), form.note.trim(), props.baseVersion)
     emit('update:visible', false)
     emit('saved')
   } catch (e) {
-    error.value = errorMessage(e)
+    if (isStale(e)) {
+      error.value = 'The rules changed since you opened them. They have been reloaded; reopen the rule and try again.'
+      emit('stale')
+    } else error.value = errorMessage(e)
   } finally {
     saving.value = false
   }
@@ -229,7 +236,12 @@ async function save() {
 
       <fieldset class="group">
         <legend>When all of these hold</legend>
-        <div v-for="(row, i) in form.rows" :key="i" class="cond-row">
+        <div v-for="(row, i) in form.rows" :key="i" class="cond-row" :class="{ locked: locked(row) }">
+          <template v-if="locked(row)">
+            <code class="cond">{{ row.original }}</code>
+            <span class="text-xs text-ink-500">Uses a fact this editor can't type; edit it in the YAML tab.</span>
+          </template>
+          <template v-else>
           <Select
             :model-value="row.fact"
             :options="factOptions"
@@ -274,6 +286,7 @@ async function save() {
               @update:model-value="(v) => setList(row, String(v ?? ''))"
             />
             <InputText v-else v-model="row.value" fluid :aria-label="`Value ${i + 1}`" />
+          </template>
           </template>
           <Button severity="secondary" text rounded aria-label="Remove condition" @click="form.rows.splice(i, 1)">
             <template #icon><Trash2 :size="15" /></template>
@@ -362,10 +375,12 @@ async function save() {
 <style scoped>
 .group { display: flex; flex-direction: column; gap: 0.75rem; margin: 0; padding: 0.75rem 1rem 1rem; border: 1px solid var(--color-ink-200); border-radius: 0.75rem; min-width: 0; }
 .group legend { padding-inline: 0.4rem; font-size: 0.8125rem; font-weight: 600; color: var(--color-ink-600); }
+.cond { padding: 0.15rem 0.45rem; border-radius: 5px; font-size: 0.75rem; color: var(--color-ink-700); background: var(--color-ink-100); }
+.cond-row.locked { grid-template-columns: auto minmax(0, 1fr) auto; }
 .cond-row { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 0.9fr) minmax(0, 1.2fr) auto; gap: 0.5rem; align-items: center; }
 @media (max-width: 640px) {
   .cond-row { grid-template-columns: repeat(2, minmax(0, 1fr)); padding-bottom: 0.75rem; border-bottom: 1px dashed var(--color-ink-200); }
-  .cond-row > :first-child { grid-column: 1 / -1; }
+  .cond-row:not(.locked) > :first-child { grid-column: 1 / -1; }
   .cond-row > :last-child { grid-column: 1 / -1; justify-self: end; }
 }
 .note { display: flex; align-items: flex-start; gap: 0.5rem; padding: 0.55rem 0.8rem; border: 1px solid; border-radius: 0.6rem; font-size: 0.8125rem; }

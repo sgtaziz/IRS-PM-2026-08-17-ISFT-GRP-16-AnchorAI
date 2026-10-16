@@ -27,7 +27,7 @@ import SectionCard from '../components/SectionCard.vue'
 import { errorMessage, useAsync } from '../composables/useAsync'
 import { dateTime } from '../format'
 import { channelLabel, humanize, RULE_KIND_LABELS, ruleCode } from '../labels'
-import { draftText, saveText, validateText } from '../rulesApi'
+import { draftText, isStale, saveText, validateText } from '../rulesApi'
 import { useGlossaryStore } from '../stores/glossary'
 
 const KIND_STYLE = {
@@ -44,7 +44,13 @@ const vocab = useAsync(() => api<Vocabulary>('/rules/vocabulary'))
 const versions = useAsync(() => api<RuleVersion[]>('/rules/versions'))
 const toast = useToast()
 const tab = ref('rules')
-const failed = (summary: string, e: unknown) => toast.add({ severity: 'error', summary, detail: errorMessage(e), life: 6000 })
+const failed = (summary: string, e: unknown) => {
+  if (isStale(e)) {
+    toast.add({ severity: 'warn', summary: 'Rules changed since you opened them', detail: 'Reloaded the latest version. Review it and try again.', life: 7000 })
+    reloadAll()
+  } else toast.add({ severity: 'error', summary, detail: errorMessage(e), life: 6000 })
+}
+const baseVersion = computed(() => rules.data.value?.version ?? null)
 
 async function reloadAll() {
   await Promise.all([rules.run(), versions.run(), vocab.run(), glossary.reload()])
@@ -94,6 +100,7 @@ async function confirmAsk() {
     toast.add({ severity: 'success', summary: 'New rule version saved', life: 3000 })
     await reloadAll()
   } catch (e) {
+    if (isStale(e)) ask.value = null
     failed('Could not save', e)
   } finally {
     askBusy.value = false
@@ -109,7 +116,10 @@ function toggle(r: Rule) {
     danger: !enabled,
     required: false,
     run: (note) =>
-      api<RuleVersion>(`/rules/${encodeURIComponent(r.id)}`, { method: 'PATCH', body: JSON.stringify({ enabled, note: note || null }) }),
+      api<RuleVersion>(`/rules/${encodeURIComponent(r.id)}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ enabled, note: note || null, base_version: baseVersion.value }),
+      }),
   })
 }
 
@@ -121,7 +131,7 @@ function remove(r: Rule) {
     confirm: 'Delete',
     danger: true,
     required: true,
-    run: (note) => saveText(draftText(rest), note),
+    run: (note) => saveText(draftText(rest), note, baseVersion.value),
   })
 }
 
@@ -173,7 +183,7 @@ async function saveYaml() {
   if (!yamlNote.value.trim() || yamlBlocked.value) return
   yamlBusy.value = true
   try {
-    await saveText(yamlText.value, yamlNote.value.trim())
+    await saveText(yamlText.value, yamlNote.value.trim(), baseVersion.value)
     yamlNote.value = ''
     toast.add({ severity: 'success', summary: 'New rule version saved', life: 3000 })
     await reloadAll()
@@ -194,7 +204,7 @@ async function view(v: RuleVersion) {
 }
 async function activate(v: RuleVersion) {
   try {
-    await api<RuleVersion>(`/rules/versions/${v.version}/activate`, { method: 'POST' })
+    await api<RuleVersion>(`/rules/versions/${v.version}/activate`, { method: 'POST', body: JSON.stringify({ base_version: baseVersion.value }) })
     toast.add({ severity: 'success', summary: `Version ${v.version} is now active`, life: 3000 })
     await reloadAll()
   } catch (e) {
@@ -434,7 +444,9 @@ function test() {
     :rule="editing"
     :rules="rules.data.value.rules"
     :vocab="vocab.data.value"
+    :base-version="baseVersion"
     @saved="saved"
+    @stale="reloadAll"
   />
 
   <Dialog :visible="ask !== null" :header="ask?.title" modal :style="{ width: 'min(480px, 94vw)' }" @update:visible="(v: boolean) => !v && (ask = null)">
