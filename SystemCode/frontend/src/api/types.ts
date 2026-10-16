@@ -229,3 +229,36 @@ export interface DataOverview {
   build: BuildStatus
   raw: RawInfo | null
 }
+
+// Stream C: mirrors anchorai/schemas.py RuleFiring and anchorai/reasoning/models.py.
+export interface RuleFiring {
+  rule_id: string
+  description: string
+  facts_matched: Record<string, unknown>
+  effect: string
+}
+
+export interface Proposal {
+  offer_id: string
+  channel: string
+  rule_id: string
+}
+
+export interface RuleOutcome {
+  member_id: string
+  facts: Record<string, unknown>
+  firings: RuleFiring[]
+  proposals: Proposal[]
+  blocked: Record<string, string>
+  allowed: Proposal[]
+}
+
+// Mirrors anchorai/knowledge/ego.py: Cytoscape elements.
+export interface GraphElement {
+  data: { id: string; type: string; label?: string; source?: string; target?: string } & Record<string, unknown>
+}
+
+export interface EgoGraph {
+  nodes: GraphElement[]
+  edges: GraphElement[]
+}

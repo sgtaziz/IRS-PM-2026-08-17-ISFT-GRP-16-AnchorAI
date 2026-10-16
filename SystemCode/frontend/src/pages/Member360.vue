@@ -6,7 +6,7 @@ import Tag from 'primevue/tag'
 import { computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from '../api/client'
-import type { MemberDetail } from '../api/types'
+import type { EgoGraph, MemberDetail, RuleOutcome } from '../api/types'
 import ChartCard from '../components/ChartCard.vue'
 import KpiTile from '../components/KpiTile.vue'
 import PageState from '../components/PageState.vue'
@@ -23,9 +23,9 @@ const memberId = computed(() => String(route.params.id))
 const detail = useAsync((id: string) => api<MemberDetail>(`/members/${id}`))
 
 // Panels owned by Streams B and C; until their endpoints exist the panel says so instead of failing.
-const ruleTrace = useAsync((id: string) => api<unknown[]>(`/rules/trace/${id}`))
+const ruleTrace = useAsync((id: string) => api<RuleOutcome>(`/rules/trace/${id}`))
 const similarCases = useAsync((id: string) => api<unknown[]>(`/plan/similar-cases/${id}`))
-const egoGraph = useAsync((id: string) => api<unknown>(`/graph/ego/${id}`))
+const egoGraph = useAsync((id: string) => api<EgoGraph>(`/graph/ego/${id}`))
 const contacts = useAsync((id: string) => api<unknown[]>(`/outcomes?member_id=${encodeURIComponent(id)}`))
 const panels = [
   { title: 'Rule trace', owner: 'Stream C', state: ruleTrace },
