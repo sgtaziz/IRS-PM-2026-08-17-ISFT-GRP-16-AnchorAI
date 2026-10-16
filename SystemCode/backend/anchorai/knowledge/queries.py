@@ -4,7 +4,8 @@ ANCHOR_SHARE = """
 MATCH (m:Member)-[a:ATTENDS]->(:Class)
 WITH m, sum(a.visits_per_week) AS total
 WHERE total > 0
-MATCH (m)-[a:ATTENDS]->(:Class)-[:TAUGHT_BY]->(:Instructor)<-[:AFFECTS]-(:Event {type: 'instructor_left'})
+MATCH (m)-[a:ATTENDS]->(:Class)-[:TAUGHT_BY]->(i:Instructor)
+WHERE EXISTS { (i)<-[:AFFECTS]-(:Event {type: 'instructor_left'}) }
 WITH m, total, sum(a.visits_per_week) AS lost
 RETURN m.member_id AS member_id, lost / total AS anchor_instructor_share
 """
@@ -23,12 +24,10 @@ RETURN m.member_id AS member_id, reduce(s = 0.0, p IN peers | s + p.churn_prob) 
 
 EGO = """
 MATCH (m:Member {member_id: $member_id})
-OPTIONAL MATCH club = (m)-[:MEMBER_OF]->(:Club)
-OPTIONAL MATCH taught = (m)-[:ATTENDS]->(:Class)-[:TAUGHT_BY]->(:Instructor)
-OPTIONAL MATCH left = (m)-[:ATTENDS]->(:Class)-[:TAUGHT_BY]->(:Instructor)<-[:AFFECTS]-(:Event)
-OPTIONAL MATCH cancelled = (m)-[:ATTENDS]->(:Class)<-[:AFFECTS]-(:Event)
-OPTIONAL MATCH offered = (m)-[:RECEIVED]->(:Offer)
 RETURN m,
-       collect(DISTINCT club) + collect(DISTINCT taught) + collect(DISTINCT left)
-       + collect(DISTINCT cancelled) + collect(DISTINCT offered) AS paths
+  COLLECT { MATCH p = (m)-[:MEMBER_OF]->(:Club) RETURN p }
+  + COLLECT { MATCH p = (m)-[:ATTENDS]->(:Class)-[:TAUGHT_BY]->(:Instructor) RETURN p }
+  + COLLECT { MATCH p = (m)-[:ATTENDS]->(:Class)-[:TAUGHT_BY]->(:Instructor)<-[:AFFECTS]-(:Event) RETURN p }
+  + COLLECT { MATCH p = (m)-[:ATTENDS]->(:Class)<-[:AFFECTS]-(:Event) RETURN p }
+  + COLLECT { MATCH p = (m)-[:RECEIVED]->(:Offer) RETURN p } AS paths
 """
