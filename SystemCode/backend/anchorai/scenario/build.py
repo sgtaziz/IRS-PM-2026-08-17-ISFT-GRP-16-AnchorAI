@@ -38,6 +38,10 @@ OFFERS = pd.DataFrame(OFFER_CATALOG)[
 ].assign(channels=lambda d: d["channels"].str.join("|"))
 HISTORY_SHARE = 0.6
 TREATED_SHARE = 0.6
+# Log-odds added to the no-contact churn hazard per unit share of a member's weekly class
+# visits hit by the event (docs/SCENARIO.md). Losing the instructor you train with is the
+# larger shock; a cancelled class leaves the rest of the routine intact.
+EVENT_EFFECTS = {"instructor_left": 1.4, "class_cancelled": 0.9}
 
 
 def find_raw_csv(raw_dir: Path) -> Path:
@@ -112,21 +116,60 @@ def sigmoid(z: np.ndarray) -> np.ndarray:
     return 1 / (1 + np.exp(-z))
 
 
-def base_churn(f: pd.DataFrame) -> pd.Series:
-    """Synthetic no-contact churn hazard over the next month, from features only."""
-    z = (
+def base_logit(f: pd.DataFrame) -> pd.Series:
+    """Log-odds of the synthetic no-contact churn hazard over the next month, from features."""
+    return (
         -1.4
         + 1.3 * (f["lifetime"] <= 2)
         + 1.1 * (f["trend_ratio"] < 0.7)
         - 0.9 * (f["contract_period"] == 12)
         - 0.4 * f["group_visits"]
         - 0.5 * (f["avg_class_frequency_total"] - 1.9)
+    ).rename("base_logit")
+
+
+def base_churn(f: pd.DataFrame) -> pd.Series:
+    """Synthetic no-contact churn hazard over the next month, before any gym event."""
+    return pd.Series(sigmoid(base_logit(f).to_numpy()), index=f.index, name="base_churn")
+
+
+def event_exposure(
+    attendance: pd.DataFrame, classes: pd.DataFrame, events: pd.DataFrame
+) -> pd.DataFrame:
+    """Share of each member's weekly class visits hit by each kind of event.
+
+    Mirrors the knowledge graph's definitions: the share of visits in classes whose instructor
+    left, and in classes that were cancelled. Members without class visits are not listed.
+    """
+    visits = attendance.merge(classes[["class_id", "instructor_id"]], on="class_id")
+    total = visits.groupby("member_id")["visits_per_week"].sum()
+    total = total[total > 0]
+    gone = events.loc[events["event_type"] == "instructor_left", "entity_id"]
+    cancelled = events.loc[events["event_type"] == "class_cancelled", "entity_id"]
+
+    def share(hit: pd.Series) -> pd.Series:
+        lost = visits[hit].groupby("member_id")["visits_per_week"].sum()
+        return (lost / total).reindex(total.index).fillna(0.0)
+
+    return pd.DataFrame(
+        {
+            "lost_instructor_share": share(visits["instructor_id"].isin(gone)),
+            "cancelled_share": share(visits["class_id"].isin(cancelled)),
+        }
+    ).rename_axis("member_id")
+
+
+def event_shift(exposure: pd.DataFrame, index: pd.Index, effects: dict[str, float]) -> pd.Series:
+    """Log-odds added to each member's hazard by the events in `exposure`."""
+    exposure = exposure.reindex(index).fillna(0.0)
+    return (
+        effects["instructor_left"] * exposure["lost_instructor_share"]
+        + effects["class_cancelled"] * exposure["cancelled_share"]
     )
-    return pd.Series(sigmoid(z.to_numpy()), index=f.index, name="base_churn")
 
 
-def offer_effects(f: pd.DataFrame) -> pd.DataFrame:
-    """Raw treatment effect on next-month retention, one column per offer (before saturation).
+def raw_offer_effects(f: pd.DataFrame) -> pd.DataFrame:
+    """Raw treatment effect on next-month retention, one column per offer, before risk scaling.
 
     Effects are heterogeneous on purpose: PT sessions work for new members, class passes for
     class-goers, discounts for price-sensitive monthly members and backfire on annual ones.
@@ -134,7 +177,7 @@ def offer_effects(f: pd.DataFrame) -> pd.DataFrame:
     falling = (f["trend_ratio"] < 0.85).astype(float)
     new = (f["lifetime"] <= 3).astype(float)
     price_sensitive = (f["contract_period"] == 1) & (f["avg_additional_charges_total"] < 120)
-    effects = pd.DataFrame(
+    return pd.DataFrame(
         {
             "checkin_message": 0.02 + 0.04 * falling,
             "free_pt_session": 0.02 + 0.14 * new + 0.04 * falling,
@@ -145,15 +188,41 @@ def offer_effects(f: pd.DataFrame) -> pd.DataFrame:
         },
         index=f.index,
     )
+
+
+def realised_uplift(raw: pd.DataFrame, hazard: pd.Series) -> pd.DataFrame:
+    """Uplift in stay probability at a given hazard, saturating at certain retention."""
     # Persuasion matters more for members who are at risk in the first place.
-    return effects.mul(0.6 + base_churn(f), axis=0)
+    stay = 1 - hazard
+    treated_stay = raw.mul(0.6 + hazard, axis=0).add(stay, axis=0).clip(0, 1)
+    return treated_stay.sub(stay, axis=0)
 
 
-def build_true_uplift(features: pd.DataFrame) -> pd.DataFrame:
-    """Realised uplift in stay probability, after saturating at certain retention."""
-    stay = 1 - base_churn(features)
-    treated_stay = (offer_effects(features).add(stay, axis=0)).clip(0, 1)
-    uplift = treated_stay.sub(stay, axis=0)
+def build_true_churn(
+    features: pd.DataFrame,
+    exposure: pd.DataFrame,
+    rng: np.random.Generator,
+    effects: dict[str, float],
+) -> pd.DataFrame:
+    """Next-month churn without contact, before and after the gym events, plus one draw of it."""
+    logit = base_logit(features)
+    shares = exposure.reindex(features.index).fillna(0.0)
+    event = sigmoid((logit + event_shift(exposure, features.index, effects)).to_numpy())
+    return pd.DataFrame(
+        {
+            "member_id": features.index,
+            "base_churn": sigmoid(logit.to_numpy()),
+            "event_churn": event,
+            "lost_instructor_share": shares["lost_instructor_share"].to_numpy(),
+            "cancelled_share": shares["cancelled_share"].to_numpy(),
+            "churned_no_contact": rng.random(len(features)) < event,
+        }
+    )
+
+
+def build_true_uplift(features: pd.DataFrame, hazard: pd.Series) -> pd.DataFrame:
+    """Realised uplift for contacting each member now, at their post-event hazard."""
+    uplift = realised_uplift(raw_offer_effects(features), hazard)
     long = (
         uplift.rename_axis("member_id")
         .reset_index()
@@ -165,10 +234,17 @@ def build_true_uplift(features: pd.DataFrame) -> pd.DataFrame:
 def build_interventions(
     members: pd.DataFrame,
     features: pd.DataFrame,
-    true_uplift: pd.DataFrame,
+    attendance: pd.DataFrame,
+    classes: pd.DataFrame,
+    events: pd.DataFrame,
     rng: np.random.Generator,
+    effects: dict[str, float],
 ) -> pd.DataFrame:
-    """Randomised past contacts: a random share of members, a random offer, a random week."""
+    """Randomised past contacts: a random share of members, a random offer, a random week.
+
+    Each outcome uses the hazard in force that week, so an event only affects contacts made
+    in or after the week it happened.
+    """
     history = members.sample(frac=HISTORY_SHARE, random_state=rng.integers(2**31))
     history = history.reset_index(drop=True)
     n = len(history)
@@ -183,9 +259,23 @@ def build_interventions(
     n_options = history["offer_id"].map(options.groupby("offer_id").size()).fillna(1)
     history["k"] = (rng.random(n) * n_options).astype(int)
     history = history.merge(options[["offer_id", "k", "channel"]], on=["offer_id", "k"], how="left")
-    effect = history.merge(true_uplift, on=["member_id", "offer_id"], how="left")["uplift"]
-    stay = 1 - history["member_id"].map(base_churn(features))
-    history["stayed"] = rng.random(n) < (stay + effect.fillna(0)).clip(0, 1).to_numpy()
+
+    logit = history["member_id"].map(base_logit(features))
+    for week in history["week_start"].unique():
+        happened = events[events["week_start"] <= week]
+        if happened.empty:
+            continue
+        shift = event_shift(event_exposure(attendance, classes, happened), features.index, effects)
+        in_week = history["week_start"] == week
+        logit[in_week] += history.loc[in_week, "member_id"].map(shift)
+    hazard = pd.Series(sigmoid(logit.to_numpy()), index=history.index)
+    raw = raw_offer_effects(features).loc[history["member_id"]].set_index(history.index)
+    uplift = realised_uplift(raw, hazard)
+    treated = np.flatnonzero(history["treated"].to_numpy())
+    column = history["offer_id"].map({c: i for i, c in enumerate(uplift.columns)})
+    effect = np.zeros(n)
+    effect[treated] = uplift.to_numpy()[treated, column.to_numpy()[treated].astype(int)]
+    history["stayed"] = rng.random(n) < np.clip(1 - hazard.to_numpy() + effect, 0, 1)
     history = history.sort_values(["week_start", "member_id"], ignore_index=True)
     history["intervention_id"] = [f"V{i:05d}" for i in range(1, n + 1)]
     return history
@@ -208,20 +298,30 @@ def build_events(classes: pd.DataFrame, attendance: pd.DataFrame) -> pd.DataFram
     )
 
 
-def build_tables(raw: pd.DataFrame, seed: int) -> dict[str, pd.DataFrame]:
+def build_tables(
+    raw: pd.DataFrame, seed: int, event_effects: dict[str, float] | None = None
+) -> dict[str, pd.DataFrame]:
+    effects = EVENT_EFFECTS if event_effects is None else event_effects
     rng = np.random.default_rng(seed)
     members = build_members(raw, rng, seed)
     instructors, classes = build_staff_and_classes()
     attendance = build_attendance(members, classes, rng)
     features = build_features(members)
-    true_uplift = build_true_uplift(features)
+    events = build_events(classes, attendance)
+    interventions = build_interventions(
+        members, features, attendance, classes, events, rng, effects
+    )
+    exposure = event_exposure(attendance, classes, events)
+    true_churn = build_true_churn(features, exposure, rng, effects)
+    hazard = true_churn.set_index("member_id")["event_churn"]
     return {
         "members": members,
         "instructors": instructors,
         "classes": classes,
         "attendance": attendance,
         "offers": OFFERS,
-        "interventions": build_interventions(members, features, true_uplift, rng),
-        "true_uplift": true_uplift,
-        "events": build_events(classes, attendance),
+        "interventions": interventions,
+        "true_uplift": build_true_uplift(features, hazard),
+        "true_churn": true_churn,
+        "events": events,
     }
