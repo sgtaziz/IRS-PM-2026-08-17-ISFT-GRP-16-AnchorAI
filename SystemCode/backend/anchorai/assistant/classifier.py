@@ -10,6 +10,7 @@ from pathlib import Path
 import numpy as np
 import yaml
 from pydantic import BaseModel
+from sqlmodel import Session
 
 from anchorai.assistant.slots import Slots, extract_slots
 from anchorai.assistant.tools import name_lookup
@@ -139,12 +140,14 @@ def get_classifier() -> IntentClassifier:
         return _build()
 
 
-def refresh_names(classifier: IntentClassifier | None = None) -> None:
+def refresh_names(
+    classifier: IntentClassifier | None = None, session: Session | None = None
+) -> None:
     """Pick up added or renamed instructors and classes without reloading the embedding model."""
     if classifier is None:
         if not _build.cache_info().currsize:
             return
         classifier = _build()
-    instructors, classes = name_lookup()
+    instructors, classes = name_lookup(session)
     with _names_lock:
         classifier.instructors, classifier.classes = instructors, classes

@@ -8,14 +8,26 @@ from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel
 
 from anchorai.api.main import app
+from anchorai.config import get_settings
 from anchorai.db.seeds import run_seeds
-from anchorai.db.session import get_session, make_engine
+from anchorai.db.session import get_session, make_engine, reset_engine
 from anchorai.discovery import service
 from anchorai.discovery.scores import score_frame
 from anchorai.features import FEATURES, build_features
 from anchorai.scenario.tables import read_tables, write_tables
 
 FIXTURES = Path(__file__).parent / "fixtures"
+
+
+@pytest.fixture(autouse=True, scope="session")
+def no_real_db(tmp_path_factory):
+    """Code that opens the default engine gets an empty throwaway DB, never the developer's app.db."""
+    with pytest.MonkeyPatch.context() as mp:
+        stray = tmp_path_factory.mktemp("stray") / "stray.db"
+        mp.setattr(get_settings(), "anchorai_db_url", f"sqlite:///{stray}")
+        reset_engine()
+        yield
+    reset_engine()
 
 
 @pytest.fixture(scope="module")

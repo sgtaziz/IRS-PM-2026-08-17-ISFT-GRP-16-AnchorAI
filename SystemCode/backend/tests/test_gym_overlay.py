@@ -36,7 +36,7 @@ def test_overlay_merge():
 
 @pytest.fixture
 def graph_down(monkeypatch):
-    def down():
+    def down(_session=None):
         raise GraphDown("Neo4j is not reachable")
 
     monkeypatch.setattr(reload, "reload_graph", down)

@@ -21,7 +21,7 @@ def status(session: SessionDep, _: Manager):
 @router.post("/reload", response_model=KgStatus)
 def reload_graph(session: SessionDep, user: Manager):
     try:
-        result = reload.sync_graph()
+        result = reload.sync_graph(session)
     except DataNotBuilt as e:
         raise HTTPException(503, str(e)) from None
     if result.stale:

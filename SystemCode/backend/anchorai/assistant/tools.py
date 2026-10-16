@@ -56,8 +56,8 @@ def probability(p: float | None) -> str:
     return ">99%" if shown >= 100 else "<1%" if shown <= 0 else f"{shown}%"
 
 
-def name_lookup() -> tuple[dict[str, str], dict[str, str]]:
-    eff = effective()
+def name_lookup(session: Session | None = None) -> tuple[dict[str, str], dict[str, str]]:
+    eff = effective(session)
     instructors = dict(zip(eff.instructors["name"], eff.instructors["instructor_id"]))
     classes = dict(zip(eff.classes["name"], eff.classes["class_id"]))
     return instructors, classes

@@ -42,12 +42,12 @@ What each stream needs from the others: blockers, reviews, decisions and promise
 | # | Requested by | Kind | Item | Why it matters | Status | Added |
 |---|---|---|---|---|---|---|
 | 13 | B | deliver | `graph_signals(facts)` strings for `Explanation.graph_signals` | Done in `anchorai/knowledge/signals.py`; B to confirm it fits | answered | 2026-10-16 |
-| 19 | A | blocker | `tests/test_gym_overlay.py::test_failed_reload_stays_stale_and_is_audited` reads the developer's real `app.db`: `anchorai/knowledge/entities.py:109` opens `Session(get_engine())` instead of the test engine | Fails with `no such table: gym_instructors` on any clone that has not run `db upgrade`; tests must not touch the real DB | open | 2026-10-16 |
 
 ## Done
 
 | # | Requested by → Owner | Item | Closed |
 |---|---|---|---|
+| 19 | A → C | KG reload and roster-name refresh now use the request's DB session; `tests/conftest.py` points the default engine at an empty throwaway DB so no test can read the real `app.db` | 2026-10-16 |
 | 10 | A → C | Reusable Cytoscape ego-graph component for Member 360 (W18) | 2026-10-16, `src/components/EgoGraph.vue`, used in Member 360 and the graph explorer |
 | 11 | A → C | Rule-trace panel component for Member 360 | 2026-10-16, `src/components/RuleTrace.vue`, used in Member 360 and rules admin |
 | 12 | B → C | Live guardrail check for plan overrides (W15) | 2026-10-16, `POST /api/rules/check` (manager, admin): per item `allowed`, `violations`, `on_playbook`, `channel_offered`, `offer_active`. `allowed` is rules only: B must also read the other three (inactive offer, unsupported channel, off-playbook override); B to confirm |

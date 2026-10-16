@@ -60,14 +60,14 @@ def status(session: Session) -> KgStatus:
     return current
 
 
-def reload_graph() -> dict[str, int]:
+def reload_graph(session: Session | None = None) -> dict[str, int]:
     """Rebuild the graph and cache its facts; raises `GraphDown` when Neo4j can't be reached."""
     driver = get_driver()
     if not neo4j_available(driver):
         raise GraphDown("Neo4j is not reachable")
     scores = load_scores() if (generated_dir() / "member_scores.parquet").exists() else None
     try:
-        counts = load_graph(driver, effective_tables(), scores)
+        counts = load_graph(driver, effective_tables(session), scores)
         save_kg_facts(compute_kg_facts(driver))
     except (*GraphUnavailable, Neo4jError) as e:
         # The graph may be half loaded: callers keep it marked stale until a reload succeeds.
@@ -77,12 +77,12 @@ def reload_graph() -> dict[str, int]:
     return counts
 
 
-def sync_graph() -> KgStatus:
+def sync_graph(session: Session | None = None) -> KgStatus:
     """Reload and record the outcome; never raises, so a saved edit is not lost to a down graph."""
     global _status
     with _lock:
         try:
-            counts = reload_graph()
+            counts = reload_graph(session)
         except GraphDown as e:
             _status = _status.model_copy(update={"stale": True, "error": str(e)})
         else:

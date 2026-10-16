@@ -2,6 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+from sqlmodel import Session
 
 from anchorai.api.deps import SessionDep, require_role
 from anchorai.assistant.classifier import refresh_names
@@ -22,9 +23,9 @@ class Edit(BaseModel):
     kg: KgStatus
 
 
-def _applied(edit_id: str | None = None) -> Edit:
-    refresh_names()
-    return Edit(id=edit_id, kg=reload.sync_graph())
+def _applied(session: Session, edit_id: str | None = None) -> Edit:
+    refresh_names(session=session)
+    return Edit(id=edit_id, kg=reload.sync_graph(session))
 
 
 def _guarded(call, *args):
@@ -45,26 +46,26 @@ def view(session: SessionDep, _: Manager):
 
 @router.post("/instructors", response_model=Edit, status_code=201)
 def add_instructor(body: InstructorIn, session: SessionDep, user: Manager):
-    return _applied(_guarded(roster.add_instructor, session, user, body))
+    return _applied(session, _guarded(roster.add_instructor, session, user, body))
 
 
 @router.post("/classes", response_model=Edit, status_code=201)
 def add_class(body: ClassIn, session: SessionDep, user: Manager):
-    return _applied(_guarded(roster.add_class, session, user, body))
+    return _applied(session, _guarded(roster.add_class, session, user, body))
 
 
 @router.put("/classes/{class_id}/instructor", response_model=Edit)
 def reassign_class(class_id: str, body: ReassignIn, session: SessionDep, user: Manager):
     _guarded(roster.reassign_class, session, user, class_id, body)
-    return _applied(class_id)
+    return _applied(session, class_id)
 
 
 @router.post("/events", response_model=Edit, status_code=201)
 def record_event(body: EventIn, session: SessionDep, user: Manager):
-    return _applied(_guarded(roster.record_event, session, user, body))
+    return _applied(session, _guarded(roster.record_event, session, user, body))
 
 
 @router.delete("/events/{event_id}", response_model=Edit)
 def revoke_event(event_id: str, session: SessionDep, user: Manager):
     _guarded(roster.revoke_event, session, user, event_id)
-    return _applied(event_id)
+    return _applied(session, event_id)
