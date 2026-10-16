@@ -3,11 +3,11 @@
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from sqlmodel import Session, func, select
 
 from anchorai.auth.schemas import UserOut
-from anchorai.auth.security import hash_password
+from anchorai.auth.security import MAX_PASSWORD_BYTES, hash_password
 from anchorai.db.audit import record_audit
 from anchorai.db.models import Role, User
 
@@ -16,11 +16,19 @@ class UserRow(UserOut):
     created_at: datetime
 
 
+def _fits_bcrypt(password: str) -> str:
+    if len(password.encode()) > MAX_PASSWORD_BYTES:
+        raise ValueError(f"Password must be at most {MAX_PASSWORD_BYTES} bytes")
+    return password
+
+
 class UserCreate(BaseModel):
     username: str = Field(pattern=r"^[A-Za-z0-9._-]{3,40}$")
     full_name: str = Field(default="", max_length=100)
     role: Role
-    password: str = Field(min_length=8, max_length=72)
+    password: str = Field(min_length=8)
+
+    _password_size = field_validator("password")(_fits_bcrypt)
 
 
 class UserUpdate(BaseModel):
@@ -30,7 +38,9 @@ class UserUpdate(BaseModel):
 
 
 class PasswordReset(BaseModel):
-    password: str = Field(min_length=8, max_length=72)
+    password: str = Field(min_length=8)
+
+    _password_size = field_validator("password")(_fits_bcrypt)
 
 
 class UserConflict(ValueError):
@@ -83,17 +93,24 @@ def create_user(session: Session, actor: User, body: UserCreate) -> UserRow:
     return UserRow.model_validate(user, from_attributes=True)
 
 
+def _active_admins(session: Session) -> int:
+    return session.exec(
+        select(func.count()).select_from(User).where(User.role == "admin", User.is_active)
+    ).one()
+
+
 def update_user(session: Session, actor: User, user_id: int, body: UserUpdate) -> UserRow:
     user = _get(session, user_id)
     before = _view(user)
     demoting = body.role is not None and body.role != "admin" and user.role == "admin"
     deactivating = body.is_active is False and user.is_active
-    if user.role == "admin" and user.is_active and (demoting or deactivating):
-        admins = session.exec(
-            select(func.count()).select_from(User).where(User.role == "admin", User.is_active)
-        ).one()
-        if admins <= 1:
-            raise UserRuleViolation("The last active admin cannot be demoted or deactivated")
+    if (
+        user.role == "admin"
+        and user.is_active
+        and (demoting or deactivating)
+        and _active_admins(session) <= 1
+    ):
+        raise UserRuleViolation("The last active admin cannot be demoted or deactivated")
     if user.id == actor.id and (demoting or deactivating or body.role not in (None, user.role)):
         raise UserRuleViolation("You cannot deactivate or change the role of your own account")
     if body.full_name is not None:
@@ -103,6 +120,11 @@ def update_user(session: Session, actor: User, user_id: int, body: UserUpdate) -
     if body.is_active is not None:
         user.is_active = body.is_active
     session.add(user)
+    session.flush()
+    if (demoting or deactivating) and not _active_admins(session):
+        # Re-checked after our write holds the SQLite lock, in case another admin was removed meanwhile.
+        session.rollback()
+        raise UserRuleViolation("The last active admin cannot be demoted or deactivated")
     record_audit(
         session, actor, "user_update", "user", str(user.id), before=before, after=_view(user)
     )

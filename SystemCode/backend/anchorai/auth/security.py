@@ -1,3 +1,4 @@
+import hashlib
 from datetime import UTC, datetime, timedelta
 from functools import lru_cache
 from typing import Any
@@ -11,7 +12,12 @@ from anchorai.db.models import User
 ALGORITHM = "HS256"
 
 
+MAX_PASSWORD_BYTES = 72
+
+
 def hash_password(password: str) -> str:
+    if len(password.encode()) > MAX_PASSWORD_BYTES:
+        raise ValueError(f"Password is longer than {MAX_PASSWORD_BYTES} bytes")
     return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 
 
@@ -33,12 +39,18 @@ def verify_password(password: str, password_hash: str) -> bool:
         return False
 
 
+def password_stamp(user: User) -> str:
+    """Changes whenever the password does, so a reset signs out the user's existing tokens."""
+    return hashlib.sha256(user.password_hash.encode()).hexdigest()[:16]
+
+
 def create_access_token(user: User) -> str:
     s = get_settings()
     claims = {
         "sub": user.username,
         "uid": user.id,
         "role": user.role,
+        "pwv": password_stamp(user),
         "exp": datetime.now(UTC) + timedelta(minutes=s.anchorai_jwt_ttl_minutes),
     }
     return jwt.encode(claims, s.anchorai_jwt_secret, algorithm=ALGORITHM)

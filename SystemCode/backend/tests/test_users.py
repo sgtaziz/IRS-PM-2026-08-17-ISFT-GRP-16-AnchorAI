@@ -40,3 +40,27 @@ def test_audit_never_holds_passwords(client, login, engine):
     assert len(rows) >= 2
     dump = json.dumps([[r.before, r.after] for r in rows])
     assert "s3cret" not in dump and "$2b$" not in dump and "password_hash" not in dump
+
+
+def test_passwords_are_limited_by_bytes_and_reset_signs_out_old_tokens(client, login):
+    admin = login("admin")
+    body = {"username": "temp2", "role": "staff", "password": "é" * 37}
+    assert client.post("/api/admin/users", json=body, headers=admin).status_code == 422
+    body["password"] = "é" * 36
+    uid = client.post("/api/admin/users", json=body, headers=admin).json()["id"]
+    assert (
+        client.post(
+            f"/api/admin/users/{uid}/password", json={"password": "日" * 25}, headers=admin
+        ).status_code
+        == 422
+    )
+
+    old = login("temp2", body["password"])
+    assert client.get("/api/auth/me", headers=old).status_code == 200
+    reset = {"password": "brand-new-pass"}
+    assert (
+        client.post(f"/api/admin/users/{uid}/password", json=reset, headers=admin).status_code
+        == 204
+    )
+    assert client.get("/api/auth/me", headers=old).status_code == 401
+    assert client.get("/api/auth/me", headers=login("temp2", "brand-new-pass")).status_code == 200

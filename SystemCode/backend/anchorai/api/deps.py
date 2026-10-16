@@ -6,7 +6,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlmodel import Session
 
-from anchorai.auth.security import decode_access_token
+from anchorai.auth.security import decode_access_token, password_stamp
 from anchorai.db.models import ROLES, User
 from anchorai.db.session import get_session
 
@@ -38,6 +38,8 @@ def get_current_user(
     user = session.get(User, uid) if isinstance(uid, int) else None
     if user is None or not user.is_active:
         raise _unauthorized("User not found or inactive")
+    if claims.get("pwv") != password_stamp(user):
+        raise _unauthorized("Password changed; sign in again")
     return user
 
 
