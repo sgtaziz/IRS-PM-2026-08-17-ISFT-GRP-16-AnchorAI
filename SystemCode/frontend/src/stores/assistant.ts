@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { reactive, ref } from 'vue'
-import { api } from '../api/client'
-import type { AssistantReply, HistoryTurn } from '../api/types'
+import { api, ApiError, apiStream } from '../api/client'
+import type { AssistantReply, AssistantStreamDone, AssistantStreamMeta, HistoryTurn } from '../api/types'
 import { errorMessage } from '../composables/useAsync'
 
 export interface Turn {
@@ -12,6 +12,8 @@ export interface Turn {
   reply: AssistantReply | null
   error: string | null
   rated: 1 | -1 | null
+  // True while the answer text is still arriving.
+  streaming: boolean
 }
 
 const HISTORY_TURNS = 4
@@ -31,6 +33,22 @@ export const useAssistantStore = defineStore('assistant', () => {
     return last?.reply?.slots.member_ids.at(-1) ?? pageMember
   }
 
+  async function stream(turn: Turn, body: string) {
+    let finished = false
+    turn.reply = null
+    await apiStream('/assistant/chat/stream', { method: 'POST', body }, (event, data) => {
+      if (event === 'meta') {
+        turn.reply = { ...(data as AssistantStreamMeta), answer: '', grounded: false, llm_used: false }
+      } else if (event === 'delta' && turn.reply) {
+        turn.reply.answer += (data as { text: string }).text
+      } else if (event === 'done' && turn.reply) {
+        Object.assign(turn.reply, data as AssistantStreamDone)
+        finished = true
+      }
+    })
+    if (!finished) throw new Error('The answer stream ended early')
+  }
+
   async function ask(question: string, pageMember: string | null) {
     question = question.trim()
     if (!question || busy.value) return
@@ -39,18 +57,26 @@ export const useAssistantStore = defineStore('assistant', () => {
       .slice(-HISTORY_TURNS)
       .map((t) => ({ question: t.question, answer: t.reply!.answer, intent: t.reply!.intent, slots: t.reply!.slots }))
     const memberId = focus(pageMember)
-    const turn = reactive<Turn>({ id: nextId++, question, pageMember, reply: null, error: null, rated: null })
+    const turn = reactive<Turn>({ id: nextId++, question, pageMember, reply: null, error: null, rated: null, streaming: false })
     turns.value.push(turn)
     busy.value = true
     const started = generation
+    const body = JSON.stringify({ message: question, member_id: memberId, history })
     try {
-      turn.reply = await api<AssistantReply>('/assistant/chat', {
-        method: 'POST',
-        body: JSON.stringify({ message: question, member_id: memberId, history }),
-      })
+      try {
+        turn.streaming = true
+        await stream(turn, body)
+      } catch (e) {
+        // The server's own errors (auth, 503) would repeat on /chat; a broken stream may not.
+        if (e instanceof ApiError) throw e
+        turn.streaming = false
+        turn.reply = null
+        turn.reply = await api<AssistantReply>('/assistant/chat', { method: 'POST', body })
+      }
     } catch (e) {
       turn.error = errorMessage(e)
     } finally {
+      turn.streaming = false
       if (started === generation) busy.value = false
     }
   }

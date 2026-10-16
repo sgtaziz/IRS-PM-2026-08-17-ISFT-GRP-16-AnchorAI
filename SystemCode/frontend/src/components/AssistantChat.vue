@@ -150,11 +150,11 @@ watch(
           <div class="row bot">
             <span class="avatar" aria-hidden="true"><Sparkles :size="15" /></span>
             <div class="bubble bot">
-              <div v-if="!t.reply && !t.error" class="typing" aria-label="Thinking"><i /><i /><i /></div>
+              <div v-if="(!t.reply || (t.streaming && !t.reply.answer)) && !t.error" class="typing" aria-label="Thinking"><i /><i /><i /></div>
               <p v-else-if="t.error" class="error"><TriangleAlert :size="15" aria-hidden="true" /> {{ t.error }}</p>
               <template v-else-if="t.reply">
-                <AssistantAnswer :answer="t.reply.answer" :evidence="t.reply.evidence" />
-                <div class="meta">
+                <AssistantAnswer :answer="t.reply.answer" :evidence="t.reply.evidence" :streaming="t.streaming" />
+                <div v-if="!t.streaming" class="meta">
                   <span class="intent">{{ INTENT_LABELS[t.reply.intent] ?? t.reply.intent }}</span>
                   <span v-if="t.reply.tool" title="The data source the answer came from">via {{ TOOL_LABELS[t.reply.tool] ?? t.reply.tool }}</span>
                   <span v-if="t.reply.follow_up">Follow-up</span>

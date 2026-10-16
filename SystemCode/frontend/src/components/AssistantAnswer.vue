@@ -6,7 +6,7 @@ import { useRouter } from 'vue-router'
 import type { Evidence } from '../api/types'
 import { useAuthStore } from '../stores/auth'
 
-const props = defineProps<{ answer: string; evidence: Evidence[] }>()
+const props = defineProps<{ answer: string; evidence: Evidence[]; streaming?: boolean }>()
 
 type Inline = { type: 'text' | 'bold'; text: string } | { type: 'cite'; ids: string[] }
 interface Block {
@@ -61,7 +61,9 @@ const blocks = computed(() => {
     if (para.length) out.push({ list: false, lines: [inline(para.join(' '))] })
     para = []
   }
-  for (const raw of props.answer.split('\n')) {
+  // A citation or bold marker cut off mid-stream would flash as raw text.
+  const text = props.streaming ? props.answer.replace(/(\s*\[E?\d*|\*\*[^*]*|\*|(?:^|\n)\s*[-*•])$/, '') : props.answer
+  for (const raw of text.split('\n')) {
     const line = raw.trim()
     const bullet = line.match(/^(?:[-*•]|\d+\.)\s+(.*)$/)
     if (bullet) {
