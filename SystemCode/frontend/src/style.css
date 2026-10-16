@@ -52,6 +52,7 @@
   --radius-card: 14px;
 
   --breakpoint-3xl: 106rem;
+  --breakpoint-4xl: 140rem;
 }
 
 :root {
@@ -85,7 +86,7 @@
   html { font-size: 18px; }
 }
 
-body { margin: 0; min-height: 100dvh; background: var(--app-bg); }
+body { margin: 0; min-height: 100dvh; background: var(--app-bg); font-size: 0.9375rem; }
 ::selection { background: var(--color-brand-100); }
 
 @layer base {
@@ -134,15 +135,22 @@ body { margin: 0; min-height: 100dvh; background: var(--app-bg); }
   .member-link:hover { text-decoration: underline; }
 }
 
-/* PrimeVue refinements that tokens don't reach. */
-.p-card { border: 1px solid var(--color-ink-200); }
-.p-datatable .p-datatable-table-container { border: 1px solid var(--color-ink-200); border-radius: 12px; }
-.p-datatable .p-datatable-thead > tr > th { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
-.p-datatable .p-datatable-thead > tr > th:first-child { border-top-left-radius: 11px; }
-.p-datatable .p-datatable-thead > tr > th:last-child { border-top-right-radius: 11px; }
-.p-datatable .p-datatable-tbody > tr:last-child > td { border-bottom: 0; }
-.p-datatable-selectable .p-datatable-tbody > tr { cursor: pointer; }
-.p-datatable .p-paginator { padding-top: 0.75rem; }
-.p-dialog-mask, .p-drawer-mask { backdrop-filter: blur(2px); }
-.p-tooltip .p-tooltip-text { line-height: 1.45; }
-.p-toast { max-width: calc(100vw - 2rem); }
+/* PrimeVue refinements that tokens don't reach; layered so utilities can still override them. */
+@layer components {
+  .p-inputtext, .p-select-label, .p-multiselect-label, .p-textarea, .p-select-option, .p-multiselect-option, .p-autocomplete-option, .p-menu-item-label { font-size: 0.875rem; }
+  .p-datatable { font-size: 0.875rem; }
+  .p-datatable-thead > tr > th, .p-datatable-tbody > tr > td { white-space: nowrap; }
+  .p-button { font-size: 0.875rem; }
+  .p-button.p-button-sm { font-size: 0.8125rem; }
+  .p-card { border: 1px solid var(--color-ink-200); }
+  .p-datatable .p-datatable-table-container { border: 1px solid var(--color-ink-200); border-radius: 12px; }
+  .p-datatable .p-datatable-thead > tr > th { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; }
+  .p-datatable .p-datatable-thead > tr > th:first-child { border-top-left-radius: 11px; }
+  .p-datatable .p-datatable-thead > tr > th:last-child { border-top-right-radius: 11px; }
+  .p-datatable .p-datatable-tbody > tr:last-child > td { border-bottom: 0; }
+  .p-datatable-selectable .p-datatable-tbody > tr { cursor: pointer; }
+  .p-datatable .p-paginator { padding-top: 0.75rem; }
+  .p-dialog-mask, .p-drawer-mask { backdrop-filter: blur(1px); }
+  .p-tooltip .p-tooltip-text { line-height: 1.45; }
+  .p-toast { max-width: calc(100vw - 2rem); }
+}

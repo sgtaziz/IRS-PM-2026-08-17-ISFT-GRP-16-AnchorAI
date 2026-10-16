@@ -71,7 +71,7 @@ export const AnchorPreset = definePreset(Aura, {
     },
     datatable: {
       header: { background: 'transparent', borderWidth: '0', padding: '0 0 0.75rem 0' },
-      headerCell: { background: '{surface.50}', color: '{text.muted.color}', padding: '0.625rem 0.875rem' },
+      headerCell: { background: '{surface.50}', selectedBackground: '{surface.100}', color: '{text.muted.color}', selectedColor: '{primary.700}', padding: '0.625rem 0.875rem' },
       columnTitle: { fontWeight: '600' },
       bodyCell: { padding: '0.625rem 0.875rem' },
       row: { stripedBackground: '{surface.50}' },

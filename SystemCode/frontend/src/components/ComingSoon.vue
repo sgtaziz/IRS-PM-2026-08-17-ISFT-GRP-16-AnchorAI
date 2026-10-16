@@ -33,4 +33,13 @@ defineProps<{ icon: Component; title: string; text: string; features: string[]; 
       </div>
     </div>
   </section>
+  <div class="mt-5 grid gap-5 opacity-70 md:grid-cols-3" aria-hidden="true">
+    <div v-for="n in 3" :key="n" class="rounded-card border border-dashed border-ink-200 bg-white/60 p-5">
+      <div class="mb-4 h-3 w-1/3 rounded-full bg-ink-100" />
+      <div v-for="r in 4" :key="r" class="mb-3 flex items-center gap-3">
+        <div class="size-7 shrink-0 rounded-lg bg-ink-100" />
+        <div class="h-2.5 rounded-full bg-ink-100" :style="{ width: `${85 - ((n * 7 + r * 13) % 40)}%` }" />
+      </div>
+    </div>
+  </div>
 </template>

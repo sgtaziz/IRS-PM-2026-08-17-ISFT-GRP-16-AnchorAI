@@ -1,6 +1,6 @@
 <script setup lang="ts">
+import { Gift, Pencil, Plus, Save, SlidersHorizontal, UsersRound } from 'lucide-vue-next'
 import Button from 'primevue/button'
-import Card from 'primevue/card'
 import Column from 'primevue/column'
 import Dialog from 'primevue/dialog'
 import InputNumber from 'primevue/inputnumber'
@@ -16,16 +16,17 @@ import { api } from '../api/client'
 import type { CatalogView, Channel, Constraints, Offer, StaffRow } from '../api/types'
 import ConfirmAction from '../components/ConfirmAction.vue'
 import DataTableX from '../components/DataTableX.vue'
+import PageHeader from '../components/PageHeader.vue'
 import PageState from '../components/PageState.vue'
+import SectionCard from '../components/SectionCard.vue'
 import { errorMessage, useAsync } from '../composables/useAsync'
 import { money } from '../format'
+import { channelLabel, humanize } from '../labels'
 
-const CHANNELS: { label: string; value: Channel }[] = [
-  { label: 'SMS', value: 'sms' },
-  { label: 'Email', value: 'email' },
-  { label: 'Call', value: 'call' },
-  { label: 'In person', value: 'in_person' },
-]
+const CHANNELS: { label: string; value: Channel }[] = (['sms', 'email', 'call', 'in_person'] as const).map((value) => ({
+  label: channelLabel(value),
+  value,
+}))
 const BLANK: Offer = {
   offer_id: '',
   name: '',
@@ -119,19 +120,15 @@ async function saveConstraints() {
   }
 }
 
-const skillOptions = () => (catalog.data.value?.skills ?? []).map((s) => ({ label: s.replace('_', ' '), value: s }))
+const skillOptions = () => (catalog.data.value?.skills ?? []).map((s) => ({ label: humanize(s), value: s }))
 </script>
 
 <template>
-  <div class="page-head">
-    <h2>Offers & constraints</h2>
-    <span class="sub">Inputs the weekly plan reads; every change is audited</span>
-  </div>
-  <PageState :loading="catalog.loading.value && !catalog.data.value" :error="catalog.error.value" @retry="load">
-    <template v-if="catalog.data.value">
-      <Card class="block">
-        <template #title>Offer catalogue</template>
-        <template #content>
+  <div class="page">
+    <PageHeader title="Offers & constraints" subtitle="The inputs the weekly plan reads: what can be offered, who can deliver it and the limits. Every change is audited." />
+    <PageState :loading="catalog.loading.value && !catalog.data.value" :error="catalog.error.value" @retry="load">
+      <template v-if="catalog.data.value">
+        <SectionCard title="Offer catalogue" :subtitle="`${catalog.data.value.offers.length} offers`" :icon="Gift" class="mb-5">
           <DataTableX
             :value="catalog.data.value.offers"
             data-key="offer_id"
@@ -140,36 +137,53 @@ const skillOptions = () => (catalog.data.value?.skills ?? []).map((s) => ({ labe
             export-name="offers"
           >
             <template #toolbar>
-              <Button label="Add offer" size="small" @click="openOffer()" />
+              <Button label="Add offer" size="small" @click="openOffer()">
+                <template #icon><Plus :size="15" /></template>
+              </Button>
             </template>
             <Column field="name" header="Offer" sortable>
               <template #body="{ data }">
-                {{ data.name }} <small class="muted">{{ data.offer_id }}</small>
+                <div class="flex flex-col gap-0.5">
+                  <span class="font-semibold text-ink-800">{{ data.name }}</span>
+                  <span><span class="id-chip">{{ data.offer_id }}</span></span>
+                </div>
               </template>
             </Column>
             <Column field="cost" header="Cost" sortable>
-              <template #body="{ data }">{{ money(data.cost) }}</template>
+              <template #body="{ data }"><span class="tabular-nums">{{ money(data.cost) }}</span></template>
             </Column>
-            <Column field="staff_minutes" header="Staff min" sortable />
+            <Column field="staff_minutes" header="Staff time" sortable>
+              <template #body="{ data }"><span class="tabular-nums">{{ data.staff_minutes }} min</span></template>
+            </Column>
             <Column field="inventory" header="Weekly stock">
               <template #body="{ data }">{{ data.inventory ?? 'Unlimited' }}</template>
             </Column>
             <Column field="channels" header="Channels">
-              <template #body="{ data }">{{ data.channels.join(', ') }}</template>
+              <template #body="{ data }">
+                <span class="flex flex-wrap gap-1">
+                  <span v-for="c in data.channels" :key="c" class="rounded-md bg-ink-100 px-2 py-0.5 text-xs font-medium text-ink-700">{{ channelLabel(c) }}</span>
+                </span>
+              </template>
             </Column>
             <Column field="required_skill" header="Skill">
-              <template #body="{ data }">{{ data.required_skill || 'Anyone' }}</template>
+              <template #body="{ data }">{{ data.required_skill ? humanize(data.required_skill) : 'Anyone' }}</template>
             </Column>
-            <Column field="eligibility" header="Eligibility" />
+            <Column field="eligibility" header="Eligibility">
+              <template #body="{ data }"><span class="block min-w-56 whitespace-normal text-ink-600">{{ data.eligibility }}</span></template>
+            </Column>
             <Column field="active" header="Status">
               <template #body="{ data }">
-                <Tag :severity="data.active ? 'success' : 'secondary'" :value="data.active ? 'Active' : 'Inactive'" />
+                <span class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold" :class="data.active ? 'bg-success-soft text-[#0b7a53]' : 'bg-ink-100 text-ink-500'">
+                  <span class="size-1.5 rounded-full" :class="data.active ? 'bg-success' : 'bg-ink-400'" />{{ data.active ? 'Active' : 'Inactive' }}
+                </span>
               </template>
             </Column>
             <Column header="Actions">
               <template #body="{ data }">
-                <div class="row-actions">
-                  <Button label="Edit" size="small" text @click="openOffer(data)" />
+                <div class="flex gap-1">
+                  <Button label="Edit" size="small" text @click="openOffer(data)">
+                    <template #icon><Pencil :size="14" /></template>
+                  </Button>
                   <ConfirmAction
                     label="Delete"
                     :message="`Delete ${data.name}? Past plans keep their record.`"
@@ -179,79 +193,89 @@ const skillOptions = () => (catalog.data.value?.skills ?? []).map((s) => ({ labe
               </template>
             </Column>
           </DataTableX>
-        </template>
-      </Card>
+        </SectionCard>
 
-      <div class="grid cols-2">
-        <Card>
-          <template #title>Staff roster</template>
-          <template #content>
+        <div class="grid items-start gap-5 xl:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)]">
+          <SectionCard title="Staff roster" subtitle="Weekly hours and skills used when assigning calls" :icon="UsersRound">
             <PageState :empty="!staff.length" empty-text="No staff users yet. Add them on the Users page.">
-              <table class="plain">
-                <thead>
-                  <tr><th scope="col">Staff</th><th scope="col">Hours / week</th><th scope="col">Skills</th><th></th></tr>
-                </thead>
-                <tbody>
-                  <tr v-for="s in staff" :key="s.user_id">
-                    <td>{{ s.full_name || s.username }}</td>
-                    <td>
-                      <InputNumber
-                        v-model="s.weekly_hours"
-                        :min="0"
-                        :max="60"
-                        :max-fraction-digits="1"
-                        size="small"
-                        input-class="narrow"
-                        :aria-label="`Weekly hours for ${s.username}`"
-                      />
-                    </td>
-                    <td>
-                      <MultiSelect
-                        v-model="s.skills"
-                        :options="skillOptions()"
-                        option-label="label"
-                        option-value="value"
-                        placeholder="None"
-                        size="small"
-                        display="chip"
-                        :aria-label="`Skills for ${s.username}`"
-                      />
-                    </td>
-                    <td><Button label="Save" size="small" outlined @click="saveStaff(s)" /></td>
-                  </tr>
-                </tbody>
-              </table>
+              <div class="table-wrap">
+                <table class="plain">
+                  <thead>
+                    <tr><th scope="col">Staff</th><th scope="col">Hours / week</th><th scope="col">Skills</th><th scope="col"><span class="sr-only">Save</span></th></tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="s in staff" :key="s.user_id">
+                      <td>
+                        <p class="m-0 font-semibold text-ink-800">{{ s.full_name || s.username }}</p>
+                        <p class="m-0 text-xs text-ink-500">@{{ s.username }}</p>
+                      </td>
+                      <td>
+                        <InputNumber
+                          v-model="s.weekly_hours"
+                          :min="0"
+                          :max="60"
+                          :max-fraction-digits="1"
+                          size="small"
+                          input-class="narrow"
+                          :aria-label="`Weekly hours for ${s.username}`"
+                        />
+                      </td>
+                      <td>
+                        <MultiSelect
+                          v-model="s.skills"
+                          :options="skillOptions()"
+                          option-label="label"
+                          option-value="value"
+                          placeholder="None"
+                          size="small"
+                          display="chip"
+                          class="min-w-48"
+                          :aria-label="`Skills for ${s.username}`"
+                        />
+                      </td>
+                      <td class="text-right">
+                        <Button label="Save" size="small" severity="secondary" outlined @click="saveStaff(s)">
+                          <template #icon><Save :size="14" /></template>
+                        </Button>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </PageState>
-          </template>
-        </Card>
+          </SectionCard>
 
-        <Card v-if="constraints">
-          <template #title>Planning constraints</template>
-          <template #content>
+          <SectionCard v-if="constraints" title="Planning constraints" subtitle="Defaults for the weekly plan and contact-fatigue caps" :icon="SlidersHorizontal">
             <form class="form" @submit.prevent="saveConstraints">
-              <label class="field">
-                <span>Default weekly budget ($)</span>
-                <InputNumber v-model="constraints.default_budget" :min="0" mode="currency" currency="USD" />
-              </label>
-              <label class="field">
-                <span>Default staff minutes per week</span>
-                <InputNumber v-model="constraints.default_staff_minutes" :min="0" />
-              </label>
-              <label class="field">
-                <span>Max contacts per member per 30 days</span>
-                <InputNumber v-model="constraints.max_contacts_per_member_per_30d" :min="0" />
-              </label>
-              <label class="field">
-                <span>Max offers per member per 90 days</span>
-                <InputNumber v-model="constraints.max_offers_per_member_per_90d" :min="0" />
-              </label>
-              <Button type="submit" label="Save constraints" />
+              <div class="grid gap-4 sm:grid-cols-2">
+                <label class="field">
+                  <span>Default weekly budget</span>
+                  <InputNumber v-model="constraints.default_budget" :min="0" mode="currency" currency="USD" fluid />
+                </label>
+                <label class="field">
+                  <span>Default staff minutes per week</span>
+                  <InputNumber v-model="constraints.default_staff_minutes" :min="0" fluid />
+                </label>
+                <label class="field">
+                  <span>Max contacts per member per 30 days</span>
+                  <InputNumber v-model="constraints.max_contacts_per_member_per_30d" :min="0" fluid />
+                </label>
+                <label class="field">
+                  <span>Max offers per member per 90 days</span>
+                  <InputNumber v-model="constraints.max_offers_per_member_per_90d" :min="0" fluid />
+                </label>
+              </div>
+              <div class="flex justify-end">
+                <Button type="submit" label="Save constraints">
+                  <template #icon><Save :size="15" /></template>
+                </Button>
+              </div>
             </form>
-          </template>
-        </Card>
-      </div>
-    </template>
-  </PageState>
+          </SectionCard>
+        </div>
+      </template>
+    </PageState>
+  </div>
 
   <Dialog
     :visible="editing !== null"
@@ -264,26 +288,27 @@ const skillOptions = () => (catalog.data.value?.skills ?? []).map((s) => ({ labe
       <Message v-if="formError" severity="error" :closable="false">{{ formError }}</Message>
       <label class="field">
         <span>Offer ID</span>
-        <InputText v-model="editing.offer_id" :disabled="!isNew" placeholder="e.g. free_pt_session" />
+        <InputText fluid v-model="editing.offer_id" :disabled="!isNew" placeholder="e.g. free_pt_session" />
       </label>
-      <label class="field"><span>Name</span><InputText v-model="editing.name" /></label>
+      <label class="field"><span>Name</span><InputText fluid v-model="editing.name" /></label>
       <div class="two">
         <label class="field">
           <span>Cost ($)</span>
-          <InputNumber v-model="editing.cost" :min="0" mode="currency" currency="USD" />
+          <InputNumber fluid v-model="editing.cost" :min="0" mode="currency" currency="USD" />
         </label>
         <label class="field">
           <span>Staff minutes</span>
-          <InputNumber v-model="editing.staff_minutes" :min="0" />
+          <InputNumber fluid v-model="editing.staff_minutes" :min="0" />
         </label>
         <label class="field">
           <span>Weekly stock (blank = unlimited)</span>
-          <InputNumber v-model="editing.inventory" :min="0" />
+          <InputNumber fluid v-model="editing.inventory" :min="0" />
         </label>
         <label class="field">
           <span>Required skill</span>
           <Select
             v-model="editing.required_skill"
+            fluid
             :options="[{ label: 'Anyone', value: '' }, ...skillOptions()]"
             option-label="label"
             option-value="value"
@@ -292,11 +317,11 @@ const skillOptions = () => (catalog.data.value?.skills ?? []).map((s) => ({ labe
       </div>
       <label class="field">
         <span>Channels</span>
-        <MultiSelect v-model="editing.channels" :options="CHANNELS" option-label="label" option-value="value" display="chip" />
+        <MultiSelect fluid v-model="editing.channels" :options="CHANNELS" option-label="label" option-value="value" display="chip" />
       </label>
       <label class="field">
         <span>Eligibility</span>
-        <InputText v-model="editing.eligibility" placeholder="Who can receive it" />
+        <InputText fluid v-model="editing.eligibility" placeholder="Who can receive it" />
       </label>
       <label class="switch">
         <ToggleSwitch v-model="editing.active" input-id="offer-active" />
@@ -311,27 +336,20 @@ const skillOptions = () => (catalog.data.value?.skills ?? []).map((s) => ({ labe
 </template>
 
 <style scoped>
-.block {
-  margin-bottom: 1rem;
-}
 .form {
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 1rem;
 }
 .two {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
   gap: 0.75rem;
 }
 .switch {
   display: flex;
   gap: 0.5rem;
   align-items: center;
-}
-.row-actions {
-  display: flex;
-  gap: 0.25rem;
 }
 .dialog-actions {
   display: flex;

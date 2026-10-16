@@ -33,7 +33,7 @@ function ask() {
     :severity="severity === 'primary' ? undefined : severity"
     :size="size"
     :disabled="disabled"
-    outlined
+    :outlined="severity !== 'primary'"
     @click="ask"
   />
 </template>

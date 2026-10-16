@@ -1,30 +1,42 @@
 <script setup lang="ts">
+import { CircleCheck, FlaskConical, Play, ScrollText, TriangleAlert } from 'lucide-vue-next'
 import Button from 'primevue/button'
-import Card from 'primevue/card'
 import Column from 'primevue/column'
 import InputText from 'primevue/inputtext'
-import Message from 'primevue/message'
-import Tag from 'primevue/tag'
+import vTooltip from 'primevue/tooltip'
 import { onMounted, ref } from 'vue'
 import { api } from '../api/client'
 import type { Rule, RuleOutcome, RuleSet } from '../api/types'
 import DataTableX from '../components/DataTableX.vue'
+import EmptyState from '../components/EmptyState.vue'
+import PageHeader from '../components/PageHeader.vue'
 import PageState from '../components/PageState.vue'
 import RuleTrace from '../components/RuleTrace.vue'
+import SectionCard from '../components/SectionCard.vue'
 import { useAsync } from '../composables/useAsync'
+import { channelLabel, humanize, RULE_KIND_LABELS, ruleCode } from '../labels'
+import { useGlossaryStore } from '../stores/glossary'
 
-const KIND_SEVERITY = { derive: 'info', playbook: 'success', guardrail: 'danger' } as const
+const KIND_STYLE = {
+  derive: 'bg-[#efeafe] text-[#5b3cc4]',
+  playbook: 'bg-success-soft text-[#0b7a53]',
+  guardrail: 'bg-danger-soft text-[#b4183a]',
+} as const
 
 const rules = useAsync(() => api<RuleSet>('/rules'))
 const trace = useAsync((id: string) => api<RuleOutcome>(`/rules/trace/${encodeURIComponent(id)}`))
 const memberId = ref('M0155')
-onMounted(rules.run)
+const glossary = useGlossaryStore()
+onMounted(() => {
+  rules.run()
+  glossary.load()
+})
 
 function action(r: Rule) {
   const t = r.then
-  if (t.propose) return `propose ${t.propose.offer_id} via ${t.propose.channel}`
-  if (t.block) return `block ${t.block === 'all' ? 'all offers' : t.block.join(', ')}`
-  return `assert ${Object.entries(t.assert ?? {}).map(([k, v]) => `${k} = ${v}`).join(', ')}`
+  if (t.propose) return `Propose ${glossary.offer(t.propose.offer_id)} by ${channelLabel(t.propose.channel)}`
+  if (t.block) return `Block ${t.block === 'all' ? 'all offers' : t.block.map(glossary.offer).join(', ')}`
+  return `Conclude ${Object.entries(t.assert ?? {}).map(([k, v]) => (v === true ? humanize(k) : `${humanize(k)} = ${v}`)).join(', ')}`
 }
 
 function test() {
@@ -34,69 +46,97 @@ function test() {
 </script>
 
 <template>
-  <div class="page-head">
-    <h2>Rules</h2>
-    <span class="sub">
-      Forward-chaining rule base{{ rules.data.value?.version ? ` · version ${rules.data.value.version}` : '' }};
-      guardrails fire first, then higher salience, then more specific rules
-    </span>
-  </div>
-  <PageState :loading="rules.loading.value" :error="rules.error.value" :empty="rules.data.value?.rules.length === 0" @retry="rules.run">
-    <template v-if="rules.data.value">
-      <Message v-if="!rules.data.value.issues.length" severity="success" :closable="false">
-        Validation: no unknown facts, contradictions or unreachable rules.
-      </Message>
-      <Message v-for="(i, n) in rules.data.value.issues" v-else :key="n" :severity="i.severity === 'error' ? 'error' : 'warn'" :closable="false">
-        <strong>{{ i.rule_id }}</strong>: {{ i.message }}
-      </Message>
+  <div class="page">
+    <PageHeader title="Rules" subtitle="Forward-chaining rule base. Guardrails fire first, then higher salience, then more specific rules.">
+      <template #actions>
+        <span v-if="rules.data.value?.version" class="rounded-full bg-white px-3 py-1.5 text-sm font-medium text-ink-600 ring-1 ring-ink-200">
+          Version {{ rules.data.value.version }}
+        </span>
+      </template>
+    </PageHeader>
+    <PageState :loading="rules.loading.value" :error="rules.error.value" :empty="rules.data.value?.rules.length === 0" @retry="rules.run">
+      <template v-if="rules.data.value">
+        <div v-if="!rules.data.value.issues.length" class="banner ok">
+          <CircleCheck :size="18" class="shrink-0" aria-hidden="true" />
+          <span><strong>Validation passed.</strong> No unknown facts, contradictions or unreachable rules.</span>
+        </div>
+        <div v-for="(i, n) in rules.data.value.issues" v-else :key="n" class="banner" :class="i.severity === 'error' ? 'error' : 'warn'">
+          <TriangleAlert :size="18" class="shrink-0" aria-hidden="true" />
+          <span><strong>{{ glossary.rule(i.rule_id) }}</strong> <span class="id-chip">{{ ruleCode(i.rule_id) }}</span>: {{ i.message }}</span>
+        </div>
 
-      <div class="grid layout-rules">
-        <DataTableX
-          :value="rules.data.value.rules"
-          data-key="id"
-          export-name="rules"
-          :global-filter-fields="['id', 'description', 'source', 'kind']"
-          :rows="50"
-          sort-field="salience"
-          :sort-order="-1"
-        >
-          <Column field="id" header="Rule" sortable />
-          <Column field="kind" header="Kind" sortable>
-            <template #body="{ data }"><Tag :value="data.kind" :severity="KIND_SEVERITY[data.kind as Rule['kind']]" /></template>
-          </Column>
-          <Column field="salience" header="Salience" sortable />
-          <Column header="When">
-            <template #body="{ data }">
-              <code v-for="c in (data as Rule).when" :key="c" class="cond">{{ c }}</code>
-            </template>
-          </Column>
-          <Column header="Then"><template #body="{ data }">{{ action(data) }}</template></Column>
-          <Column field="description" header="Description" />
-          <Column field="source" header="Source" />
-        </DataTableX>
+        <div class="mt-5 grid items-start gap-5 2xl:grid-cols-[minmax(0,2fr)_minmax(24rem,1fr)]">
+          <SectionCard :title="`${rules.data.value.rules.length} rules`" subtitle="Sorted by salience" :icon="ScrollText">
+            <DataTableX
+              :value="rules.data.value.rules"
+              data-key="id"
+              export-name="rules"
+              :global-filter-fields="['id', 'description', 'source', 'kind']"
+              :rows="50"
+              sort-field="salience"
+              :sort-order="-1"
+            >
+              <Column field="description" header="Rule" sortable>
+                <template #body="{ data }">
+                  <div class="flex min-w-80 flex-col gap-1 whitespace-normal">
+                    <span class="font-medium text-ink-800">{{ data.description }}</span>
+                    <span class="flex flex-wrap items-baseline gap-x-2 text-xs text-ink-500">
+                      <span v-tooltip.top="data.id" class="id-chip">{{ ruleCode(data.id) }}</span>
+                      <span>Source: {{ data.source }}</span>
+                    </span>
+                  </div>
+                </template>
+              </Column>
+              <Column field="kind" header="Kind" sortable>
+                <template #body="{ data }">
+                  <span class="rounded-full px-2.5 py-0.5 text-xs font-semibold" :class="KIND_STYLE[data.kind as Rule['kind']]">
+                    {{ RULE_KIND_LABELS[data.kind as Rule['kind']] }}
+                  </span>
+                </template>
+              </Column>
+              <Column field="salience" header="Salience" sortable>
+                <template #body="{ data }"><span class="tabular-nums">{{ data.salience }}</span></template>
+              </Column>
+              <Column header="When">
+                <template #body="{ data }">
+                  <div class="flex flex-col items-start gap-1">
+                    <code v-for="c in (data as Rule).when" :key="c" class="cond">{{ c }}</code>
+                  </div>
+                </template>
+              </Column>
+              <Column header="Then">
+                <template #body="{ data }"><span class="block min-w-48 whitespace-normal">{{ action(data) }}</span></template>
+              </Column>
+            </DataTableX>
+          </SectionCard>
 
-        <Card>
-          <template #title>Test on a member</template>
-          <template #content>
-            <form class="toolbar" @submit.prevent="test">
-              <label class="field">
-                <span>Member id</span>
-                <InputText v-model="memberId" placeholder="M0155" size="small" />
+          <SectionCard title="Test on a member" subtitle="Run the rule base and see the firing trace" :icon="FlaskConical" class="2xl:sticky 2xl:top-[calc(var(--topbar-h)+1.5rem)]">
+            <form class="toolbar mb-5" @submit.prevent="test">
+              <label class="field min-w-40 flex-1">
+                <span>Member ID</span>
+                <InputText v-model="memberId" placeholder="M0155" fluid />
               </label>
-              <Button type="submit" label="Run rules" size="small" :loading="trace.loading.value" />
+              <Button type="submit" label="Run rules" :loading="trace.loading.value">
+                <template #icon><Play :size="15" /></template>
+              </Button>
             </form>
-            <PageState :loading="trace.loading.value" :error="trace.error.value" :empty="!trace.data.value" empty-text="Run the rule base on a member to see the firing trace.">
+            <PageState :loading="trace.loading.value" :error="trace.error.value" :empty="!trace.data.value">
+              <template #empty>
+                <EmptyState :icon="FlaskConical" compact text="Run the rule base on a member to see the firing trace." />
+              </template>
               <RuleTrace v-if="trace.data.value" :outcome="trace.data.value" />
             </PageState>
-          </template>
-        </Card>
-      </div>
-    </template>
-  </PageState>
+          </SectionCard>
+        </div>
+      </template>
+    </PageState>
+  </div>
 </template>
 
 <style scoped>
-.layout-rules { grid-template-columns: minmax(0, 2fr) minmax(300px, 1fr); align-items: start; margin-top: 1rem; }
-@media (max-width: 1100px) { .layout-rules { grid-template-columns: 1fr; } }
-.cond { display: block; font-size: 0.8rem; white-space: nowrap; }
+.banner { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 0.5rem; padding: 0.75rem 1rem; border-radius: 0.75rem; font-size: 0.875rem; border: 1px solid; }
+.banner.ok { background: var(--color-success-soft); border-color: #bfe8d6; color: #0b6a48; }
+.banner.warn { background: var(--color-warn-soft); border-color: #f5d9a6; color: #7a4800; }
+.banner.error { background: var(--color-danger-soft); border-color: #f6c3cd; color: #9b1530; }
+.cond { padding: 0.1rem 0.4rem; border-radius: 5px; font-size: 0.75rem; white-space: nowrap; color: var(--color-ink-700); background: var(--color-ink-100); }
 </style>

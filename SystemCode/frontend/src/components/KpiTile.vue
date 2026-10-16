@@ -18,7 +18,7 @@ const TONES = {
 
 <template>
   <div class="flex min-w-0 items-start gap-3.5 rounded-card border border-ink-200 bg-white p-4 shadow-card">
-    <span v-if="icon" class="grid size-10 shrink-0 place-items-center rounded-xl" :class="TONES[tone ?? 'default']">
+    <span v-if="icon" class="hidden size-10 shrink-0 place-items-center rounded-xl sm:grid" :class="TONES[tone ?? 'default']">
       <component :is="icon" :size="20" aria-hidden="true" />
     </span>
     <div class="flex min-w-0 flex-col gap-0.5">
