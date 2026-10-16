@@ -1,42 +1,30 @@
 <script setup lang="ts">
-defineProps<{ label: string; value: string | number; hint?: string; tone?: 'default' | 'warn' | 'good' }>()
+import type { Component } from 'vue'
+
+defineProps<{
+  label: string
+  value: string | number
+  hint?: string
+  tone?: 'default' | 'warn' | 'good'
+  icon?: Component
+}>()
+
+const TONES = {
+  default: 'bg-brand-50 text-brand-600',
+  warn: 'bg-danger-soft text-danger',
+  good: 'bg-success-soft text-success',
+}
 </script>
 
 <template>
-  <div class="kpi" :class="tone ?? 'default'">
-    <span class="label">{{ label }}</span>
-    <strong class="value">{{ value }}</strong>
-    <small v-if="hint" class="hint">{{ hint }}</small>
+  <div class="flex min-w-0 items-start gap-3.5 rounded-card border border-ink-200 bg-white p-4 shadow-card">
+    <span v-if="icon" class="grid size-10 shrink-0 place-items-center rounded-xl" :class="TONES[tone ?? 'default']">
+      <component :is="icon" :size="20" aria-hidden="true" />
+    </span>
+    <div class="flex min-w-0 flex-col gap-0.5">
+      <span class="text-[0.8125rem] font-medium text-ink-500">{{ label }}</span>
+      <strong class="text-[1.625rem] leading-tight font-semibold tracking-tight text-ink-900 tabular-nums">{{ value }}</strong>
+      <small v-if="hint" class="text-xs text-ink-500">{{ hint }}</small>
+    </div>
   </div>
 </template>
-
-<style scoped>
-.kpi {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  padding: 1rem 1.1rem;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-left: 4px solid var(--accent);
-  border-radius: 10px;
-  min-width: 0;
-}
-.kpi.warn {
-  border-left-color: #c2475b;
-}
-.kpi.good {
-  border-left-color: #3a9d6b;
-}
-.label {
-  font-size: 0.85rem;
-  color: var(--muted);
-}
-.value {
-  font-size: 1.6rem;
-  line-height: 1.2;
-}
-.hint {
-  color: var(--muted);
-}
-</style>

@@ -1,4 +1,3 @@
-import Aura from '@primeuix/themes/aura'
 import { createPinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import ConfirmationService from 'primevue/confirmationservice'
@@ -10,11 +9,17 @@ import { setUnauthorizedHandler } from './api/client'
 import { router } from './router'
 import { useAuthStore } from './stores/auth'
 import './style.css'
+import { AnchorPreset } from './theme'
 
 const app = createApp(App)
   .use(createPinia())
   .use(router)
-  .use(PrimeVue, { theme: { preset: Aura, options: { darkModeSelector: false } } })
+  .use(PrimeVue, {
+    theme: {
+      preset: AnchorPreset,
+      options: { darkModeSelector: false, cssLayer: { name: 'primevue', order: 'theme, base, primevue, components, utilities' } },
+    },
+  })
   .use(ToastService)
   .use(ConfirmationService)
 

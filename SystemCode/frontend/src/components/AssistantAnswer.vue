@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { ChevronDown, ChevronUp } from 'lucide-vue-next'
 import vTooltip from 'primevue/tooltip'
 import { computed, nextTick, ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -111,6 +112,7 @@ async function cite(id: string) {
 
     <div v-if="evidence.length" class="sources">
       <button type="button" class="toggle" :aria-expanded="open" @click="open = !open">
+        <component :is="open ? ChevronUp : ChevronDown" :size="14" aria-hidden="true" />
         {{ open ? 'Hide' : 'Show' }} {{ evidence.length }} source{{ evidence.length === 1 ? '' : 's' }}
       </button>
       <ol v-if="open" ref="sources">
@@ -126,34 +128,37 @@ async function cite(id: string) {
 </template>
 
 <style scoped>
-.answer { line-height: 1.5; }
+.answer { line-height: 1.6; }
 .answer p { margin: 0; }
-.block { margin: 0 0 0.5rem; }
-.answer ul { padding-left: 1.1rem; display: flex; flex-direction: column; gap: 0.2rem; }
+.block { margin: 0 0 0.6rem; }
+.block:last-of-type { margin-bottom: 0; }
+.answer ul { list-style: disc; padding-left: 1.2rem; display: flex; flex-direction: column; gap: 0.3rem; }
+.answer li::marker { color: var(--color-ink-400); }
+.answer strong { font-weight: 600; color: var(--color-ink-900); }
 .cites { white-space: nowrap; margin-left: 0.15rem; }
 .cite {
-  --c: var(--accent);
+  --c: var(--color-brand-600);
   display: inline-flex; align-items: center; justify-content: center;
-  min-width: 1.15rem; height: 1.05rem; padding: 0 0.25rem; margin: 0 0.08rem;
-  font: 600 0.68rem/1 system-ui, sans-serif; vertical-align: 0.15em;
-  color: var(--c); background: color-mix(in srgb, var(--c) 12%, transparent);
-  border: 1px solid color-mix(in srgb, var(--c) 35%, transparent); border-radius: 999px;
-  cursor: pointer;
+  min-width: 1.2rem; height: 1.1rem; padding: 0 0.3rem; margin: 0 0.08rem;
+  font: 600 0.68rem/1 var(--font-sans); vertical-align: 0.15em;
+  color: var(--c); background: color-mix(in srgb, var(--c) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--c) 30%, transparent); border-radius: 999px;
+  cursor: pointer; transition: background 0.15s, color 0.15s;
 }
 .cite:hover, .cite:focus-visible { background: var(--c); color: #fff; outline: none; }
 .cite.static { cursor: default; vertical-align: baseline; flex: none; }
-.k-member { --c: #2f6fb5; }
-.k-rule { --c: #7c4dbd; }
-.k-offer { --c: #23855a; }
-.k-event { --c: #c46a12; }
-.k-plan { --c: #12808a; }
-.sources { margin-top: 0.25rem; font-size: 0.8rem; }
-.toggle { background: none; border: 0; padding: 0; color: var(--muted); cursor: pointer; font: inherit; text-decoration: underline dotted; }
-.toggle:hover { color: var(--text); }
-.sources ol { list-style: none; margin: 0.4rem 0 0; padding: 0.4rem; display: flex; flex-direction: column; gap: 0.15rem; background: var(--bg); border-radius: 8px; }
-.sources li { display: flex; gap: 0.4rem; align-items: baseline; padding: 0.2rem 0.3rem; border-radius: 6px; transition: background 0.3s; }
-.sources li.hl { background: color-mix(in srgb, var(--accent) 14%, transparent); }
-.kind { color: var(--muted); flex: none; min-width: 5.5rem; }
+.k-member { --c: #1f60ea; }
+.k-rule { --c: #6d4ae8; }
+.k-offer { --c: #0b8a5c; }
+.k-event { --c: #c46a00; }
+.k-plan { --c: #0e8b88; }
+.sources { margin-top: 0.6rem; font-size: 0.8rem; }
+.toggle { display: inline-flex; align-items: center; gap: 0.3rem; background: none; border: 0; padding: 0.15rem 0; color: var(--color-ink-500); cursor: pointer; font: 500 0.78rem var(--font-sans); }
+.toggle:hover { color: var(--color-brand-700); }
+.sources ol { list-style: none; margin: 0.4rem 0 0; padding: 0.35rem; display: flex; flex-direction: column; gap: 0.1rem; background: var(--color-ink-50); border: 1px solid var(--color-ink-100); border-radius: 0.6rem; }
+.sources li { display: flex; gap: 0.5rem; align-items: baseline; padding: 0.3rem 0.4rem; border-radius: 0.4rem; transition: background 0.3s; }
+.sources li.hl { background: var(--color-brand-100); }
+.kind { color: var(--color-ink-500); flex: none; min-width: 5.5rem; font-weight: 500; }
 </style>
 
 <style>

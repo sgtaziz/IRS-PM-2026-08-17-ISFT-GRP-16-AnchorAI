@@ -1,7 +1,10 @@
 <script setup lang="ts" generic="T extends object">
 import { FilterMatchMode } from '@primevue/core/api'
+import { Download, Search } from 'lucide-vue-next'
 import Button from 'primevue/button'
 import DataTable from 'primevue/datatable'
+import IconField from 'primevue/iconfield'
+import InputIcon from 'primevue/inputicon'
 import InputText from 'primevue/inputtext'
 import { ref } from 'vue'
 
@@ -48,34 +51,23 @@ function exportCsv() {
     :global-filter-fields="lazy ? undefined : globalFilterFields"
     :export-filename="exportName"
     removable-sort
-    striped-rows
-    size="small"
     scrollable
   >
     <template #header>
-      <div class="dtx-header">
+      <div class="flex flex-wrap items-center gap-2">
         <slot name="toolbar" />
-        <InputText
-          v-if="!lazy && globalFilterFields?.length"
-          v-model="filters.global.value"
-          placeholder="Filter rows"
-          aria-label="Filter rows"
-          size="small"
-        />
-        <Button label="Export CSV" size="small" severity="secondary" outlined @click="exportCsv" />
+        <div class="ml-auto flex flex-wrap items-center gap-2">
+          <IconField v-if="!lazy && globalFilterFields?.length">
+            <InputIcon><Search :size="15" /></InputIcon>
+            <InputText v-model="filters.global.value" placeholder="Filter rows" aria-label="Filter rows" size="small" />
+          </IconField>
+          <Button label="Export CSV" size="small" severity="secondary" outlined @click="exportCsv">
+            <template #icon><Download :size="15" /></template>
+          </Button>
+        </div>
       </div>
     </template>
-    <template #empty>No rows match.</template>
+    <template #empty><p class="m-0 py-8 text-center text-sm text-ink-500">No rows match.</p></template>
     <slot />
   </DataTable>
 </template>
-
-<style scoped>
-.dtx-header {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  align-items: center;
-  justify-content: flex-end;
-}
-</style>

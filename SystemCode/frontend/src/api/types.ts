@@ -283,6 +283,12 @@ export interface RuleIssue {
   message: string
 }
 
+export interface Glossary {
+  rules: Record<string, string>
+  offers: Record<string, string>
+  facts: Record<string, string>
+}
+
 export interface RuleSet {
   version: number | null
   rules: Rule[]

@@ -1,18 +1,28 @@
 <script setup lang="ts">
-import Tag from 'primevue/tag'
 import { computed } from 'vue'
 import type { RiskBand } from '../api/types'
 import { probability } from '../format'
 
 const props = defineProps<{ band: RiskBand; prob?: number }>()
 
-const severity = computed(() => ({ high: 'danger', medium: 'warn', low: 'success' })[props.band])
-const text = computed(() => {
-  const label = `${props.band[0].toUpperCase()}${props.band.slice(1)} risk`
-  return props.prob === undefined ? label : `${label} · ${probability(props.prob)}`
-})
+const TONES: Record<RiskBand, string> = {
+  high: 'bg-danger-soft text-[#b4183a] ring-[#f6c3cd]',
+  medium: 'bg-warn-soft text-[#9a5c00] ring-[#f5d9a6]',
+  low: 'bg-success-soft text-[#0b7a53] ring-[#bfe8d6]',
+}
+const DOTS: Record<RiskBand, string> = { high: 'bg-risk-high', medium: 'bg-risk-medium', low: 'bg-risk-low' }
+
+const label = computed(() => `${props.band[0].toUpperCase()}${props.band.slice(1)} risk`)
+const text = computed(() => (props.prob === undefined ? label.value : `${label.value} · ${probability(props.prob)}`))
 </script>
 
 <template>
-  <Tag :severity="severity" :value="text" :aria-label="text" />
+  <span
+    class="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap ring-1 ring-inset"
+    :class="TONES[band]"
+    :aria-label="text"
+  >
+    <span class="size-1.5 rounded-full" :class="DOTS[band]" aria-hidden="true" />
+    {{ label }}<template v-if="prob !== undefined"><span class="font-medium opacity-80">· {{ probability(prob) }}</span></template>
+  </span>
 </template>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
+import { Search } from 'lucide-vue-next'
 import AutoComplete, { type AutoCompleteOptionSelectEvent } from 'primevue/autocomplete'
-import Button from 'primevue/button'
 import Dialog from 'primevue/dialog'
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -40,7 +40,6 @@ function submitTyped() {
   if (exact) go(exact.member_id)
 }
 
-
 function onKey(e: KeyboardEvent) {
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
     e.preventDefault()
@@ -53,19 +52,25 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
 </script>
 
 <template>
-  <Button
-    class="search-trigger"
-    label="Search members (Ctrl+K)"
-    size="small"
-    severity="secondary"
+  <button
+    type="button"
+    class="flex h-10 w-full items-center gap-2.5 rounded-lg border border-ink-200 bg-ink-50 px-3 text-left text-sm text-ink-500 transition hover:border-ink-300 hover:bg-white"
+    aria-keyshortcuts="Control+K"
     @click="open = true"
-  />
+  >
+    <Search :size="16" class="shrink-0" aria-hidden="true" />
+    <span class="flex-1 truncate">Search members…</span>
+    <kbd class="hidden rounded-md border border-ink-200 bg-white px-1.5 py-0.5 font-sans text-[0.6875rem] font-semibold text-ink-500 sm:inline">Ctrl K</kbd>
+  </button>
   <Dialog
     v-model:visible="open"
     header="Find a member"
     modal
-    :style="{ width: 'min(520px, 92vw)' }"
+    dismissable-mask
+    position="top"
+    :style="{ width: 'min(560px, 92vw)', marginTop: '12vh' }"
   >
+    <p class="m-0 mb-3 text-sm text-ink-500">Jump to any member's 360 view by their ID.</p>
     <label for="member-search" class="sr-only">Member ID</label>
     <AutoComplete
       v-model="text"
@@ -82,9 +87,9 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
       @keydown.enter="submitTyped"
     >
       <template #option="{ option }">
-        <div class="hit">
-          <strong>{{ option.member_id }}</strong>
-          <span>{{ option.segment }}</span>
+        <div class="grid w-full grid-cols-[4.5rem_1fr_auto] items-center gap-3">
+          <strong class="font-semibold tabular-nums">{{ option.member_id }}</strong>
+          <span class="truncate text-ink-500">{{ option.segment }}</span>
           <RiskBadge :band="option.risk_band" :prob="option.churn_prob" />
         </div>
       </template>
@@ -92,16 +97,3 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKey))
     </AutoComplete>
   </Dialog>
 </template>
-
-<style scoped>
-.hit {
-  display: grid;
-  grid-template-columns: 5rem 1fr auto;
-  gap: 0.75rem;
-  align-items: center;
-}
-.search-trigger {
-  width: 100%;
-  justify-content: flex-start;
-}
-</style>

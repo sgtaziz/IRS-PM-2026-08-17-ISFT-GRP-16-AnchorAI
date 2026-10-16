@@ -1,13 +1,16 @@
 <script setup lang="ts">
 import type { EChartsOption } from 'echarts'
-import Card from 'primevue/card'
+import type { Component } from 'vue'
 import VChart from 'vue-echarts'
-import '../charts'
+import { CHART_THEME } from '../charts'
 import PageState from './PageState.vue'
+import SectionCard from './SectionCard.vue'
 
 withDefaults(
   defineProps<{
     title: string
+    subtitle?: string
+    icon?: Component
     option: EChartsOption | null
     loading?: boolean
     empty?: boolean
@@ -19,19 +22,11 @@ withDefaults(
 </script>
 
 <template>
-  <Card class="chart-card">
-    <template #title>{{ title }}</template>
-    <template #content>
-      <PageState :loading="loading" :empty="empty || !option" :empty-text="emptyText">
-        <VChart :option="option!" autoresize :style="{ height }" />
-      </PageState>
-      <slot />
-    </template>
-  </Card>
+  <SectionCard :title="title" :subtitle="subtitle" :icon="icon">
+    <template v-if="$slots.actions" #actions><slot name="actions" /></template>
+    <PageState :loading="loading" :empty="empty || !option" :empty-text="emptyText">
+      <VChart :option="option!" :theme="CHART_THEME" autoresize :style="{ height }" />
+    </PageState>
+    <slot />
+  </SectionCard>
 </template>
-
-<style scoped>
-.chart-card {
-  min-width: 0;
-}
-</style>
