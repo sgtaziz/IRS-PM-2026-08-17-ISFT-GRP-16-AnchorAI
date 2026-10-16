@@ -158,6 +158,9 @@ def prepare(
         return Prepared(reply)
 
     result = TOOLS[reply.intent](session, reply.slots)
+    if role == "staff":
+        # Plan lines come last in every tool, so dropping them keeps the E-numbers contiguous.
+        result.evidence = [e for e in result.evidence if e.kind != "plan"]
     reply.tool, reply.evidence = result.tool, result.evidence
     if not result.evidence:
         reply.answer = result.note or DONT_KNOW

@@ -8,14 +8,15 @@ import re
 from typing import Literal
 
 from openai import OpenAIError
-from pydantic import BaseModel
-from sqlmodel import Session
+from pydantic import BaseModel, ValidationError
+from sqlmodel import Session, select
 
 from anchorai import catalog
 from anchorai.assistant.llm import chat
+from anchorai.db.models import Plan, PlanItem
 from anchorai.reasoning import service as reasoning
 from anchorai.reasoning.check import ItemCheck, ProposedItem, check_items
-from anchorai.schemas import Channel
+from anchorai.schemas import Channel, Explanation
 
 log = logging.getLogger(__name__)
 
@@ -88,7 +89,37 @@ def _evidence(session: Session, member_id: str, offer_id: str, channel: Channel)
         lines.append("An instructor the member often trains with has left the gym")
     if facts.get("class_cancelled"):
         lines.append("A class the member attends has been cancelled")
+    lines.extend(_plan_signals(session, member_id, offer_id, facts))
     return lines
+
+
+def _plan_signals(session: Session, member_id: str, offer_id: str, facts: dict) -> list[str]:
+    """Graph signals from the plan's Explanation that the fact lines above don't already say."""
+    plan = session.exec(select(Plan).order_by(Plan.week_start.desc(), Plan.id.desc())).first()
+    item = (
+        plan
+        and session.exec(
+            select(PlanItem).where(
+                PlanItem.plan_id == plan.id,
+                PlanItem.member_id == member_id,
+                PlanItem.offer_id == offer_id,
+                ~PlanItem.removed,
+            )
+        ).first()
+    )
+    try:
+        signals = Explanation.model_validate(item.explanation).graph_signals if item else []
+    except ValidationError:
+        return []
+    covered = {
+        "instructor": facts.get("lost_anchor_instructor"),
+        "cancelled": facts.get("class_cancelled"),
+    }
+    return [
+        s
+        for s in signals
+        if not FORBIDDEN.search(s) and not any(on and word in s for word, on in covered.items())
+    ]
 
 
 def _template(session: Session, member_id: str, offer_id: str, channel: Channel) -> Draft:

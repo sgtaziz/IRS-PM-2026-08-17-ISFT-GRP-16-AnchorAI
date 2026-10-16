@@ -1,4 +1,5 @@
 import json
+from datetime import date
 
 import numpy as np
 import pytest
@@ -265,3 +266,129 @@ def test_chat_stream_endpoint(client, login, built, monkeypatch, classifier):
     )
     assert [e for e, _ in unknown] == ["meta", "delta", "done"]
     assert unknown[-1][1] == {"grounded": False, "llm_used": False, "answer": DONT_KNOW}
+
+
+def explanation(member_id, **overrides):
+    base = {
+        "explanation_id": f"X-{member_id}",
+        "member_id": member_id,
+        "churn_prob": 0.6,
+        "top_drivers": [["lifetime", 0.4]],
+        "rule_trace": [],
+        "similar_cases": [
+            {"outcome": "retained after a call"},
+            {"outcome": "left"},
+            {"outcome": "x"},
+        ],
+        "graph_signals": ["A class they attend has been cancelled"],
+        "summary": "Picked for a call because visits dropped.",
+    }
+    return base | overrides
+
+
+@pytest.fixture
+def plan(engine):
+    from sqlmodel import delete
+
+    from anchorai.db.models import Plan, PlanItem
+
+    with Session(engine) as session:
+        row = Plan(week_start=date(2099, 1, 5), status="draft")
+        session.add(row)
+        session.commit()
+        session.add_all(
+            [
+                PlanItem(
+                    plan_id=row.id,
+                    member_id="M0001",
+                    offer_id="free_pt_session",
+                    channel="call",
+                    expected_value=0.12,
+                    explanation_id="X-M0001",
+                    explanation=explanation("M0001"),
+                ),
+                PlanItem(
+                    plan_id=row.id,
+                    member_id="M0002",
+                    offer_id="checkin_message",
+                    channel="sms",
+                    expected_value=0.05,
+                    explanation_id="X-M0002",
+                    removed=True,
+                    override_reason="member asked not to be contacted",
+                ),
+                PlanItem(
+                    plan_id=row.id,
+                    member_id="M0003",
+                    offer_id="checkin_message",
+                    channel="sms",
+                    expected_value=0.05,
+                    explanation_id="X-M0003",
+                    explanation={"summary": "incomplete"},
+                ),
+            ]
+        )
+        session.commit()
+        plan_id = row.id
+    yield
+    with Session(engine) as session:
+        session.exec(delete(PlanItem).where(PlanItem.plan_id == plan_id))
+        session.exec(delete(Plan).where(Plan.id == plan_id))
+        session.commit()
+
+
+def texts(reply, kind="plan"):
+    return [e.text for e in reply.evidence if e.kind == kind]
+
+
+def test_member_answers_show_plan_status(built, engine, classifier, plan):
+    never = lambda _: "ok"
+    with Session(engine) as session:
+        reply = answer(session, "M0001 risk", role="manager", classifier=classifier, chat=never)
+        assert reply.intent == "member_risk"
+        lines = texts(reply)
+        assert lines[0] == (
+            "M0001 is in the plan for the week of 2099-01-05: "
+            "Free personal training session by phone call, expected value 0.12"
+        )
+        assert any("Picked for a call" in t for t in lines)
+        assert len([t for t in lines if "similar past case" in t]) == 2
+        assert any("plan graph signal" in t for t in lines)
+
+        out = answer(session, "M0004 risk", role="manager", classifier=classifier, chat=never)
+        assert texts(out) == ["M0004 is not in the plan for the week of 2099-01-05"]
+
+        removed = answer(session, "M0002 risk", role="manager", classifier=classifier, chat=never)
+        assert any("removed" in t and "asked not to be contacted" in t for t in texts(removed))
+
+        # A malformed stored explanation leaves just the plan line.
+        broken = answer(session, "M0003 risk", role="manager", classifier=classifier, chat=never)
+        assert len(texts(broken)) == 1 and "is in the plan" in texts(broken)[0]
+
+        staff = answer(session, "M0001 risk", role="staff", classifier=classifier, chat=never)
+        assert not texts(staff)
+        assert [e.id for e in staff.evidence] == [f"E{i + 1}" for i in range(len(staff.evidence))]
+
+
+def test_compare_one_in_one_out(built, engine, classifier, plan):
+    with Session(engine) as session:
+        reply = answer(
+            session,
+            "compare M0001 and M0004",
+            role="manager",
+            classifier=classifier,
+            chat=lambda _: "ok",
+        )
+        assert reply.intent == "compare_members"
+        lines = texts(reply)
+        assert any(t.startswith("M0001 is in the plan") for t in lines)
+        assert "M0004 is not in the plan for the week of 2099-01-05" in lines
+        assert any("Picked for a call" in t for t in lines)
+
+
+def test_no_plan_lines_without_a_plan(built, engine, classifier):
+    with Session(engine) as session:
+        reply = answer(
+            session, "M0001 risk", role="manager", classifier=classifier, chat=lambda _: "ok"
+        )
+        assert reply.grounded and not texts(reply)

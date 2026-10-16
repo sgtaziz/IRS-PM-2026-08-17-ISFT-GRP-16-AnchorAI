@@ -4,7 +4,7 @@ import json
 import math
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 from sqlmodel import Session, select
 
 from anchorai.assistant.slots import Slots
@@ -19,10 +19,12 @@ from anchorai.reasoning import service as reasoning
 from anchorai.reasoning.engine import run
 from anchorai.reasoning.models import Rule
 from anchorai.scenario.offers import OFFER_CATALOG
+from anchorai.schemas import Explanation
 
 OFFER_NAMES = {o["offer_id"]: o["name"] for o in OFFER_CATALOG}
 CHANNELS = {"sms": "SMS", "email": "email", "call": "phone call", "in_person": "in person"}
 TOP_AFFECTED = 5
+SIMILAR_CASES_SHOWN = 2
 
 
 class Evidence(BaseModel):
@@ -146,6 +148,46 @@ def _rule_lines(lines: _Lines, session: Session, member_id: str, detail: bool) -
         lines.add(f"{member_id} graph signal: {signal}", "member", member_id)
 
 
+def _plan_lines(lines: _Lines, session: Session, member_id: str) -> None:
+    """Where the member stands in the latest plan, with the stored explanation when there is one."""
+    plan = session.exec(select(Plan).order_by(Plan.week_start.desc(), Plan.id.desc())).first()
+    if plan is None:
+        return
+    week = f"{plan.week_start:%Y-%m-%d}"
+    items = session.exec(
+        select(PlanItem)
+        .where(PlanItem.plan_id == plan.id, PlanItem.member_id == member_id)
+        .order_by(PlanItem.id)
+    ).all()
+    kept = next((i for i in items if not i.removed), None)
+    if kept is None:
+        lines.add(f"{member_id} is not in the plan for the week of {week}", "plan", str(plan.id))
+        for item in items:
+            why = f": {item.override_reason}" if item.override_reason else ""
+            lines.add(
+                f"{member_id} was removed from the plan for the week of {week}{why}",
+                "plan",
+                str(plan.id),
+            )
+        return
+    lines.add(
+        f"{member_id} is in the plan for the week of {week}: "
+        f"{_offer(kept.offer_id, kept.channel)}, expected value {kept.expected_value:.2f}",
+        "plan",
+        str(plan.id),
+    )
+    try:
+        explanation = Explanation.model_validate(kept.explanation)
+    except ValidationError:
+        return
+    lines.add(f"{member_id} plan explanation: {explanation.summary}", "plan", str(plan.id))
+    for case in explanation.similar_cases[:SIMILAR_CASES_SHOWN]:
+        if outcome := case.get("outcome"):
+            lines.add(f"{member_id} similar past case: {outcome}", "plan", str(plan.id))
+    for signal in explanation.graph_signals:
+        lines.add(f"{member_id} plan graph signal: {signal}", "plan", str(plan.id))
+
+
 def member_risk(session: Session, slots: Slots) -> ToolResult:
     member_id = slots.member_ids[0]
     if missing := _missing("member_risk", [member_id]):
@@ -154,6 +196,7 @@ def member_risk(session: Session, slots: Slots) -> ToolResult:
     _score_lines(lines, member_id)
     for signal in graph_signals(reasoning.all_facts()[member_id]):
         lines.add(f"{member_id} graph signal: {signal}", "member", member_id)
+    _plan_lines(lines, session, member_id)
     return ToolResult(tool="member_risk", evidence=lines.items)
 
 
@@ -164,6 +207,7 @@ def member_actions(session: Session, slots: Slots) -> ToolResult:
     lines = _Lines()
     lines.add(_profile(member_id, reasoning.all_facts()[member_id]), "member", member_id)
     _rule_lines(lines, session, member_id, detail=True)
+    _plan_lines(lines, session, member_id)
     return ToolResult(tool="member_actions", evidence=lines.items)
 
 
@@ -177,6 +221,8 @@ def compare_members(session: Session, slots: Slots) -> ToolResult:
     for member_id in pair:
         _score_lines(lines, member_id)
         _rule_lines(lines, session, member_id, detail=False)
+    for member_id in pair:
+        _plan_lines(lines, session, member_id)
     return ToolResult(tool="compare_members", evidence=lines.items)
 
 

@@ -98,3 +98,53 @@ def test_inactive_offer_and_unsupported_channel(client, login, built, no_llm, en
             row.active = True
             s.add(row)
             s.commit()
+
+
+def test_drafts_use_plan_explanation_signals(client, login, built, no_llm, engine):
+    from datetime import date
+
+    from sqlmodel import Session, delete
+
+    from anchorai.db.models import Plan, PlanItem
+
+    staff = login("staff1")
+    before = post(client, staff).json()["evidence"]
+    explanation = {
+        "explanation_id": "X",
+        "member_id": "M0008",
+        "churn_prob": 0.7,
+        "top_drivers": [],
+        "rule_trace": [],
+        "similar_cases": [],
+        "graph_signals": ["Their usual class moved to a new time", "Churn risk is high"],
+        "summary": "s",
+    }
+    with Session(engine) as s:
+        plan = Plan(week_start=date(2099, 1, 5))
+        s.add(plan)
+        s.commit()
+        plan_id = plan.id
+        s.add(
+            PlanItem(
+                plan_id=plan_id,
+                member_id="M0008",
+                offer_id="checkin_message",
+                channel="sms",
+                expected_value=0.1,
+                explanation_id="X",
+                explanation=explanation,
+            )
+        )
+        s.commit()
+    try:
+        after = post(client, staff).json()["evidence"]
+        assert after[: len(before)] == before
+        assert after[len(before) :] == ["Their usual class moved to a new time"]
+        # A plan item for another offer adds nothing.
+        other = post(client, staff, offer="free_pt_session", channel="call").json()["evidence"]
+        assert "Their usual class moved to a new time" not in other
+    finally:
+        with Session(engine) as s:
+            s.exec(delete(PlanItem).where(PlanItem.plan_id == plan_id))
+            s.exec(delete(Plan).where(Plan.id == plan_id))
+            s.commit()
