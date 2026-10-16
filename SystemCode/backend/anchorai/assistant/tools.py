@@ -16,9 +16,11 @@ from anchorai.knowledge.graph import GraphUnavailable, read
 from anchorai.knowledge.signals import graph_signals
 from anchorai.reasoning import service as reasoning
 from anchorai.reasoning.engine import run
+from anchorai.reasoning.models import Rule
 from anchorai.scenario.offers import OFFER_CATALOG
 
 OFFER_NAMES = {o["offer_id"]: o["name"] for o in OFFER_CATALOG}
+CHANNELS = {"sms": "SMS", "email": "email", "call": "phone call", "in_person": "in person"}
 TOP_AFFECTED = 5
 
 
@@ -96,24 +98,47 @@ def _score_lines(lines: _Lines, member_id: str) -> None:
         )
 
 
+def _code(rule_id: str) -> str:
+    return rule_id.split("_")[0]
+
+
+def _offer(offer_id: str, channel: str | None = None) -> str:
+    name = OFFER_NAMES.get(offer_id, offer_id)
+    return f"{name} by {CHANNELS.get(channel, channel)}" if channel else name
+
+
+def _effect(rule: Rule) -> str:
+    """What a rule does in words, for staff and the LLM ("concludes new member")."""
+    then = rule.then
+    if then.assert_ is not None:
+        return "concludes " + ", ".join(k.replace("_", " ") for k in then.assert_)
+    if then.propose is not None:
+        return "proposes " + _offer(then.propose.offer_id, then.propose.channel)
+    targets = then.block
+    return "blocks " + ("all offers" if targets == "all" else ", ".join(map(_offer, targets)))
+
+
 def _rule_lines(lines: _Lines, session: Session, member_id: str, detail: bool) -> None:
     _, rules = reasoning.active_rules(session)
+    by_id = {r.id: r for r in rules}
     outcome = run(rules, reasoning.all_facts()[member_id], member_id)
     if detail:
         for f in outcome.firings:
             lines.add(
-                f"{member_id} rule {f.rule_id}: {f.description} -> {f.effect}", "rule", f.rule_id
+                f"{member_id} rule {_code(f.rule_id)}: {f.description}; "
+                f"{_effect(by_id[f.rule_id])}",
+                "rule",
+                f.rule_id,
             )
     for p in outcome.allowed:
         lines.add(
-            f"{member_id} allowed offer: {OFFER_NAMES.get(p.offer_id, p.offer_id)} via {p.channel} "
-            f"(rule {p.rule_id})",
+            f"{member_id} allowed offer: {_offer(p.offer_id, p.channel)} (rule {_code(p.rule_id)})",
             "offer",
             p.offer_id,
         )
     for target, rule_id in outcome.blocked.items():
-        what = "all offers" if target == "all" else OFFER_NAMES.get(target, target)
-        lines.add(f"{member_id} blocked: {what} (guardrail {rule_id})", "rule", rule_id)
+        what = "all offers" if target == "all" else _offer(target)
+        lines.add(f"{member_id} blocked: {what} (guardrail {_code(rule_id)})", "rule", rule_id)
     if not outcome.allowed and "all" not in outcome.blocked:
         lines.add(f"{member_id}: no playbook rule proposes an offer", "member", member_id)
     for signal in graph_signals(outcome.facts):
