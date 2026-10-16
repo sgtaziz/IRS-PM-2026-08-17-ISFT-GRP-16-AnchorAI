@@ -49,9 +49,66 @@ function readable(e: EgoGraph['nodes'][number]) {
 // Sizes in screen pixels: the layout is spread out for readable links, so labels must not shrink with the zoom.
 const px = (n: number) => () => n / (cy?.zoom() ?? 1)
 
+type Palette = (typeof PALETTES)['light']
+
+function styles(p: Palette): cytoscape.StylesheetJson {
+  return [
+    {
+      // Names sit inside the node, so they never cover a link or its label.
+      selector: 'node',
+      style: {
+        label: 'data(label)',
+        shape: 'round-rectangle',
+        width: 'label',
+        height: px(14),
+        padding: () => `${7 / (cy?.zoom() ?? 1)}px`,
+        'background-color': (n) => p.tints[n.data('type') as keyof typeof p.tints] ?? p.tints.Club,
+        'border-width': px(1.5),
+        'border-color': (n) => p.colors[n.data('type') as keyof typeof p.colors] ?? p.colors.Club,
+        color: p.text,
+        'font-size': px(12),
+        'font-family': 'Inter, ui-sans-serif, system-ui, sans-serif',
+        'font-weight': 500,
+        'text-valign': 'center',
+        'text-halign': 'center',
+        'z-index-compare': 'manual',
+        'z-index': 1,
+      },
+    },
+    { selector: 'node[type = "Member"]', style: { 'font-weight': 700, 'border-width': px(2) } },
+    { selector: 'node[risk_band = "high"]', style: { 'border-width': px(3), 'border-color': p.risk } },
+    {
+      selector: 'edge',
+      style: {
+        label: 'data(label)',
+        'font-size': px(10),
+        'font-family': 'Inter, ui-sans-serif, system-ui, sans-serif',
+        color: p.linkText,
+        'text-rotation': 'autorotate',
+        'text-background-color': p.labelBg,
+        'text-background-opacity': 1,
+        'text-background-padding': () => `${3 / (cy?.zoom() ?? 1)}px`,
+        'text-background-shape': 'roundrectangle',
+        'text-border-color': p.labelBorder,
+        'text-border-width': px(1),
+        'text-border-opacity': 1,
+        width: px(1.5),
+        'arrow-scale': px(1),
+        'line-color': p.line,
+        'target-arrow-shape': 'triangle',
+        'target-arrow-color': p.line,
+        'curve-style': 'bezier',
+        // Links end at the node's edge, so drawing them on top only keeps their labels visible.
+        'z-index-compare': 'manual',
+        'z-index': 2,
+      },
+    },
+  ]
+}
+
 function draw() {
   cy?.destroy()
-  const p = palette.value as (typeof PALETTES)['light']
+  const p = palette.value as Palette
   if (!el.value) return
   cy = cytoscape({
     container: el.value,
@@ -68,58 +125,7 @@ function draw() {
     },
     maxZoom: 2,
     minZoom: 0.2,
-    style: [
-      {
-        // Names sit inside the node, so they never cover a link or its label.
-        selector: 'node',
-        style: {
-          label: 'data(label)',
-          shape: 'round-rectangle',
-          width: 'label',
-          height: px(14),
-          padding: () => `${7 / (cy?.zoom() ?? 1)}px`,
-          'background-color': (n) => p.tints[n.data('type') as keyof typeof p.tints] ?? p.tints.Club,
-          'border-width': px(1.5),
-          'border-color': (n) => p.colors[n.data('type') as keyof typeof p.colors] ?? p.colors.Club,
-          color: p.text,
-          'font-size': px(12),
-          'font-family': 'Inter, ui-sans-serif, system-ui, sans-serif',
-          'font-weight': 500,
-          'text-valign': 'center',
-          'text-halign': 'center',
-          'z-index-compare': 'manual',
-          'z-index': 1,
-        },
-      },
-      { selector: 'node[type = "Member"]', style: { 'font-weight': 700, 'border-width': px(2) } },
-      { selector: 'node[risk_band = "high"]', style: { 'border-width': px(3), 'border-color': p.risk } },
-      {
-        selector: 'edge',
-        style: {
-          label: 'data(label)',
-          'font-size': px(10),
-          'font-family': 'Inter, ui-sans-serif, system-ui, sans-serif',
-          color: p.linkText,
-          'text-rotation': 'autorotate',
-          'text-background-color': p.labelBg,
-          'text-background-opacity': 1,
-          'text-background-padding': () => `${3 / (cy?.zoom() ?? 1)}px`,
-          'text-background-shape': 'roundrectangle',
-          'text-border-color': p.labelBorder,
-          'text-border-width': px(1),
-          'text-border-opacity': 1,
-          width: px(1.5),
-          'arrow-scale': px(1),
-          'line-color': p.line,
-          'target-arrow-shape': 'triangle',
-          'target-arrow-color': p.line,
-          'curve-style': 'bezier',
-          // Links end at the node's edge, so drawing them on top only keeps their labels visible.
-          'z-index-compare': 'manual',
-          'z-index': 2,
-        },
-      },
-    ],
+    style: styles(p),
   })
   cy.on('zoom', () => cy?.style().update())
   cy.style().update()
@@ -130,7 +136,12 @@ function draw() {
 }
 
 onMounted(draw)
-watch(() => [props.graph, themeStore.isDark], draw)
+watch(() => props.graph, draw)
+// Restyle in place on a theme switch, so the layout, zoom and pan stay where the user left them.
+watch(
+  () => themeStore.isDark,
+  () => cy?.style(styles(palette.value as Palette)),
+)
 onBeforeUnmount(() => cy?.destroy())
 </script>
 
