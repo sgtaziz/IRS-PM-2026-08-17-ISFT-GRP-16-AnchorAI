@@ -40,7 +40,6 @@ What each stream needs from the others: blockers, reviews, decisions and promise
 
 | # | Requested by | Kind | Item | Why it matters | Status | Added |
 |---|---|---|---|---|---|---|
-| 12 | B | deliver | Live guardrail check for plan overrides (W15) | Engine is ready; endpoint pending | open | 2026-10-16 |
 | 13 | B | deliver | `graph_signals(facts)` strings for `Explanation.graph_signals` | Done in `anchorai/knowledge/signals.py`; B to confirm it fits | answered | 2026-10-16 |
 
 ## Done
@@ -49,3 +48,4 @@ What each stream needs from the others: blockers, reviews, decisions and promise
 |---|---|---|---|
 | 10 | A → C | Reusable Cytoscape ego-graph component for Member 360 (W18) | 2026-10-16, `src/components/EgoGraph.vue`, used in Member 360 and the graph explorer |
 | 11 | A → C | Rule-trace panel component for Member 360 | 2026-10-16, `src/components/RuleTrace.vue`, used in Member 360 and rules admin |
+| 12 | B → C | Live guardrail check for plan overrides (W15) | 2026-10-16, `POST /api/rules/check` (manager, admin): per item `allowed`, `violations`, `on_playbook`, `channel_offered`; B to confirm |

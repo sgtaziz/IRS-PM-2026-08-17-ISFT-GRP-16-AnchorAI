@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 from anchorai.api.deps import SessionDep, require_role
 from anchorai.db.models import User
 from anchorai.discovery.service import DataNotBuilt
+from anchorai.reasoning import check as guardrails
 from anchorai.reasoning import service, versions
 from anchorai.reasoning.models import RuleOutcome
 from anchorai.reasoning.service import Glossary, RuleSet
@@ -44,6 +45,10 @@ class EnableIn(BaseModel):
     base_version: int | None
 
 
+class CheckIn(BaseModel):
+    items: list[guardrails.ProposedItem] = Field(min_length=1, max_length=500)
+
+
 class ActivateIn(BaseModel):
     base_version: int | None
 
@@ -70,6 +75,24 @@ def save_rules(body: SaveIn, session: SessionDep, user: Admin):
         raise _invalid(e) from None
     except StaleRules as e:
         raise HTTPException(409, str(e)) from None
+
+
+@router.post(
+    "/check",
+    response_model=list[guardrails.ItemCheck],
+    dependencies=[Depends(require_role("manager", "admin"))],
+)
+def check_items(body: CheckIn, session: SessionDep):
+    try:
+        return guardrails.check_items(session, body.items)
+    except guardrails.UnknownMember as e:
+        raise HTTPException(404, f"Unknown member {e}") from None
+    except guardrails.UnknownOffer as e:
+        raise HTTPException(422, f"Unknown offer {e}") from None
+    except DataNotBuilt as e:
+        raise HTTPException(503, str(e)) from None
+    except service.InvalidRuleBase as e:
+        raise HTTPException(500, str(e)) from None
 
 
 @router.get("/glossary", response_model=Glossary)

@@ -207,3 +207,30 @@ def test_glossary_names_every_rule_and_offer(client, login):
     assert set(body["offers"]) == set(OFFERS)
     assert all(rule.id in body["rules"] for rule in load_rule_files())
     assert body["facts"]["trend_ratio"] and "routine_disrupted" in body["facts"]
+
+
+def test_guardrail_check_reports_blocks(client, login, built):
+    manager = login("manager")
+
+    def post(items, headers=manager):
+        return client.post("/api/rules/check", json={"items": items}, headers=headers)
+
+    items = [
+        {"member_id": "M0008", "offer_id": "free_pt_session", "channel": "call"},
+        {"member_id": "M0007", "offer_id": "discount_1m", "channel": "email"},
+        {"member_id": "M0007", "offer_id": "class_pass", "channel": "sms"},
+        {"member_id": "M0005", "offer_id": "checkin_message", "channel": "sms"},
+    ]
+    ok, discount, off_playbook, fatigued = post(items).json()
+    assert ok["allowed"] and ok["on_playbook"] and ok["violations"] == []
+    assert not discount["allowed"]
+    assert discount["violations"][0]["rule_id"] == "G03_discount_eligibility"
+    assert off_playbook["allowed"] and not off_playbook["on_playbook"]
+    assert fatigued["violations"][0]["blocks"] == "all"
+    assert fatigued["violations"][0]["rule_id"] == "G01_contact_fatigue"
+
+    unknown_member = [{"member_id": "NOPE", "offer_id": "class_pass", "channel": "sms"}]
+    unknown_offer = [{"member_id": "M0001", "offer_id": "nope", "channel": "sms"}]
+    assert post(unknown_member).status_code == 404
+    assert post(unknown_offer).status_code == 422
+    assert post(items, login("staff1")).status_code == 403
