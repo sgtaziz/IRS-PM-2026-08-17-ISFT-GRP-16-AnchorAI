@@ -1,5 +1,6 @@
 """KG cohort signals as rule facts, cached to parquet so the pipeline runs without Neo4j."""
 
+import os
 from pathlib import Path
 from typing import Any
 
@@ -41,14 +42,21 @@ def kg_facts_path(directory: Path | None = None) -> Path:
 
 def save_kg_facts(facts: pd.DataFrame, directory: Path | None = None) -> Path:
     path = kg_facts_path(directory)
-    facts.reset_index().to_parquet(path, index=False)
+    # Write then rename, so a request reading mid-load never sees a half-written file.
+    tmp = path.with_suffix(".tmp")
+    facts.reset_index().to_parquet(tmp, index=False)
+    os.replace(tmp, path)
     return path
 
 
 def load_kg_facts(directory: Path | None = None) -> pd.DataFrame | None:
-    """Cached KG facts, or None when the graph has never been loaded."""
+    """Cached KG facts, or None when the graph hasn't been loaded since the last data build."""
     path = kg_facts_path(directory)
     if not path.exists():
+        return None
+    # Facts from a graph built before the last data build describe old members: ignore them.
+    card = (directory or generated_dir()) / "model_card.json"
+    if card.exists() and path.stat().st_mtime < card.stat().st_mtime:
         return None
     return pd.read_parquet(path).set_index("member_id")
 
