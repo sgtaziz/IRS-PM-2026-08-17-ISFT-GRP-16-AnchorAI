@@ -11,3 +11,4 @@ Feeds the report's AI-use appendix. One row per meaningful use.
 | 2026-10-16 | Abdulaziz | Claude Code | Rule engine seeds, knowledge graph setup | Tested; thresholds pending |
 | 2026-10-16 | Abdulaziz | Claude Code | WebUI redesign | Reviewed screenshots; reviewed for regressions |
 | 2026-10-16 | Abdulaziz | Claude Code | Assistant chat | Reviewed and tested |
+| 2026-10-16 | Abdulaziz | Claude Code | Simulated manager interviews | Chose thresholds from interview and data checks; reviewed |
