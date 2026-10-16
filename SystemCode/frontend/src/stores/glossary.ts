@@ -21,9 +21,14 @@ export const useGlossaryStore = defineStore('glossary', () => {
     return pending
   }
 
+  function reload() {
+    pending = null
+    return load()
+  }
+
   const rule = (id: string) => data.value?.rules[id] ?? humanize(id.replace(/^[A-Z]\d+_/, ''))
   const offer = (id: string) => data.value?.offers[id] ?? humanize(id)
   const fact = (name: string) => data.value?.facts[name] ?? humanize(name)
 
-  return { data, load, rule, offer, fact }
+  return { data, load, reload, rule, offer, fact }
 })

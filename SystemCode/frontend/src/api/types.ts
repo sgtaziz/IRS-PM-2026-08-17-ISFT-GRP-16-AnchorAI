@@ -295,6 +295,51 @@ export interface RuleSet {
   issues: RuleIssue[]
 }
 
+// Mirrors anchorai/reasoning/versions.py.
+export interface RuleReport {
+  rule_count: number
+  parse_errors: string[]
+  issues: RuleIssue[]
+}
+
+export interface RuleVersion {
+  version: number
+  note: string
+  created_by: string | null
+  created_at: string
+  is_active: boolean
+  rule_count: number
+}
+
+export interface RuleVersionDetail extends RuleVersion {
+  yaml_text: string
+}
+
+export interface FactInfo {
+  name: string
+  type: 'number' | 'bool' | 'category'
+  description: string
+  source: string
+  derived: boolean
+  choices: string[]
+}
+
+export interface Vocabulary {
+  facts: FactInfo[]
+  offers: { offer_id: string; name: string; channels: string[] }[]
+  channels: string[]
+}
+
+// Mirrors anchorai/auth/users.py.
+export interface UserRow {
+  id: number
+  username: string
+  role: Role
+  full_name: string
+  is_active: boolean
+  created_at: string
+}
+
 // Mirrors anchorai/assistant/slots.py, tools.py and service.py.
 export interface Slots {
   member_ids: string[]

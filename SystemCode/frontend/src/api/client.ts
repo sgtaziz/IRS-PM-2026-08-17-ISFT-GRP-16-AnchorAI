@@ -20,6 +20,15 @@ export function setUnauthorizedHandler(handler: () => void) {
   onUnauthorized = handler
 }
 
+function detailMessage(detail: unknown): string | null {
+  if (typeof detail === 'string') return detail
+  if (Array.isArray(detail)) return detail.map((d) => d?.msg).filter(Boolean).join('; ') || null
+  // A rejected rule draft carries its validation report.
+  const report = detail as { parse_errors?: string[]; issues?: { severity: string; message: string }[] } | null
+  const problems = [...(report?.parse_errors ?? []), ...(report?.issues ?? []).filter((i) => i.severity === 'error').map((i) => i.message)]
+  return problems.length ? problems.join('; ') : null
+}
+
 async function request(path: string, init?: RequestInit): Promise<Response> {
   const token = getToken()
   const headers = new Headers(init?.headers)
@@ -28,7 +37,7 @@ async function request(path: string, init?: RequestInit): Promise<Response> {
   const res = await fetch(`/api${path}`, { ...init, headers })
   if (!res.ok) {
     const body = await res.json().catch(() => null)
-    const message = typeof body?.detail === 'string' ? body.detail : res.statusText
+    const message = detailMessage(body?.detail) ?? res.statusText
     // A failed login is also a 401; only a rejected session should log out.
     if (res.status === 401 && token) {
       clearToken()
