@@ -22,3 +22,5 @@ Final file: `IRS-PM-<date>-<batch>-GRP-<team>-AnchorAI-Group-Report.pdf`
 | Appendix: scenario layer parameters | A |
 | Appendix: AI-use note | all (from docs/AI_USE.md) |
 | Appendix: individual reflections | each member |
+
+Section sources live next to this file: `sections/a-*.md` (Stream A: data preparation, knowledge discovery, E1 and E2), `installation-guide.md` and `user-guide.md`. The scenario-layer appendix is `docs/SCENARIO.md`.
