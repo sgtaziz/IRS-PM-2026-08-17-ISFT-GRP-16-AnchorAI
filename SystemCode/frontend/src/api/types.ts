@@ -261,6 +261,7 @@ export interface GraphElement {
 export interface EgoGraph {
   nodes: GraphElement[]
   edges: GraphElement[]
+  member_total?: number | null
 }
 
 // Mirrors anchorai/reasoning/models.py, validate.py and service.py.

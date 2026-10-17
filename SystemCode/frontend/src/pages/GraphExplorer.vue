@@ -6,6 +6,7 @@ import IconField from 'primevue/iconfield'
 import InputIcon from 'primevue/inputicon'
 import InputText from 'primevue/inputtext'
 import Select from 'primevue/select'
+import SelectButton from 'primevue/selectbutton'
 import vTooltip from 'primevue/tooltip'
 import { computed, onMounted, ref } from 'vue'
 import { api } from '../api/client'
@@ -28,14 +29,25 @@ const entities = useAsync(() => api<GraphEntities>('/graph/entities'))
 const sim = useAsync((event_type: EventType, entity_id: string) =>
   api<Simulation>('/graph/simulate', { method: 'POST', body: JSON.stringify({ event_type, entity_id }) }),
 )
-const ego = useAsync((id: string) => api<EgoGraphData>(`/graph/ego/${encodeURIComponent(id)}`))
+type EgoKind = 'member' | 'class' | 'instructor'
+const kinds: { label: string; value: EgoKind }[] = [
+  { label: 'Member', value: 'member' },
+  { label: 'Class', value: 'class' },
+  { label: 'Instructor', value: 'instructor' },
+]
+const ego = useAsync((kind: EgoKind, id: string) =>
+  api<EgoGraphData>(kind === 'member' ? `/graph/ego/${encodeURIComponent(id)}` : `/graph/ego/${kind}/${encodeURIComponent(id)}`),
+)
 
 const auth = useAuthStore()
 const glossary = useGlossaryStore()
 const target = ref<string | null>(null)
 const memberId = ref('')
-// The member whose graph is shown; the input can be edited without changing the link.
+const kind = ref<EgoKind>('member')
+const entityId = ref<string | null>(null)
+// The graph on screen; the inputs and the kind toggle can change without changing it.
 const shown = ref('')
+const shownKind = ref<EgoKind>('member')
 onMounted(() => {
   entities.run()
   glossary.load()
@@ -63,18 +75,48 @@ function simulate() {
   sim.run(type as EventType, id)
 }
 
+const entityOptions = computed(() => {
+  const e = entities.data.value
+  if (!e) return []
+  return kind.value === 'class'
+    ? e.classes.map((c) => ({ label: `${c.name} ${c.detail} · Club ${c.club_id}`, value: c.id }))
+    : e.instructors.map((i) => ({ label: `${i.name} · Club ${i.club_id}`, value: i.id }))
+})
+
 function showMember(id: string) {
+  kind.value = shownKind.value = 'member'
   memberId.value = id
   shown.value = id
-  ego.run(id)
+  ego.run('member', id)
 }
+
+function showEntity(k: 'class' | 'instructor', id: string) {
+  kind.value = shownKind.value = k
+  entityId.value = id
+  shown.value = id
+  ego.run(k, id)
+}
+
+function submitEgo() {
+  if (kind.value === 'member') showMember(memberId.value.trim().toUpperCase())
+  else if (entityId.value) showEntity(kind.value, entityId.value)
+}
+
+function pickKind() {
+  entityId.value = null
+}
+
+const memberCount = computed(() => ego.data.value?.nodes.filter((n) => n.data.type === 'Member').length ?? 0)
 
 function offers(m: AffectedMember) {
   return m.allowed.map((p) => glossary.offer(p.offer_id)).join(', ') || '—'
 }
 
 function onSelect(type: string, id: string) {
-  if (type === 'Member' && id !== shown.value) showMember(id)
+  const k = type.toLowerCase() as EgoKind
+  if (k === shownKind.value && id === shown.value) return
+  if (k === 'member') showMember(id)
+  else if (k === 'class' || k === 'instructor') showEntity(k, id)
 }
 </script>
 
@@ -169,23 +211,31 @@ function onSelect(type: string, id: string) {
         </PageState>
       </SectionCard>
 
-      <SectionCard title="Member neighbourhood" subtitle="Classes, instructors, club and events linked to one member" :icon="Network" class="xl:sticky xl:top-[calc(var(--topbar-h)+1.5rem)]">
-        <form class="toolbar mb-4" @submit.prevent="showMember(memberId.trim().toUpperCase())">
-          <label class="field min-w-40 flex-1">
+      <SectionCard title="Neighbourhood" subtitle="What is linked to one member, class or instructor. Click a class, instructor or member node to move to it." :icon="Network" class="xl:sticky xl:top-[calc(var(--topbar-h)+1.5rem)]">
+        <form class="toolbar mb-4" @submit.prevent="submitEgo">
+          <SelectButton v-model="kind" :options="kinds" option-label="label" option-value="value" :allow-empty="false" aria-label="Kind of node" @change="pickKind" />
+          <label v-if="kind === 'member'" class="field min-w-40 flex-1">
             <span>Member ID</span>
             <IconField>
               <InputIcon><Search :size="15" /></InputIcon>
               <InputText v-model="memberId" placeholder="M0155" fluid />
             </IconField>
           </label>
-          <Button type="submit" label="Show" severity="secondary" outlined :disabled="!memberId.trim()" />
+          <label v-else class="field min-w-40 flex-1">
+            <span>{{ kind === 'class' ? 'Class' : 'Instructor' }}</span>
+            <Select v-model="entityId" :options="entityOptions" option-label="label" option-value="value" :placeholder="`Pick a ${kind}`" :loading="entities.loading.value" filter fluid />
+          </label>
+          <Button type="submit" label="Show" severity="secondary" outlined :disabled="kind === 'member' ? !memberId.trim() : !entityId" />
         </form>
         <PageState :loading="ego.loading.value" :error="ego.error.value" :empty="!ego.data.value">
           <template #empty>
-            <EmptyState :icon="Users" compact text="Pick a member from the table, or type an ID." />
+            <EmptyState :icon="Users" compact text="Pick a member, class or instructor, or select a member from the table." />
           </template>
+          <p v-if="ego.data.value?.member_total != null && ego.data.value.member_total > memberCount" class="m-0 mb-3 text-sm text-ink-500">
+            Showing the {{ memberCount }} highest-risk of {{ ego.data.value.member_total.toLocaleString() }} members.
+          </p>
           <EgoGraph v-if="ego.data.value" :graph="ego.data.value" height="480px" @select="onSelect" />
-          <RouterLink v-if="ego.data.value" :to="`/members/${encodeURIComponent(shown)}`" class="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold no-underline">
+          <RouterLink v-if="ego.data.value && shownKind === 'member'" :to="`/members/${encodeURIComponent(shown)}`" class="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold no-underline">
             Open {{ shown }} in Member 360 <ArrowRight :size="15" aria-hidden="true" />
           </RouterLink>
         </PageState>
