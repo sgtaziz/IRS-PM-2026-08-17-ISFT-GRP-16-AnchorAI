@@ -1,95 +1,90 @@
 id,intent,sentence,label,citations_ok,reason
-q08,member_risk,The data shows little sign that member 2999 is slipping away.,supported,True,Follows directly from the low 2% churn probability in E1.
-q08,member_risk,"Their churn probability is 2%, which is low risk [E1].",supported,True,E1 states the 2% churn probability and low-risk segment.
-q08,member_risk,- Extra spend raises their risk [E3].,supported,True,E3 states extra spend raises risk.
-q08,member_risk,- Months as a member also raises their risk [E5].,supported,True,E5 states months as a member raises risk.
-q08,member_risk,"- Weekly visits are flat at 1.4, the same as their usual rate [E2].",supported,True,E2 shows 1.4 visits/week this month versus 1.4 usual.
-q08,member_risk,"The model lists a drop in visits as lowering risk [E4], but the profile shows no drop [E2].",supported,True,E4 lists visit drop as lowering risk; E2 shows no drop.
-q03,member_risk,"M0231 has a 1% churn probability, which is low risk.",supported,True,E1 states the 1% churn probability and low-risk label; no citation given.
-q03,member_risk,"The member is in the ""Established solo trainers"" segment [E1].",supported,True,E1 states the segment name.
-q03,member_risk,Months as a member raises risk.,supported,True,E3 states months as a member raises risk.
-q03,member_risk,The member has been a member for 1 month [E2][E3].,supported,True,E2 states 1 month as a member; E3 names the driver.
-q03,member_risk,Age lowers risk [E4].,supported,True,E4 states age lowers risk.
-q03,member_risk,A drop in weekly visits lowers risk [E5].,supported,True,E5 lists this as a risk driver that lowers risk.
-q03,member_risk,"The data shows 2.2 visits/week this month versus 2.0 usual [E2], which is an increase, not a drop.",supported,True,E2 gives 2.2 this month vs 2.0 usual; the increase follows directly.
-q03,member_risk,The visit-trend label may need checking [E2][E5].,unsupported,True,"The cited lines show a conflict, but the recommendation to check the label is not stated in evidence."
-q02,member_risk,"Member 77's churn probability is 2%, which is low risk [E1].",supported,True,E1 states the 2% churn probability and low-risk segment.
-q02,member_risk,"Being a member for only 2 months raises their risk [E3], while spending extra [E5] and a drop in weekly visits [E4] lower it.",supported,True,"E3, E4, and E5 state each driver's direction; E3 is consistent with E2's 2 months."
-q02,member_risk,"The profile shows visits rising slightly, from 0.9 to 1.0 per week [E2], so the ""drop in visits"" label may be inconsistent with the visit numbers.",supported,True,E2 gives 1.0 visits/week this month versus 0.9 usual; the inconsistency follows directly.
+q08,member_risk,Member 2999 shows few signs of slipping away.,supported,True,Paraphrases the low-risk churn rating in E1; no citation given.
+q08,member_risk,"Their churn probability is 2%, which is low risk [E1].",supported,True,E1 states the 2% probability and low-risk rating directly.
+q08,member_risk,The only driver listed as raising risk is extra spend [E3].,supported,True,E3 is the only evidence line saying a driver raises risk.
+q08,member_risk,"Weekly visits are unchanged, at 1.4 this month and 1.4 usually [E2][E4].",supported,True,E2 gives 1.4 this month vs 1.4 usual; E4 says the visit change lowers risk.
+q08,member_risk,A 6-month contract lowers risk [E5].,supported,True,"E5 says contract length lowers risk; the 6-month figure is in E2, which is not cited."
+q03,member_risk,"M0231 has a 2% churn probability, which is low risk.",supported,True,E1 states the 2% churn probability and low risk label.
+q03,member_risk,"The member is in the ""Established solo trainers"" segment [E1].",supported,True,E1 states the segment name directly.
+q03,member_risk,Raises risk: months as a member [E3],supported,True,E3 lists months as a member as a risk driver that raises risk.
+q03,member_risk,Lowers risk: age [E4],supported,True,E4 lists age as a risk driver that lowers risk.
+q03,member_risk,"Lowers risk: change in weekly visits, this month versus lifetime [E5]",supported,True,"E5 lists weekly visit change, this month vs lifetime, as lowering risk."
+q03,member_risk,"Current profile: 6-month contract, 1 month as a member, 2.2 visits per week this month versus 2.0 usually, and no group classes [E2].",supported,True,"E2 states each profile value: contract, tenure, visit rates, no group classes."
+q02,member_risk,"M0077 has a 4% churn probability, which is low risk [E1].",supported,True,E1 states the 4% probability and low-risk label directly.
+q02,member_risk,Being only 2 months in raises their risk [E2][E3].,supported,True,E2 gives 2 months' tenure; E3 says months as a member raises risk.
+q02,member_risk,"Their visits have gone up slightly this month, from 0.9 to 1.0 per week, which lowers it [E2][E4].",supported,True,E2 gives 1.0 vs 0.9 visits/week; E4 says the visit change lowers risk.
+q02,member_risk,Extra spend also lowers it [E5].,supported,True,E5 states extra spend lowers risk.
 q12,member_actions,The rules blocked every offer for member 2040.,supported,True,E5 states all offers were blocked for M2040.
-q12,member_actions,"Guardrail G01 never allows contacting a member more than once in 30 days, and it blocks all offers [E2][E5].",supported,True,E2 states the 30-day contact limit and that G01 blocks all offers.
-q12,member_actions,"Guardrail G04, which stops paid offers going to low-risk members, also blocked the free personal training session, the bring-a-friend class pass, and the one month at 20% off [E3][E6][E7][E8].",supported,True,E3 describes G04's paid-offer rule; E6-E8 confirm each of the three blocks.
-q12,member_actions,"Rule D06 labelled the member social, so social offers would otherwise fit [E4].",supported,True,"E4 states D06 concludes a social member, so social offers fit."
-q11,member_actions,"No, the discount is blocked.",supported,True,"E9 lists the 20% offer as blocked for M0066 under G04, as E2 defines."
-q11,member_actions,"""One month at 20% off"" is not allowed for M0066 under guardrail G04, which stops paid offers for low-risk members [E9][E2].",supported,True,E9 states the block for M0066 and E2 states the G04 low-risk rule.
-q11,member_actions,"The offer we can send is a personal check-in message by SMS, because a class they attend was cancelled [E6][E5][E4].",supported,True,"E6 names the allowed offer, E5 gives the P03 check-in rule, and E4 links the cancellation to disrupted routine."
-q32,graph_impact,"Nora Ali's classes are attended by 272 members, and 46 of them are high risk of leaving [E1].",supported,True,E1 states 272 attendees and 46 high risk; 'of leaving' is a minor gloss.
-q32,graph_impact,Five of these members have a churn probability above 99%:,supported,True,Five lines each show attendance with churn probability above 99%.
-q32,graph_impact,M1972 [E2],supported,True,E2 states M1972 attends Nora Ali's classes with churn probability above 99%.
-q32,graph_impact,M3107 [E3],supported,True,E3 states M3107 attends Nora Ali's classes with churn probability above 99%.
-q32,graph_impact,M1394 [E4],supported,True,E4 states M1394 attends Nora Ali's classes with churn probability above 99%.
-q32,graph_impact,M1141 [E5],supported,True,E5 states M1141 attends Nora Ali's classes with churn probability above 99%.
-q32,graph_impact,M0472 [E6],supported,True,E6 states M0472 attends Nora Ali's classes with churn probability above 99%.
-q28,graph_impact,"177 members attend the Zumba class, and 31 of them are high risk [E1].",supported,True,E1 states both the 177 attendance and the 31 high-risk count.
-q28,graph_impact,"Five of these members have a churn probability above 99%: M0222 [E2], M3261 [E3], M2920 [E4], M2758 [E5], and M3951 [E6].",supported,True,Each of E2-E6 names one member attending Zumba with churn above 99%.
-q27,graph_impact,The 298 members who attend Ana Costa's classes are the ones affected [E1].,unsupported,False,E1 gives the 298 count but never says the members are 'affected'.
-q27,graph_impact,"Of them, 54 are high risk [E1].",supported,True,E1 states 54 of the 298 members are high risk.
-q27,graph_impact,These five have a churn probability above 99%:,supported,True,E2–E6 each give churn probability >99% for one of the five members.
-q27,graph_impact,M0222 [E2],supported,True,E2 states M0222 has churn probability >99%.
-q27,graph_impact,M2076 [E3],supported,True,E3 states M2076 has churn probability >99%.
-q27,graph_impact,M2758 [E4],supported,True,E4 states M2758 has churn probability >99%.
-q27,graph_impact,M0718 [E5],supported,True,E5 states M0718 has churn probability >99%.
-q27,graph_impact,M0453 [E6],supported,True,E6 states M0453 has churn probability >99%.
-q40,list_members,"All 10 members shown are high risk, with churn probability above 99%, so the data doesn't rank one above the others [E1][E2][E3][E4][E5][E6][E7][E8][E9][E10][E11].",unsupported,False,"E2-E11 support the >99% risk, but no line says the data doesn't rank them."
-q40,list_members,"All are in the ""New and slipping"" segment:",supported,True,Each of E2-E11 states segment 'New and slipping'.
-q40,list_members,"M2908, club C3, 0 months [E2]",supported,True,"E2 states M2908, club C3, 0 months, same segment."
-q40,list_members,"M0923, club C2, 0 months [E3]",supported,True,"E3 states M0923, club C2, 0 months."
-q40,list_members,"M3607, club C1, 0 months [E4]",supported,True,"E4 states M3607, club C1, 0 months."
-q40,list_members,"M3365, club C1, 0 months [E5]",supported,True,"E5 states M3365, club C1, 0 months."
-q40,list_members,"M2383, club C3, 0 months [E6]",supported,True,"E6 states M2383, club C3, 0 months."
-q40,list_members,"M1787, club C1, 0 months [E7]",supported,True,"E7 states M1787, club C1, 0 months."
-q40,list_members,"M2013, club C1, 1 month [E8]",supported,True,"E8 states M2013, club C1, 1 months."
-q40,list_members,"M2127, club C1, 2 months [E9]",supported,True,"E9 states M2127, club C1, 2 months."
-q40,list_members,"M1335, club C2, 0 months [E10]",supported,True,"E10 states M1335, club C2, 0 months."
-q40,list_members,"M3833, club C3, 0 months [E11]",supported,True,"E11 states M3833, club C3, 0 months."
-q36,list_members,There are 331 high-risk members at C3.,supported,True,"E1 directly states 331 matching high-risk C3 members, though uncited."
-q36,list_members,The 10 with the highest churn probability are below.,supported,True,"E1 says it shows the 10 highest-probability members, though uncited."
-q36,list_members,"Each has over 99% churn probability, is in the 'New and slipping' segment, and has 0 months as a member [E1][E2][E3][E4][E5][E6][E7][E8][E9][E10][E11].",supported,True,"E2–E11 each state >99%, 'New and slipping', and 0 months."
-q36,list_members,- M2908 [E1][E2],supported,True,E2 gives M2908's attributes; E1 covers the top-10 set.
-q36,list_members,- M2383 [E1][E3],supported,True,E3 gives M2383's attributes; E1 covers the top-10 set.
-q36,list_members,- M3833 [E1][E4],supported,True,E4 gives M3833's attributes; E1 covers the top-10 set.
-q36,list_members,- M3186 [E1][E5],supported,True,E5 gives M3186's attributes; E1 covers the top-10 set.
-q36,list_members,- M1414 [E1][E6],supported,True,E6 gives M1414's attributes; E1 covers the top-10 set.
-q36,list_members,- M2169 [E1][E7],supported,True,E7 gives M2169's attributes; E1 covers the top-10 set.
-q36,list_members,- M1509 [E1][E8],supported,True,E8 gives M1509's attributes; E1 covers the top-10 set.
-q36,list_members,- M1088 [E1][E9],supported,True,E9 gives M1088's attributes; E1 covers the top-10 set.
-q36,list_members,- M2678 [E1][E10],supported,True,E10 gives M2678's attributes; E1 covers the top-10 set.
-q36,list_members,- M0754 [E1][E11],supported,True,E11 gives M0754's attributes; E1 covers the top-10 set.
-q35,list_members,"These are the 8 members with the highest churn probability, out of 4,000 matching members [E1].",supported,True,E1 states 8 highest-probability members out of 4000 matching.
-q35,list_members,"All are over 99% and in the ""New and slipping"" segment [E2][E3][E4][E5][E6][E7][E8][E9].",supported,True,Each cited line shows >99% probability and 'New and slipping' segment.
-q35,list_members,"- M2908: club C3, 0 months as a member [E2]",supported,True,E2 states club C3 and 0 months as a member.
-q35,list_members,"- M0923: club C2, 0 months as a member [E3]",supported,True,E3 states club C2 and 0 months as a member.
-q35,list_members,"- M3607: club C1, 0 months as a member [E4]",supported,True,E4 states club C1 and 0 months as a member.
-q35,list_members,"- M3365: club C1, 0 months as a member [E5]",supported,True,E5 states club C1 and 0 months as a member.
-q35,list_members,"- M2383: club C3, 0 months as a member [E6]",supported,True,E6 states club C3 and 0 months as a member.
-q35,list_members,"- M1787: club C1, 0 months as a member [E7]",supported,True,E7 states club C1 and 0 months as a member.
-q35,list_members,"- M2013: club C1, 1 month as a member [E8]",supported,True,E8 states club C1 and 1 month as a member.
-q35,list_members,"- M2127: club C1, 2 months as a member [E9]",supported,True,E9 states club C1 and 2 months as a member.
-q25,compare_members,"Both are high risk, with M0008 at 91% and M0014 at 86%.",supported,True,E1 and E8 state the churn probabilities and high-risk labels.
-q25,compare_members,"M0008 is ""New and slipping,"" while M0014 is ""Established class-goers.""",supported,True,E1 and E8 state each member's segment name.
-q25,compare_members,"Both are on month-to-month contracts, with 0 and 1 months as members.",supported,True,E2 and E9 state the contract type and months as a member.
-q25,compare_members,M0008 has no group classes and 1.0 visits/week.,supported,True,E2 states no group classes and 1.0 visits/week this month.
-q25,compare_members,M0014 attends group classes but has 0.0 visits/week.,supported,True,E9 states group class attendance and 0.0 visits/week this month.
-q25,compare_members,Both share months as a member as a risk driver.,supported,True,E3 and E10 both list months as a member as raising risk.
-q25,compare_members,M0008 also has extra spend as a risk driver.,supported,True,E4 lists extra spend per month as a risk driver raising risk for M0008.
-q25,compare_members,M0014 also has age as a risk driver.,supported,True,E12 lists age as a risk driver raising risk for M0014.
-q25,compare_members,Both can get a free personal training session or one month at 20% off by phone.,supported,True,"E6, E7, E13 and E14 list these phone offers as allowed for each member."
-q25,compare_members,M0014 can also get a personal check-in message by SMS.,supported,True,E15 lists the SMS check-in as an allowed offer for M0014.
-q21,compare_members,"Both are low churn risk (under 1%), with the same blocked offers and no playbook offer",supported,True,E1/E10 give under 1% risk; E6-E8 and E15-E17 match blocked offers; E9/E18 say no offer.
-q21,compare_members,They differ in:,supported,True,Framing lead-in with no factual claim.
-q21,compare_members,Segment: 3010 is 'Annual-contract loyalists'; 3011 is 'Established solo trainers',supported,True,Both segment names match the cited evidence lines exactly.
-q21,compare_members,Contract: 3010 has a 12-month contract; 3011 has a 6-month contract,supported,True,E2 states 12-month contract; E11 states 6-month contract.
-q21,compare_members,Tenure: 3010 has been a member for 7 months; 3011 for 5 months,supported,True,E2 gives 7 months and E11 gives 5 months as a member.
-q21,compare_members,Visits: 3010 averages 0.5 visits/week this month vs 0.6 usual; 3011 averages 4.4 vs 4.2 usual,supported,True,Figures match E2 and E11 exactly; 'averages' is a reasonable reading of 'this month'.
-q21,compare_members,"Risk drivers: 3010's are tenure, months left on contract, and visit drop",supported,True,"E3, E4 and E5 list these three drivers for M3010."
-q21,compare_members,"3011's are extra spend, visit drop, and tenure",supported,True,"E12, E13 and E14 list these three drivers for M3011."
+q12,member_actions,The contact cap guardrail blocks all offers [E2][E5].,supported,True,E2 says the contact cap blocks all offers; E5 confirms all offers blocked.
+q12,member_actions,"Separately, the low-risk spending guardrail blocked three offers: the free personal training session, the bring-a-friend class pass, and one month at 20% off [E3][E6][E7][E8].",supported,True,"E3 defines the G04 block; E6, E7 and E8 each record one of the three blocked offers."
+q12,member_actions,"Rule D06 would have fit social offers because the member joined through a friend, but that didn't change the result [E4].",supported,True,E4 says social offers fit due to the friend referral; no change follows from E5 blocking all offers.
+q11,member_actions,"No, a discount is blocked for M0066.",supported,True,E9 blocks the 20% discount; E2 blocks paid offers including it.
+q11,member_actions,"The ""One month at 20% off"" offer is blocked by guardrail G04 [E9][E2].",supported,True,E9 states the block by G04; E2 lists the rule and that offer.
+q11,member_actions,The only allowed offer is a personal check-in message by SMS [E6].,supported,True,E6 names the allowed offer; no other allowed offer appears in the evidence.
+q11,member_actions,It applies because a class they attend was cancelled [E4][E5].,supported,True,E4 infers routine disruption from the cancellation; E5 ties disruption to the check-in offer.
+q32,graph_impact,"About 263 members attend classes taught by Nora Ali, and 42 of them are high risk [E1].",supported,True,E1 states both the 263 total and the 42 high-risk count.
+q32,graph_impact,Five members have a churn probability above 99%:,supported,,E2–E6 each show a separate member with churn probability above 99%.
+q32,graph_impact,M3107 [E2],supported,True,E2 shows M3107 attends Nora Ali's classes with churn above 99%.
+q32,graph_impact,M1394 [E3],supported,True,E3 shows M1394 attends Nora Ali's classes with churn above 99%.
+q32,graph_impact,M1972 [E4],supported,True,E4 shows M1972 attends Nora Ali's classes with churn above 99%.
+q32,graph_impact,M1141 [E5],supported,True,E5 shows M1141 attends Nora Ali's classes with churn above 99%.
+q32,graph_impact,M0472 [E6],supported,True,E6 shows M0472 attends Nora Ali's classes with churn above 99%.
+q28,graph_impact,"The data shows 175 members attend the Zumba class, and 31 of them are high risk [E1].",supported,True,E1 states both the 175 attendees and the 31 high-risk members.
+q28,graph_impact,"It does not mention the cancellation itself, so these are Zumba attendees in general.",supported,True,No evidence line mentions cancellation; E1 describes the group as Zumba attendees.
+q28,graph_impact,Five Zumba attendees have a churn probability above 99%:,supported,True,E2–E6 each state a Zumba attendee with churn probability above 99%.
+q28,graph_impact,M0222 [E2],supported,True,E2 states M0222 attends Zumba with churn probability >99%.
+q28,graph_impact,M2758 [E3],supported,True,E3 states M2758 attends Zumba with churn probability >99%.
+q28,graph_impact,M3261 [E4],supported,True,E4 states M3261 attends Zumba with churn probability >99%.
+q28,graph_impact,M3951 [E5],supported,True,E5 states M3951 attends Zumba with churn probability >99%.
+q28,graph_impact,M2825 [E6],supported,True,E6 states M2825 attends Zumba with churn probability >99%.
+q27,graph_impact,The 293 members who attend her classes are the ones affected [E1].,unsupported,False,E1 gives the attendance count but never says these members are affected.
+q27,graph_impact,"Of those, 52 are high risk [E1].",supported,True,E1 states 52 of the 293 attendees are high risk.
+q27,graph_impact,"Five members listed with churn probability above 99% attend her classes: M0222, M2758, M0453, M2076, and M0268 [E2][E3][E4][E5][E6].",supported,True,Each of E2–E6 states one of these members attends her classes with churn >99%.
+q40,list_members,"These 10 members are the highest churn risk, each above 99%.",supported,True,E1 gives the top-10 ranking; E2-E11 each state churn probability above 99%.
+q40,list_members,so call them first,unsupported,True,Outreach priority is a recommendation that no evidence line states.
+q40,list_members,"The data doesn't rank them further, so any order among them is up to you.",unsupported,True,'Up to you' is an unstated recommendation; the evidence doesn't address ordering within the group.
+q40,list_members,"M2908, club C3, 0 months as a member",supported,True,E2 states club C3 and 0 months as a member.
+q40,list_members,"M1414, club C3, 0 months as a member",supported,True,E3 states club C3 and 0 months as a member.
+q40,list_members,"M0222, club C2, 0 months as a member",supported,True,E4 states club C2 and 0 months as a member.
+q40,list_members,"M3833, club C3, 0 months as a member",supported,True,E5 states club C3 and 0 months as a member.
+q40,list_members,"M1415, club C2, 1 month as a member",supported,True,E6 states club C2 and 1 month as a member.
+q40,list_members,"M1983, club C1, 1 month as a member",supported,True,E7 states club C1 and 1 month as a member.
+q40,list_members,"M0047, club C2, 0 months as a member",supported,True,E8 states club C2 and 0 months as a member.
+q40,list_members,"M3248, club C1, 0 months as a member",supported,True,E9 states club C1 and 0 months as a member.
+q40,list_members,"M0923, club C2, 0 months as a member",supported,True,E10 states club C2 and 0 months as a member.
+q40,list_members,"M1289, club C1, 0 months as a member",supported,True,E11 states club C1 and 0 months as a member.
+q36,list_members,There are 323 high-risk members at club C3.,supported,True,E1 states 323 matching high-risk club C3 members; answer gives no citation.
+q36,list_members,The 10 with the highest churn probability are:,supported,True,E1 says it shows the 10 highest churn probability members; no citation given.
+q36,list_members,"M2908, M1414, M3833, M3206, M3186, M3972, M3544, M0862, M1509, M1674 [E1][E2][E3][E4][E5][E6][E7][E8][E9][E10][E11]",supported,True,E2–E11 each name one listed member in order; E1 supports the top-10 selection.
+q36,list_members,"Each has a churn probability above 99%, is in the 'New and slipping' segment, and has 0 months as a member [E2][E3][E4][E5][E6][E7][E8][E9][E10][E11]",supported,True,"Each cited line states >99% probability, 'New and slipping' segment, and 0 months."
+q35,list_members,"These are the 8 members with the highest churn probability out of 4,000 matching members [E1].",supported,True,E1 states showing 8 highest-probability members out of 4000 matching.
+q35,list_members,All are above 99% and in the 'New and slipping' segment [E2][E3][E4][E5][E6][E7][E8][E9].,supported,True,Each of E2–E9 lists >99% probability and 'New and slipping' segment.
+q35,list_members,The data doesn't rank them against each other.,unsupported,False,No evidence line states whether ranking data exists or is absent.
+q35,list_members,"- M2908, club C3, 0 months as a member [E2]",supported,True,"E2 gives M2908, club C3, 0 months."
+q35,list_members,"- M1414, club C3, 0 months as a member [E3]",supported,True,"E3 gives M1414, club C3, 0 months."
+q35,list_members,"- M0222, club C2, 0 months as a member [E4]",supported,True,"E4 gives M0222, club C2, 0 months."
+q35,list_members,"- M3833, club C3, 0 months as a member [E5]",supported,True,"E5 gives M3833, club C3, 0 months."
+q35,list_members,"- M1415, club C2, 1 month as a member [E6]",supported,True,"E6 gives M1415, club C2, 1 month."
+q35,list_members,"- M1983, club C1, 1 month as a member [E7]",supported,True,"E7 gives M1983, club C1, 1 month."
+q35,list_members,"- M0047, club C2, 0 months as a member [E8]",supported,True,"E8 gives M0047, club C2, 0 months."
+q35,list_members,"- M3248, club C1, 0 months as a member [E9]",supported,True,"E9 gives M3248, club C1, 0 months."
+q25,compare_members,"Both are high risk: M0008 at 89%, M0014 at 74%.",supported,True,Both lines state high risk with these percentages.
+q25,compare_members,"Segments differ: ""New and slipping"" vs. ""Established class-goers"".",supported,True,Each line states its segment name.
+q25,compare_members,Both are month-to-month.,supported,True,Both profiles state a month-to-month contract.
+q25,compare_members,"M0008 has 0 months as a member, M0014 has 1.",supported,True,Profiles state 0 and 1 months as a member.
+q25,compare_members,M0008 skips group classes.,supported,True,Profile states no group classes.
+q25,compare_members,M0008 dropped from 1.2 to 1.0 visits/week.,supported,True,Profile shows 1.0 this month vs 1.2 usual.
+q25,compare_members,M0014 attends classes.,supported,True,Profile states attends group classes.
+q25,compare_members,M0014 logged 0.0 visits.,supported,True,Profile states 0.0 visits this month.
+q25,compare_members,Both are flagged for months as a member.,supported,True,Each risk driver line lists months as a member as raising risk.
+q25,compare_members,M0008 is also flagged for extra spend and months left on contract.,supported,True,Both driver lines are listed as raising risk for M0008.
+q25,compare_members,M0014 is also flagged for age and visits.,supported,True,Both driver lines are listed as raising risk for M0014.
+q25,compare_members,Both can get a free PT session or 20% off by phone.,supported,True,Each member has both allowed offers listed.
+q25,compare_members,M0014 can also get an SMS check-in.,supported,False,Only E15 supports SMS; other citations are PT and discount offers.
+q21,compare_members,"Both members have the same low churn risk (under 1%), the same blocked offers, and no playbook offer for either [E1][E10][E6][E15][E9][E18].",supported,False,"Churn and playbook claims are supported, but E6 and E15 cover only one blocked offer, not the full set."
+q21,compare_members,- **Contract:** 3010 has a 12-month contract; 3011 has 6 months [E2][E11].,supported,True,E2 states a 12-month contract and E11 states a 6-month contract.
+q21,compare_members,- **Tenure:** 3010 has been a member for 7 months; 3011 for 5 [E2][E11].,supported,True,E2 gives 7 months and E11 gives 5 months as a member.
+q21,compare_members,- **Visits:** 3010 averages 0.5 visits/week this month vs 0.6 usual; 3011 averages 4.4 vs 4.2 [E2][E11].,supported,True,E2 gives 0.5 vs 0.6 usual and E11 gives 4.4 vs 4.2.
+q21,compare_members,- **Segment:** 3010 is 'Annual-contract loyalists'; 3011 is 'Established solo trainers' [E1][E10].,supported,True,E1 and E10 name these exact segments for each member.
+q21,compare_members,- **Risk drivers:** Contract length is a driver for 3010 [E5].,supported,True,E5 lists contract length as a risk driver for M3010.
+q21,compare_members,Extra spend is a driver for 3011 [E12].,supported,True,E12 lists extra spend as a risk driver for M3011.

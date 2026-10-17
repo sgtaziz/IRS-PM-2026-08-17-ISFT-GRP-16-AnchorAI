@@ -1,5 +1,5 @@
 case,answer,supported,unsupported,contradicted,flagged
-f01,bad_answer,0,1,0,['The discounted month is blocked by G03 because it needs month-to-month']
-f01,good_answer,2,1,0,['A free PT session by call is allowed instead [E3].']
-f02,bad_answer,0,1,0,"['Start with the check-in message by SMS to rebuild trust, then offer th']"
+f01,bad_answer,1,2,0,"['because it needs month-to-month terms', ""which the data doesn't show""]"
+f01,good_answer,3,0,0,[]
+f02,bad_answer,0,2,0,"['Start with the check-in message by SMS to rebuild trust', 'then offer the PT session once they reply']"
 f02,good_answer,1,0,0,[]
