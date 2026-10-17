@@ -1,0 +1,3 @@
+signal,n_flagged,base_churn,event_churn,within_member_lift,raw_lift_vs_all,mean_churn_prob_model
+lost_anchor_instructor,186,0.262,0.472,1.799,1.409,0.198
+class_cancelled,170,0.253,0.334,1.32,0.997,0.213

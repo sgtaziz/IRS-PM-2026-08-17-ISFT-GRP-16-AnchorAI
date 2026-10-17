@@ -1,0 +1,16 @@
+item,value,kind,gain_offer,sum_excess
+members,4000.0,summary,,
+"with an allowed offer, with KG",1227.0,summary,,
+"with an allowed offer, without KG",984.0,summary,,
+gain an allowed offer (none -> some),243.0,summary,,
+lose all allowed offers (some -> none),0.0,summary,,
+offer list changes at all,298.0,summary,,
+members reached only with KG: sum excess hazard,34.505,summary,,
+members reached only with KG: mean excess hazard,0.142,summary,,
+members whose list changes: sum excess hazard,43.696,summary,,
+all members: sum excess hazard,60.425,summary,,
+D07_lost_instructor,159.0,rule firing only with KG,132.0,33.023
+D08_class_cancelled,139.0,rule firing only with KG,111.0,10.673
+P03_disrupted_checkin,263.0,rule firing only with KG,216.0,38.367
+P03b_disrupted_checkin_email,35.0,rule firing only with KG,27.0,5.329
+checkin_message,279.0,offer newly allowed,,
