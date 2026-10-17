@@ -65,7 +65,8 @@ const failed = (summary: string, e: unknown) => {
     reloadAll()
   } else toast.add({ severity: 'error', summary, detail: errorMessage(e), life: 6000 })
 }
-const baseVersion = computed(() => rules.data.value?.version ?? null)
+// A broken active version fails /rules, so fall back to the version list to keep rollback and YAML repair usable.
+const baseVersion = computed(() => rules.data.value?.version ?? versions.data.value?.find((v) => v.is_active)?.version ?? null)
 
 async function reloadAll() {
   await Promise.all([rules.run(), versions.run(), vocab.run(), glossary.reload()])
@@ -73,9 +74,8 @@ async function reloadAll() {
 }
 onMounted(async () => {
   glossary.load()
-  versions.run()
   vocab.run()
-  await rules.run()
+  await Promise.all([versions.run(), rules.run()])
   await loadYaml()
   await showHighlighted()
 })
@@ -164,7 +164,7 @@ const yamlMember = ref('M0155')
 const dirty = computed(() => yamlText.value !== yamlBase.value)
 
 async function loadYaml() {
-  const v = rules.data.value?.version
+  const v = baseVersion.value
   if (v == null) return
   try {
     const detail = await api<RuleVersionDetail>(`/rules/versions/${v}`)
@@ -279,7 +279,7 @@ function test() {
 
 <template>
   <div class="page">
-    <PageHeader title="Rules" subtitle="Forward-chaining rule base. Guardrails fire first, then higher salience, then more specific rules.">
+    <PageHeader title="Rules" subtitle="Forward-chaining rule base. Rules fire by salience, then by number of conditions, then by file order; guardrail blocks are applied after all rules have fired.">
       <template #actions>
         <span v-if="rules.data.value?.version" class="rounded-full bg-card px-3 py-1.5 text-sm font-medium text-ink-600 ring-1 ring-ink-200">
           Version {{ rules.data.value.version }}
@@ -289,8 +289,16 @@ function test() {
         </Button>
       </template>
     </PageHeader>
-    <PageState :loading="rules.loading.value && !rules.data.value" :error="rules.error.value" :empty="rules.data.value?.rules.length === 0" @retry="rules.run">
-      <template v-if="rules.data.value">
+    <Tabs v-model:value="tab" class="mt-5">
+      <TabList>
+        <Tab value="rules"><span class="tab-label"><ListChecks :size="15" aria-hidden="true" />Rules</span></Tab>
+        <Tab value="yaml"><span class="tab-label"><FileCode2 :size="15" aria-hidden="true" />Raw YAML</span></Tab>
+        <Tab value="versions"><span class="tab-label"><History :size="15" aria-hidden="true" />Versions</span></Tab>
+      </TabList>
+      <TabPanels>
+        <TabPanel value="rules">
+          <PageState :loading="rules.loading.value && !rules.data.value" :error="rules.error.value" :empty="rules.data.value?.rules.length === 0" @retry="rules.run">
+            <template v-if="rules.data.value">
         <div v-if="!rules.data.value.issues.length" class="banner ok">
           <CircleCheck :size="18" class="shrink-0" aria-hidden="true" />
           <span><strong>Validation passed.</strong> No unknown facts, contradictions or unreachable rules.</span>
@@ -300,14 +308,6 @@ function test() {
           <span><strong>{{ glossary.rule(i.rule_id) }}</strong> <span class="id-chip">{{ ruleCode(i.rule_id) }}</span>: {{ i.message }}</span>
         </div>
 
-        <Tabs v-model:value="tab" class="mt-5">
-          <TabList>
-            <Tab value="rules"><span class="tab-label"><ListChecks :size="15" aria-hidden="true" />Rules</span></Tab>
-            <Tab value="yaml"><span class="tab-label"><FileCode2 :size="15" aria-hidden="true" />Raw YAML</span></Tab>
-            <Tab value="versions"><span class="tab-label"><History :size="15" aria-hidden="true" />Versions</span></Tab>
-          </TabList>
-          <TabPanels>
-            <TabPanel value="rules">
               <div class="grid items-start gap-5 min-[2200px]:grid-cols-[minmax(0,2fr)_minmax(24rem,1fr)]">
                 <SectionCard :title="`${rules.data.value.rules.length} rules`" subtitle="Sorted by salience" :icon="ScrollText">
                   <DataTableX
@@ -390,12 +390,14 @@ function test() {
                   </PageState>
                 </SectionCard>
               </div>
+            </template>
+          </PageState>
             </TabPanel>
 
             <TabPanel value="yaml">
               <div class="grid items-start gap-5 2xl:grid-cols-[minmax(0,2fr)_minmax(24rem,1fr)]">
-                <SectionCard title="Rule YAML" :subtitle="`Active version ${rules.data.value.version ?? '—'}. Edit, validate, test, then save as a new version.`" :icon="FileCode2">
-                  <PageState :empty="rules.data.value.version == null" empty-text="No saved version yet. Create a rule to save the first one.">
+                <SectionCard title="Rule YAML" :subtitle="`Active version ${baseVersion ?? '—'}. Edit, validate, test, then save as a new version.`" :icon="FileCode2">
+                  <PageState :empty="baseVersion == null" empty-text="No saved version yet. Create a rule to save the first one.">
                     <Textarea v-model="yamlText" class="yaml" rows="24" spellcheck="false" fluid aria-label="Rule YAML" />
                     <div v-if="yamlReport" class="mt-3 flex flex-col gap-2" aria-live="polite">
                       <div v-for="e in yamlReport.parse_errors" :key="e" class="banner error"><TriangleAlert :size="16" class="shrink-0" aria-hidden="true" />{{ e }}</div>
@@ -525,9 +527,7 @@ function test() {
               </SectionCard>
             </TabPanel>
           </TabPanels>
-        </Tabs>
-      </template>
-    </PageState>
+    </Tabs>
   </div>
 
   <RuleEditorDialog
