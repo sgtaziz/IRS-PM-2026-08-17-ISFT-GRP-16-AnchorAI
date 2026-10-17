@@ -38,13 +38,13 @@ What each stream needs from the others: blockers, reviews, decisions and promise
 | # | Requested by | Kind | Item | Why it matters | Status | Added |
 |---|---|---|---|---|---|---|
 | 13 | B | deliver | `graph_signals(facts)` strings for `Explanation.graph_signals` | Done in `anchorai/knowledge/signals.py`; B to confirm it fits | answered | 2026-10-16 |
-| 24 | A | deliver | Re-run `c_rules`, `c_e6_rules`, `c_kg` and `c_e8_assistant` after A's 2026-10-17 data changes (training members scored out-of-fold, so bands are 2,861 / 169 / 970; zero-visit attendance rows removed; new `true_churn` table; `freq_drop` became `visit_change`), and measure E7 against `true_churn` (see `docs/SCENARIO.md`, "Gym events") | The quoted E6/E7/E8 numbers come from the old build. Training-split pattern lifts were inflated by in-sample scores | open | 2026-10-17 |
 | 29 | A | review | RULE-2, remaining part: build `days_since_last_contact`, `contacts_last_30d` and `offers_last_90d` from approved plan items and logged outcomes too, not only the synthetic `interventions` | Once B logs real contacts, a member contacted yesterday must be blocked. Waits on B's plans and outcomes (#8, #9) | open | 2026-10-17 |
 
 ## Done
 
 | # | Requested by → Owner | Item | Closed |
 |---|---|---|---|
+| 24 | A → C | Re-ran `c_kg`, `c_rules`, `c_e6_rules` and `c_e8_assistant` on A's 2026-10-17 build, and measured E7 against `true_churn` in the new `c_e7_kg.ipynb`: KG flags reproduce A's within-member lifts (1.80 / 1.32) and add no ranking gain over `churn_prob`, but reach 243 low-risk members holding 57% of the event-driven excess hazard | 2026-10-17, `notebooks/results/e7_*.csv` |
 | 2 | C → A | Bimodal `churn_prob`: expected, bands match observed churn; training members now scored out-of-fold (2,861 / 169 / 970). C keeps the medium band as is (P08 now reaches 169 members) | 2026-10-17, `718508b` |
 | 20 | C → A | `call` added to `checkin_message`; P02 now proposes it by call (or email with no phone on file). Discount kept at 20%: agreed, "last resort" is handled by the playbooks | 2026-10-17, `636b825` |
 | 21 | A → C | RULE-1: any rule can be disabled; a fact only asserted by disabled rules is a warning, not an error | 2026-10-17 |
