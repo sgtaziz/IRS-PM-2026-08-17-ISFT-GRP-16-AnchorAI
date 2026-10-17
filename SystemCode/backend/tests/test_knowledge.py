@@ -6,6 +6,7 @@ from neo4j.exceptions import ServiceUnavailable
 
 from anchorai.discovery import service
 from anchorai.knowledge import loader, signals
+from anchorai.knowledge.ego import EgoGraph
 from anchorai.reasoning.facts import build_facts
 from anchorai.scenario.tables import read_tables
 from tests.conftest import FIXTURES
@@ -108,6 +109,22 @@ def test_live_graph_signals_on_fixtures():
     assert facts.loc[["M0004", "M0007"], "class_cancelled"].all()
     graph = ego_graph("M0002")
     assert {n.data["type"] for n in graph.nodes} >= {"Member", "Club", "Class", "Instructor"}
+
+
+def test_entity_ego_endpoint_shape_and_roles(client, login, monkeypatch):
+    seen = {}
+
+    def fake(entity_id, driver=None, kind="member"):
+        seen[kind] = entity_id
+        return None if entity_id == "K99" else EgoGraph(nodes=[], edges=[], member_total=120)
+
+    monkeypatch.setattr("anchorai.api.routers.graph.ego_graph", fake)
+    url = "/api/graph/ego/class/K01"
+    assert client.get(url, headers=login("staff1")).status_code == 403
+    r = client.get(url, headers=login("manager"))
+    assert r.json()["member_total"] == 120 and seen == {"class": "K01"}
+    assert client.get("/api/graph/ego/class/K99", headers=login("manager")).status_code == 404
+    assert client.get("/api/graph/ego/club/C1", headers=login("manager")).status_code == 422
 
 
 def test_simulate_event_reports_new_rule_firings(client, login, built, monkeypatch):

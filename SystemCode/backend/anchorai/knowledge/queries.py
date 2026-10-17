@@ -43,10 +43,40 @@ RETURN DISTINCT m.member_id AS member_id, m.churn_prob AS churn_prob, m.risk_ban
 
 EGO = """
 MATCH (m:Member {member_id: $member_id})
-RETURN m,
+RETURN m AS root,
   COLLECT { MATCH p = (m)-[:MEMBER_OF]->(:Club) RETURN p }
   + COLLECT { MATCH p = (m)-[:ATTENDS]->(:Class)-[:TAUGHT_BY]->(:Instructor) RETURN p }
   + COLLECT { MATCH p = (m)-[:ATTENDS]->(:Class)-[:TAUGHT_BY]->(:Instructor)<-[:AFFECTS]-(:Event) RETURN p }
   + COLLECT { MATCH p = (m)-[:ATTENDS]->(:Class)<-[:AFFECTS]-(:Event) RETURN p }
   + COLLECT { MATCH p = (m)-[:RECEIVED]->(:Offer) RETURN p } AS paths
+"""
+
+# Busiest neighbourhoods have a few hundred members, so only the $cap highest-risk are drawn.
+EGO_CLASS = """
+MATCH (k:Class {class_id: $class_id})
+RETURN k AS root,
+  COUNT { (:Member)-[:ATTENDS]->(k) } AS member_total,
+  COLLECT { MATCH p = (k)-[:TAUGHT_BY]->(:Instructor) RETURN p }
+  + COLLECT { MATCH p = (k)-[:AT]->(:Club) RETURN p }
+  + COLLECT { MATCH p = (k)-[:TAUGHT_BY]->(:Instructor)<-[:AFFECTS]-(:Event) RETURN p }
+  + COLLECT { MATCH p = (k)<-[:AFFECTS]-(:Event) RETURN p }
+  + COLLECT {
+      MATCH p = (m:Member)-[:ATTENDS]->(k)
+      RETURN p ORDER BY coalesce(m.churn_prob, -1) DESC LIMIT $cap
+    } AS paths
+"""
+
+EGO_INSTRUCTOR = """
+MATCH (i:Instructor {instructor_id: $instructor_id})
+RETURN i AS root,
+  size(COLLECT { MATCH (m:Member)-[:ATTENDS]->(:Class)-[:TAUGHT_BY]->(i) RETURN DISTINCT m.member_id }) AS member_total,
+  COLLECT { MATCH p = (:Class)-[:TAUGHT_BY]->(i) RETURN p }
+  + COLLECT { MATCH p = (i)-[:WORKS_AT]->(:Club) RETURN p }
+  + COLLECT { MATCH p = (i)<-[:AFFECTS]-(:Event) RETURN p }
+  + COLLECT {
+      MATCH (m:Member)-[:ATTENDS]->(:Class)-[:TAUGHT_BY]->(i)
+      WITH DISTINCT m ORDER BY coalesce(m.churn_prob, -1) DESC LIMIT $cap
+      MATCH p = (m)-[:ATTENDS]->(:Class)-[:TAUGHT_BY]->(i)
+      RETURN p
+    } AS paths
 """

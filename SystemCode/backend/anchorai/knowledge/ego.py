@@ -1,6 +1,6 @@
-"""A member's neighbourhood in Cytoscape's elements format."""
+"""A member, class or instructor neighbourhood in Cytoscape's elements format."""
 
-from typing import Any
+from typing import Any, Literal
 
 from neo4j import Driver
 from neo4j.graph import Node, Relationship
@@ -19,6 +19,7 @@ class Element(BaseModel):
 class EgoGraph(BaseModel):
     nodes: list[Element]
     edges: list[Element]
+    member_total: int | None = None
 
 
 def _plain(props: dict[str, Any]) -> dict[str, Any]:
@@ -45,17 +46,38 @@ def _edge(r: Relationship) -> Element:
     )
 
 
-def ego_graph(member_id: str, driver: Driver | None = None) -> EgoGraph | None:
-    records = read_records(queries.EGO, driver, member_id=member_id)
+EgoKind = Literal["member", "class", "instructor"]
+MEMBER_CAP = 40
+
+_QUERIES = {
+    "member": (queries.EGO, "member_id"),
+    "class": (queries.EGO_CLASS, "class_id"),
+    "instructor": (queries.EGO_INSTRUCTOR, "instructor_id"),
+}
+
+
+def ego_graph(
+    entity_id: str, driver: Driver | None = None, kind: EgoKind = "member"
+) -> EgoGraph | None:
+    """Class and instructor graphs show at most MEMBER_CAP members; member_total is the full count."""
+    query, param = _QUERIES[kind]
+    params: dict[str, Any] = {param: entity_id}
+    if kind != "member":
+        params["cap"] = MEMBER_CAP
+    records = read_records(query, driver, **params)
     if not records:
         return None
     nodes: dict[str, Element] = {}
     edges: dict[str, Element] = {}
-    member = records[0]["m"]
-    nodes[member.element_id] = _node(member)
+    root = records[0]["root"]
+    nodes[root.element_id] = _node(root)
     for path in records[0]["paths"]:
         for n in path.nodes:
             nodes.setdefault(n.element_id, _node(n))
         for r in path.relationships:
             edges.setdefault(r.element_id, _edge(r))
-    return EgoGraph(nodes=list(nodes.values()), edges=list(edges.values()))
+    return EgoGraph(
+        nodes=list(nodes.values()),
+        edges=list(edges.values()),
+        member_total=records[0].get("member_total"),
+    )

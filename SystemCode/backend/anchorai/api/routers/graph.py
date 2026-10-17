@@ -1,3 +1,5 @@
+from typing import Literal
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
@@ -35,6 +37,17 @@ def ego(member_id: str):
         raise HTTPException(503, _unavailable(e)) from None
     if graph is None:
         raise HTTPException(404, f"Member {member_id} is not in the knowledge graph")
+    return graph
+
+
+@router.get("/ego/{kind}/{entity_id}", response_model=EgoGraph, dependencies=manager_up)
+def ego_entity(kind: Literal["class", "instructor"], entity_id: str):
+    try:
+        graph = ego_graph(entity_id, kind=kind)
+    except GraphUnavailable as e:
+        raise HTTPException(503, _unavailable(e)) from None
+    if graph is None:
+        raise HTTPException(404, f"{kind.capitalize()} {entity_id} is not in the knowledge graph")
     return graph
 
 
