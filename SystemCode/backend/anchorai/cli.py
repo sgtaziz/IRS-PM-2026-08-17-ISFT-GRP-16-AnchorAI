@@ -8,7 +8,7 @@ from anchorai.config import get_settings
 from anchorai.db import migrate
 from anchorai.db.seeds import run_seeds
 from anchorai.db.session import get_engine, reset_engine
-from anchorai.knowledge.reload import GraphDown, reload_graph
+from anchorai.knowledge.reload import GraphDown, GraphUnreachable, reload_graph
 from anchorai.knowledge.signals import kg_facts_path
 from anchorai.scenario.tables import generated_dir
 
@@ -74,10 +74,13 @@ def kg_load() -> None:
         raise typer.Exit(1)
     try:
         counts = reload_graph()
-    except GraphDown:
+    except GraphUnreachable:
         # Degrade instead of failing setup: rules on KG facts just won't fire.
         typer.echo("kg load: Neo4j is not reachable; skipped (start it with docker compose)")
         return
+    except GraphDown as e:
+        typer.echo(f"kg load: {e}", err=True)
+        raise typer.Exit(1) from None
     typer.echo(f"Loaded graph {counts}; cached KG facts to {kg_facts_path()}")
 
 

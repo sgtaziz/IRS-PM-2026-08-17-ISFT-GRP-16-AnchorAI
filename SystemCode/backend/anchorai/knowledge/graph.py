@@ -1,12 +1,25 @@
+import threading
 from functools import lru_cache
 from typing import Any
 
 from neo4j import Driver, GraphDatabase, ManagedTransaction
-from neo4j.exceptions import AuthError, ServiceUnavailable, SessionExpired
+from neo4j.exceptions import AuthError, ServiceUnavailable, SessionExpired, TransientError
 
 from anchorai.config import get_settings
 
-GraphUnavailable = (ServiceUnavailable, SessionExpired, AuthError, OSError)
+
+class GraphReloading(RuntimeError):
+    def __init__(self) -> None:
+        super().__init__("Knowledge graph is reloading")
+
+
+Unreachable = (ServiceUnavailable, SessionExpired, OSError)
+# TransientError covers a database that is still starting up.
+GraphUnavailable = (*Unreachable, AuthError, TransientError, GraphReloading)
+
+# Set while a reload is rewriting the graph; reads that use the default driver fail fast
+# instead of seeing it half loaded. The reload's own reads pass their driver explicitly.
+reloading = threading.Event()
 
 
 @lru_cache
@@ -25,7 +38,7 @@ def get_driver() -> Driver:
 def neo4j_available(driver: Driver | None = None) -> bool:
     try:
         (driver or get_driver()).verify_connectivity()
-    except GraphUnavailable:
+    except (*Unreachable, TransientError):
         return False
     return True
 
@@ -36,6 +49,8 @@ def read(query: str, driver: Driver | None = None, **params: Any) -> list[dict[s
     def work(tx: ManagedTransaction) -> list[dict[str, Any]]:
         return [record.data() for record in tx.run(query, params)]
 
+    if driver is None and reloading.is_set():
+        raise GraphReloading
     with (driver or get_driver()).session(default_access_mode="READ") as session:
         return session.execute_read(work)
 
@@ -46,5 +61,7 @@ def read_records(query: str, driver: Driver | None = None, **params: Any) -> lis
     def work(tx: ManagedTransaction) -> list[Any]:
         return list(tx.run(query, params))
 
+    if driver is None and reloading.is_set():
+        raise GraphReloading
     with (driver or get_driver()).session(default_access_mode="READ") as session:
         return session.execute_read(work)

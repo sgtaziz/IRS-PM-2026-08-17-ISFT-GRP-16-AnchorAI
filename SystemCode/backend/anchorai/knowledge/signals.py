@@ -48,16 +48,23 @@ def save_kg_facts(facts: pd.DataFrame, directory: Path | None = None) -> Path:
     return path
 
 
-def load_kg_facts(directory: Path | None = None) -> pd.DataFrame | None:
-    """Cached KG facts, or None when the graph hasn't been loaded since the last data build."""
+def facts_problem(directory: Path | None = None) -> str | None:
+    """Why the cached KG facts can't be used, or None when they can."""
     path = kg_facts_path(directory)
     if not path.exists():
-        return None
+        return "The graph has not been loaded yet"
     # Facts from a graph built before the last data build describe old members: ignore them.
     card = (directory or generated_dir()) / "model_card.json"
     if card.exists() and path.stat().st_mtime < card.stat().st_mtime:
+        return "The graph was loaded before the last data build"
+    return None
+
+
+def load_kg_facts(directory: Path | None = None) -> pd.DataFrame | None:
+    """Cached KG facts, or None when the graph hasn't been loaded since the last data build."""
+    if facts_problem(directory):
         return None
-    return pd.read_parquet(path).set_index("member_id")
+    return pd.read_parquet(kg_facts_path(directory)).set_index("member_id")
 
 
 def graph_signals(facts: dict[str, Any]) -> list[str]:

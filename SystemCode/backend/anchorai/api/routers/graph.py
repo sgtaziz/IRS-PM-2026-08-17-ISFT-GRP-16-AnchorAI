@@ -5,10 +5,20 @@ from anchorai.api.deps import SessionDep, require_role
 from anchorai.discovery.service import DataNotBuilt
 from anchorai.knowledge import simulate
 from anchorai.knowledge.ego import EgoGraph, ego_graph
-from anchorai.knowledge.graph import GraphUnavailable
+from anchorai.knowledge.graph import GraphReloading, GraphUnavailable
 from anchorai.knowledge.simulate import Entities, EventType, Simulation
 
 router = APIRouter()
+
+
+def _unavailable(e: Exception) -> str:
+    return (
+        "Knowledge graph is reloading"
+        if isinstance(e, GraphReloading)
+        else "Knowledge graph unavailable"
+    )
+
+
 manager_up = [Depends(require_role("manager", "admin"))]
 
 
@@ -21,8 +31,8 @@ class SimulateRequest(BaseModel):
 def ego(member_id: str):
     try:
         graph = ego_graph(member_id)
-    except GraphUnavailable:
-        raise HTTPException(503, "Knowledge graph unavailable") from None
+    except GraphUnavailable as e:
+        raise HTTPException(503, _unavailable(e)) from None
     if graph is None:
         raise HTTPException(404, f"Member {member_id} is not in the knowledge graph")
     return graph
@@ -42,8 +52,8 @@ def simulate_event(req: SimulateRequest, session: SessionDep):
         result = simulate.simulate(session, req.event_type, req.entity_id)
     except DataNotBuilt as e:
         raise HTTPException(503, str(e)) from None
-    except GraphUnavailable:
-        raise HTTPException(503, "Knowledge graph unavailable") from None
+    except GraphUnavailable as e:
+        raise HTTPException(503, _unavailable(e)) from None
     if result is None:
         raise HTTPException(404, f"Unknown {req.event_type.split('_')[0]} {req.entity_id}")
     return result
