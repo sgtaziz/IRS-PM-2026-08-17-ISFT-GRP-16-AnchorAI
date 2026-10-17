@@ -1,5 +1,5 @@
 risk_band,blocked: all,blocked: offer-level,has allowed offer,no playbook matched,All
-high,140,0,846,4,990
-medium,18,0,106,0,124
-low,39,7,250,2590,2886
-All,197,7,1202,2594,4000
+high,138,1,830,1,970
+medium,15,0,154,0,169
+low,37,4,243,2577,2861
+All,190,5,1227,2578,4000

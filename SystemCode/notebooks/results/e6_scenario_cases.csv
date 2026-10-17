@@ -2,14 +2,18 @@ case,ok,failed,fired,allowed,blocked,title
 steady_low_risk,True,,G03 G04,,"discount_1m<-G03, free_pt_session<-G04, class_pass<-G04","Steady, low-risk member needs nothing"
 new_and_slipping_medium,True,,D02 P01 P08,"free_pt_session, checkin_message",,"New member whose visits are falling, medium risk, month-to-month"
 high_value_at_risk,True,,G03 D05 P06,free_pt_session,discount_1m<-G03,High-value member at high risk gets a PT session; discount is blocked on a 6-month contract
-month_to_month_high_risk,True,,P05,discount_1m,,"Month-to-month member at high risk, below the high-value fee, gets the discounted month"
-discount_never_proposed_off_month_to_month,True,,G03,,discount_1m<-G03,High risk on a 6-month contract below the high-value fee; no playbook applies
+month_to_month_high_risk,True,,D05 P06 P05,"free_pt_session, discount_1m",,"Month-to-month member at high risk is high-value too; the PT session comes first, the discounted month last"
+discount_never_proposed_off_month_to_month,True,,G03,,discount_1m<-G03,High risk on a 12-month contract below the high-value fee; no playbook applies
 recently_contacted,True,,G01 G03 D05 P06,,"all<-G01, discount_1m<-G03",A playbook proposes but the contact-fatigue guardrail blocks everything
 contact_30_days_ago,True,,G03 D05 P06,free_pt_session,discount_1m<-G03,Exactly 30 days since the last contact is allowed again
 offer_cap_reached,True,,G02 G03 D05 P06,,"all<-G02, discount_1m<-G03",Two offers in 90 days blocks everything even when the last contact is old
-never_contacted,True,,G03 D05 P06,free_pt_session,discount_1m<-G03,"A never-contacted member has no contact facts, so fatigue cannot block"
+never_contacted,True,,G03 D05 P06,free_pt_session,discount_1m<-G03,"A never-contacted member has no days-since fact and zero counts, so fatigue cannot block"
+pt_last_90d,True,,G05 D05 P06 P05,discount_1m,free_pt_session<-G05,A recent free PT session blocks another one but not the discount offer
+no_phone_checkin,True,,G03 P08b,checkin_message,discount_1m<-G03,"Medium risk without a phone gets the check-in by email, not SMS"
+no_phone_pt_in_person,True,,D05 P06b P05b,"free_pt_session, discount_1m",,High-value member without a phone gets the PT session in person and the discount by email
+phone_missing,True,,G03,,discount_1m<-G03,With no phone fact at all neither the phone nor the fallback playbooks fire
 lost_anchor_instructor,True,,G03 G04 D07 P03,checkin_message,"discount_1m<-G03, free_pt_session<-G04, class_pass<-G04",Low-risk member whose instructor left still gets a check-in (cheap offers are not blocked)
-class_cancelled_medium,True,,G03 D08 P03 P08,checkin_message,discount_1m<-G03,Class cancelled at medium risk; the SMS check-in outranks the email one and is the only check-in kept
+class_cancelled_medium,True,,G03 D08 P03 P08,checkin_message,discount_1m<-G03,Class cancelled at medium risk; the disruption check-in outranks the generic one and is the only check-in kept
 lost_instructor_recently_contacted,True,,G01 G03 G04 D07 P03,,"all<-G01, discount_1m<-G03, free_pt_session<-G04, class_pass<-G04",A disrupted routine does not override contact fatigue
 kg_facts_absent,True,,G03 P08,checkin_message,discount_1m<-G03,Without KG facts the disruption rules stay silent
 social_medium,True,,G03 D06 P04 P08,"class_pass, checkin_message",discount_1m<-G03,"Social member at medium risk gets a class pass, then a check-in"
