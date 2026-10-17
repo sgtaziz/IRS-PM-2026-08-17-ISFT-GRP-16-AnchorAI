@@ -57,7 +57,7 @@ def test_save_enable_and_rollback_are_versioned_and_audited(client, login):
     assert rules["G04_low_risk_no_paid_offers"]["enabled"] is True
 
     actions = client.get("/api/admin/audit", headers=admin).json()["actions"]
-    assert {"rule_disable", "rule_version_activate"} <= set(actions)
+    assert {"rule.disable", "rule_version.activate"} <= set(actions)
     body = {"yaml_text": text, "note": "x", "base_version": 1}
     assert client.put("/api/rules", json=body, headers=login("manager")).status_code == 403
 
@@ -71,7 +71,7 @@ def test_rollback_checks_the_version_and_a_broken_active_one_can_be_replaced(cli
         session.add(
             RuleVersion(
                 version=top + 1,
-                yaml_text=good.replace("days_since_last_contact", "made_up_fact", 1),
+                yaml_text=good.replace("at_contact_cap", "made_up_fact", 1),
             )
         )
         session.add(RuleVersion(version=top + 2, yaml_text="not: [valid"))
@@ -114,3 +114,18 @@ def test_activate_is_atomic_when_another_writer_got_in_after_the_check(
         with pytest.raises(versions.StaleRules):
             versions.activate_version(session, user, 1, base_version=base + 100)
     assert _active(client, admin) == base
+
+
+def test_seeded_version_is_canonical_so_a_disable_changes_one_rule(client, login):
+    admin = login("admin")
+    v1 = client.get("/api/rules/versions/1", headers=admin).json()["yaml_text"]
+    assert v1 == dump_rules(load_rules(v1))
+    change = {"enabled": False, "base_version": 1}
+    client.patch("/api/rules/G04_low_risk_no_paid_offers", json=change, headers=admin)
+    v2 = client.get("/api/rules/versions/2", headers=admin).json()["yaml_text"]
+    changed = [
+        a.rsplit(":", 1)[0]
+        for a, b in zip(v1.split("\n- id:"), v2.split("\n- id:"), strict=True)
+        if a != b
+    ]
+    assert len(changed) == 1

@@ -1,7 +1,8 @@
 """Base seed layer: demo users, the rule base as version 1, offers, roster and constraints.
 
-bcrypt salts are random by design, so hashes differ between runs; idempotency comes from
-upserting by username, and ANCHORAI_SEED governs everything else.
+bcrypt salts are random by design, so hashes differ between runs. Idempotency comes from
+creating only the missing users (existing ones are kept, so a changed ANCHORAI_DEMO_PASSWORD
+needs `anchorai db reset`), and ANCHORAI_SEED governs everything else.
 """
 
 import random
@@ -12,7 +13,8 @@ from anchorai import catalog
 from anchorai.auth.security import hash_password
 from anchorai.config import get_settings
 from anchorai.db.models import RuleVersion, User
-from anchorai.reasoning.engine import rule_files_text
+from anchorai.reasoning.engine import load_rule_files
+from anchorai.reasoning.versions import dump_rules
 
 DEMO_USERS: list[tuple[str, str, str]] = [
     ("admin", "admin", "Alex Admin"),
@@ -39,7 +41,10 @@ def seed(session: Session, rng: random.Random) -> None:
     if session.exec(select(RuleVersion).where(RuleVersion.version == 1)).first() is None:
         session.add(
             RuleVersion(
-                version=1, yaml_text=rule_files_text(), note="Seeded rule base", is_active=True
+                version=1,
+                yaml_text=dump_rules(load_rule_files()),
+                note="Seeded rule base",
+                is_active=True,
             )
         )
 

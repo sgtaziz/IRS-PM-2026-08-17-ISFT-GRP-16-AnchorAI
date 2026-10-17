@@ -70,7 +70,7 @@ class OfferBlocked(RuntimeError):
 
 
 def _evidence(session: Session, member_id: str, offer_id: str, channel: Channel) -> list[str]:
-    facts = reasoning.all_facts()[member_id]
+    facts = reasoning.all_facts(session)[member_id]
     offer = next(o for o in catalog.list_offers(session) if o.offer_id == offer_id)
     lines = [
         f"Offer: {offer.name}",
@@ -123,7 +123,7 @@ def _plan_signals(session: Session, member_id: str, offer_id: str, facts: dict) 
 
 
 def _template(session: Session, member_id: str, offer_id: str, channel: Channel) -> Draft:
-    facts = reasoning.all_facts()[member_id]
+    facts = reasoning.all_facts(session)[member_id]
     offer = next(o for o in catalog.list_offers(session) if o.offer_id == offer_id)
     months = int(facts["lifetime"])
     if not months:

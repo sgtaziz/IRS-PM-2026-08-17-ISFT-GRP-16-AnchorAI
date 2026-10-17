@@ -55,9 +55,35 @@ def active_rules(session: Session) -> tuple[int | None, list[Rule]]:
         raise InvalidRuleBase(f"Active rule version {version.version} is invalid: {e}") from e
 
 
+def _segment_names() -> list[str]:
+    try:
+        return sorted(member_data.get_data().table["segment"].unique())
+    except member_data.DataNotBuilt:
+        return []
+
+
 def check(session: Session, rules: list[Rule]) -> list[Issue]:
-    offers = [o.offer_id for o in catalog.list_offers(session)]
-    return validate(rules, KNOWN_FACTS, offers, [c.value for c in Channel])
+    offers = catalog.list_offers(session)
+    segments = _segment_names()
+    return validate(
+        rules,
+        KNOWN_FACTS,
+        [o.offer_id for o in offers],
+        [c.value for c in Channel],
+        offer_channels={o.offer_id: [c.value for c in o.channels] for o in offers},
+        inactive_offers={o.offer_id for o in offers if not o.active},
+        categories={"segment": segments} if segments else None,
+    )
+
+
+def inactive_offers(session: Session) -> set[str]:
+    return {o.offer_id for o in catalog.list_offers(session) if not o.active}
+
+
+def drop_inactive(session: Session, outcome: RuleOutcome) -> RuleOutcome:
+    inactive = inactive_offers(session)
+    outcome.allowed = [p for p in outcome.allowed if p.offer_id not in inactive]
+    return outcome
 
 
 def rule_set(session: Session) -> RuleSet:
@@ -82,24 +108,32 @@ def glossary(session: Session) -> Glossary:
     )
 
 
-def all_facts() -> dict[str, dict[str, Any]]:
-    """Facts for every member, rebuilt when Stream A's data or the KG facts change."""
+def all_facts(session: Session | None = None) -> dict[str, dict[str, Any]]:
+    """Facts for every member, rebuilt when Stream A's data, the KG facts or the caps change.
+
+    Without a session the caps are the catalogue defaults.
+    """
     global _facts
     data = member_data.get_data()
     kg_path = kg_facts_path()
-    key = (data.stamp, kg_path.stat().st_mtime if kg_path.exists() else None)
+    caps = catalog.get_constraints(session) if session is not None else None
+    key = (
+        data.stamp,
+        kg_path.stat().st_mtime if kg_path.exists() else None,
+        tuple(caps.model_dump().items()) if caps else None,
+    )
     with _lock:
         if _facts is None or _facts[0] != key:
             facts = build_facts(
-                data.table, data.features, data.tables["interventions"], load_kg_facts()
+                data.table, data.features, data.tables["interventions"], load_kg_facts(), caps
             )
             _facts = (key, facts)
         return _facts[1]
 
 
 def trace(session: Session, member_id: str) -> RuleOutcome | None:
-    facts = all_facts().get(member_id)
+    facts = all_facts(session).get(member_id)
     if facts is None:
         return None
     _, rules = active_rules(session)
-    return run(rules, facts, member_id)
+    return drop_inactive(session, run(rules, facts, member_id))

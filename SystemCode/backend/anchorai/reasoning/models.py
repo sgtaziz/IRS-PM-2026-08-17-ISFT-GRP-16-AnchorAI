@@ -1,11 +1,23 @@
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    PrivateAttr,
+    StringConstraints,
+    field_validator,
+    model_validator,
+)
 
 from anchorai.reasoning.conditions import Condition, parse_condition
 from anchorai.schemas import RuleFiring
 
 RuleKind = Literal["derive", "playbook", "guardrail"]
+RuleId = Annotated[
+    str, StringConstraints(strip_whitespace=True, min_length=1, pattern=r"^[A-Za-z0-9_]+$")
+]
+Source = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 
 
 class Proposal(BaseModel):
@@ -17,7 +29,7 @@ class Proposal(BaseModel):
 class Then(BaseModel):
     model_config = ConfigDict(populate_by_name=True, serialize_by_alias=True, extra="forbid")
 
-    assert_: dict[str, Any] | None = Field(default=None, alias="assert")
+    assert_: dict[str, bool | int | float | str] | None = Field(default=None, alias="assert")
     propose: Proposal | None = None
     block: Literal["all"] | list[str] | None = None
 
@@ -35,13 +47,13 @@ class Then(BaseModel):
 class Rule(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    id: str
+    id: RuleId
     kind: RuleKind
     salience: int = 0
     description: str
     when: list[str] = Field(min_length=1)
     then: Then
-    source: str = Field(min_length=1)
+    source: Source
     enabled: bool = True
 
     _conditions: list[Condition] = PrivateAttr(default_factory=list)

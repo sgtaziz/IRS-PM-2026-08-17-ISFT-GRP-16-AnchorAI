@@ -102,7 +102,8 @@ def simulate(session: Session, event_type: EventType, entity_id: str) -> Simulat
 
     already_happened = entity_id in set(eff.events["entity_id"])
     _, rules = reasoning.active_rules(session)
-    all_facts = reasoning.all_facts()
+    all_facts = reasoning.all_facts(session)
+    inactive = reasoning.inactive_offers(session)
     members = []
     for member_id, share in hits.items():
         if member_id not in all_facts:
@@ -128,7 +129,7 @@ def simulate(session: Session, event_type: EventType, entity_id: str) -> Simulat
                 risk_band=str(row["risk_band"]),
                 share=None if share is None else round(float(share), 3),
                 new_rules=[f.rule_id for f in after.firings if f.rule_id not in fired_before],
-                allowed=after.allowed,
+                allowed=[p for p in after.allowed if p.offer_id not in inactive],
             )
         )
     members.sort(key=lambda m: -m.churn_prob)

@@ -50,12 +50,31 @@ class Condition:
         return f"{self.fact} {self.op} {self.value!r}"
 
 
+def _split_items(raw: str) -> list[str]:
+    items, current, quote = [], "", ""
+    for ch in raw:
+        if quote:
+            quote = "" if ch == quote else quote
+        elif ch in "'\"":
+            quote = ch
+        elif ch == ",":
+            items.append(current)
+            current = ""
+            continue
+        current += ch
+    items.append(current)
+    return [i for i in items if i.strip()]
+
+
 def parse_scalar(raw: str) -> Scalar:
     raw = raw.strip()
     if len(raw) >= 2 and raw[0] == raw[-1] and raw[0] in "'\"":
         return raw[1:-1]
-    if raw in ("true", "false"):
-        return raw == "true"
+    # YAML reads a bare yes/no as a boolean, so `assert: {x: yes}` and `x == yes` must agree.
+    if raw in ("true", "yes"):
+        return True
+    if raw in ("false", "no"):
+        return False
     if _INT.match(raw):
         return int(raw)
     if _FLOAT.match(raw):
@@ -73,7 +92,7 @@ def parse_condition(text: str) -> Condition:
     if op in ("in", "not in"):
         if not (raw.startswith("[") and raw.endswith("]")):
             raise ValueError(f"'{op}' needs a list value, e.g. [a, b], in {text!r}")
-        items = [i for i in raw[1:-1].split(",") if i.strip()]
+        items = _split_items(raw[1:-1])
         if not items:
             raise ValueError(f"Empty list in {text!r}")
         return Condition(fact, op, tuple(parse_scalar(i) for i in items))

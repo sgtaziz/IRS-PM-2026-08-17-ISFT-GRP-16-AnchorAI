@@ -33,7 +33,8 @@ def load_rule_files(directory: Path = RULES_DIR) -> list[Rule]:
 
 
 def _priority(rule: Rule, position: int) -> tuple[int, int, int]:
-    # Salience first, then specificity (more conditions wins), then file order.
+    # Salience, then number of conditions, then file order, whatever the rule kind. Guardrails
+    # win over playbooks because blocks are applied after the loop, not because they fire first.
     return (rule.salience, len(rule.conditions), -position)
 
 
@@ -45,8 +46,8 @@ def _fire(
 ) -> str:
     then = rule.then
     if then.assert_ is not None:
-        # First assertion wins: rules fire in priority order, so a fact is set by the
-        # highest-priority rule that derives it and never changes after something read it.
+        # First assertion wins: the first rule to fire sets the fact, and later rules asserting
+        # it are kept out, so a fact never changes after rules have read it.
         new = {k: v for k, v in then.assert_.items() if k not in memory}
         memory.update(new)
         kept = sorted(set(then.assert_) - set(new))

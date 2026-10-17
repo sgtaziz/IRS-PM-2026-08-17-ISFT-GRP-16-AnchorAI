@@ -14,7 +14,7 @@ from anchorai.db.audit import record_audit
 from anchorai.db.models import RuleVersion, User
 from anchorai.reasoning import service
 from anchorai.reasoning.engine import run
-from anchorai.reasoning.facts import KNOWN_FACTS, FactType
+from anchorai.reasoning.facts import KNOWN_FACTS, FactType, value_type
 from anchorai.reasoning.models import Rule, RuleOutcome
 from anchorai.reasoning.validate import Issue
 from anchorai.schemas import Channel
@@ -145,8 +145,10 @@ def run_draft(session: Session, yaml_text: str, member_id: str) -> RuleOutcome |
     rules, report = check_draft(session, yaml_text)
     if report.parse_errors:
         raise InvalidDraft(report)
-    facts = service.all_facts().get(member_id)
-    return None if facts is None else run(rules, facts, member_id)
+    facts = service.all_facts(session).get(member_id)
+    if facts is None:
+        return None
+    return service.drop_inactive(session, run(rules, facts, member_id))
 
 
 def vocabulary(session: Session) -> Vocabulary:
@@ -171,7 +173,7 @@ def vocabulary(session: Session) -> Vocabulary:
                 name,
                 FactInfo(
                     name=name,
-                    type="bool" if isinstance(value, bool) else "category",
+                    type=value_type(value),
                     description=r.description,
                     source=f"rule {r.id}",
                     derived=True,
@@ -274,7 +276,7 @@ def save_version(
     yaml_text: str,
     note: str,
     base_version: int | None,
-    action: str = "rule_version_create",
+    action: str = "rule_version.create",
 ) -> VersionSummary:
     rules, report = check_draft(session, yaml_text)
     if not report.ok:
@@ -282,9 +284,16 @@ def save_version(
     _require_base(session, base_version)
     before_version, before = _before(session)
     latest = session.exec(select(func.max(RuleVersion.version))).one() or 0
-    for row in session.exec(select(RuleVersion).where(RuleVersion.is_active)).all():
-        row.is_active = False
-        session.add(row)
+    # Conditional on the version the caller saw, so a concurrent rollback or save wins
+    # instead of being silently overwritten.
+    deactivated = session.exec(
+        update(RuleVersion)
+        .where(RuleVersion.is_active, RuleVersion.version == base_version)
+        .values(is_active=False)
+    ).rowcount
+    if base_version is not None and deactivated != 1:
+        session.rollback()
+        raise StaleRules("The rules changed since you opened them; reload and try again")
     row = RuleVersion(
         version=latest + 1,
         yaml_text=dump_rules(rules),
@@ -332,7 +341,7 @@ def set_enabled(
         dump_rules(rules),
         note or default,
         base_version,
-        action="rule_enable" if enabled else "rule_disable",
+        action="rule.enable" if enabled else "rule.disable",
     )
 
 
@@ -369,7 +378,7 @@ def activate_version(
     record_audit(
         session,
         user,
-        "rule_version_activate",
+        "rule_version.activate",
         "rule_version",
         str(version),
         before={"active_version": active_version, "rule_count": len(active)},

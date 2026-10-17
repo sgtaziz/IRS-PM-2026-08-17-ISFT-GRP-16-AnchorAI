@@ -1,4 +1,5 @@
 import pytest
+import yaml
 from pydantic import ValidationError
 
 from anchorai.discovery import service
@@ -234,3 +235,118 @@ def test_guardrail_check_reports_blocks(client, login, built):
     assert post(unknown_member).status_code == 404
     assert post(unknown_offer).status_code == 422
     assert post(items, login("staff1")).status_code == 403
+
+
+def _flipped(rules, *ids):
+    return [r.model_copy(update={"enabled": False}) if r.id in ids else r for r in rules]
+
+
+def test_derive_rules_can_be_disabled_without_unknown_fact_errors():
+    rules = load_rule_files()
+    for off in (("D06_social_member",), ("D07_lost_instructor", "D08_class_cancelled")):
+        issues = validate(_flipped(rules, *off), KNOWN_FACTS, OFFERS, CHANNELS)
+        assert not [i for i in issues if i.severity == "error"]
+        assert any("only asserted by disabled" in i.message for i in issues)
+
+
+def test_validator_flags_rules_that_can_never_fire_or_never_reach_the_member():
+    rules = load_rules(
+        """
+- id: T1
+  kind: derive
+  description: d
+  when: ["risk_band == High"]
+  then: {assert: {a: x}}
+  source: s
+- id: T2
+  kind: derive
+  description: d
+  when: ["risk_band >= 0.6"]
+  then: {assert: {b: x}}
+  source: s
+- id: T3
+  kind: derive
+  description: d
+  when: ["lifetime > 5", "lifetime < 3"]
+  then: {assert: {c: x}}
+  source: s
+- id: T4
+  kind: playbook
+  description: d
+  when: ["risk_band == low"]
+  then: {propose: {offer_id: free_pt_session, channel: sms}}
+  source: s
+- id: G
+  kind: guardrail
+  description: d
+  when: ["risk_band == low"]
+  then: {block: [free_pt_session]}
+  source: s
+"""
+    )
+    by_rule = {
+        (i.rule_id, i.severity): i.message
+        for i in validate(
+            rules,
+            KNOWN_FACTS,
+            OFFERS,
+            CHANNELS,
+            offer_channels={"free_pt_session": ["call"]},
+            inactive_offers=["free_pt_session"],
+        )
+    }
+    assert ("T1", "warning") in by_rule and ("T2", "error") in by_rule
+    assert ("T3", "error") in by_rule
+    assert "does not offer" in by_rule[("T4", "error")]
+    assert ("T4", "warning") in by_rule
+
+
+def test_rule_shape_is_validated_at_the_model():
+    base = {
+        "id": "X1",
+        "kind": "derive",
+        "description": "d",
+        "when": ["lifetime > 1"],
+        "then": {"assert": {"a": "b"}},
+        "source": "s",
+    }
+    assert load_rules(yaml.safe_dump([base]))
+    for patch in (
+        {"id": "a/b"},
+        {"id": "  "},
+        {"source": "  "},
+        {"then": {"assert": {"tags": ["a", "b"]}}},
+    ):
+        with pytest.raises(ValidationError):
+            load_rules(yaml.safe_dump([{**base, **patch}]))
+
+
+def test_conditions_agree_with_yaml_booleans_and_quoted_commas():
+    assert parse_condition("x == yes").holds({"x": True})
+    assert parse_condition("x == no").holds({"x": False})
+    assert parse_condition("x in ['a, b', c]").value == ("a, b", "c")
+
+
+def test_contact_cap_setting_reaches_the_rule_trace(client, login, built, engine):
+    from sqlmodel import Session
+
+    from anchorai import catalog
+    from anchorai.reasoning import service as reasoning
+
+    with Session(engine) as session:
+        facts = reasoning.all_facts(session)
+        member = next(m for m, f in facts.items() if f.get("contacts_last_30d") == 1)
+        caps = catalog.get_constraints(session)
+        try:
+            blocked = reasoning.trace(session, member).blocked
+            assert caps.max_contacts_per_member_per_30d == 1 and "all" in blocked
+            relaxed = caps.model_copy(update={"max_contacts_per_member_per_30d": 2})
+            body = relaxed.model_dump()
+            r = client.put("/api/admin/offers/constraints", json=body, headers=login("admin"))
+            assert r.status_code == 200, r.text
+            session.expire_all()
+            assert "G01_contact_fatigue" not in reasoning.trace(session, member).blocked.values()
+        finally:
+            client.put(
+                "/api/admin/offers/constraints", json=caps.model_dump(), headers=login("admin")
+            )

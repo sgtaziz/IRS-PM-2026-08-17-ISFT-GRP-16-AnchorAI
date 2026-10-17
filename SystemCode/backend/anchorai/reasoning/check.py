@@ -42,7 +42,7 @@ class UnknownOffer(LookupError):
 
 def check_items(session: Session, items: list[ProposedItem]) -> list[ItemCheck]:
     offers = {o.offer_id: o for o in catalog.list_offers(session)}
-    facts = service.all_facts()
+    facts = service.all_facts(session)
     for item in items:
         if item.member_id not in facts:
             raise UnknownMember(item.member_id)

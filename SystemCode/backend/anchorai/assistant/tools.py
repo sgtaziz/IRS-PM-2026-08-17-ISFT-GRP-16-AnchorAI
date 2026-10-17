@@ -7,6 +7,7 @@ from typing import Any
 from pydantic import BaseModel, ValidationError
 from sqlmodel import Session, select
 
+from anchorai import catalog
 from anchorai.assistant.slots import Slots
 from anchorai.db.models import Plan, PlanItem
 from anchorai.discovery import service as member_data
@@ -21,7 +22,7 @@ from anchorai.reasoning.models import Rule
 from anchorai.scenario.offers import OFFER_CATALOG
 from anchorai.schemas import Explanation
 
-OFFER_NAMES = {o["offer_id"]: o["name"] for o in OFFER_CATALOG}
+STATIC_OFFER_NAMES = {o["offer_id"]: o["name"] for o in OFFER_CATALOG}
 CHANNELS = {"sms": "SMS", "email": "email", "call": "phone call", "in_person": "in person"}
 TOP_AFFECTED = 5
 SIMILAR_CASES_SHOWN = 2
@@ -75,16 +76,16 @@ def _profile(member_id: str, f: dict[str, Any]) -> str:
     )
 
 
-def _missing(tool: str, member_ids: list[str]) -> ToolResult | None:
-    unknown = [m for m in member_ids if m not in reasoning.all_facts()]
+def _missing(session: Session, tool: str, member_ids: list[str]) -> ToolResult | None:
+    unknown = [m for m in member_ids if m not in reasoning.all_facts(session)]
     if unknown:
         return ToolResult(tool=tool, note=f"I couldn't find member {', '.join(unknown)}.")
     return None
 
 
-def _score_lines(lines: _Lines, member_id: str) -> None:
+def _score_lines(lines: _Lines, session: Session, member_id: str) -> None:
     row = member_data.get_data().table.loc[member_id]
-    facts = reasoning.all_facts()[member_id]
+    facts = reasoning.all_facts(session)[member_id]
     lines.add(
         f"{member_id}: churn probability {probability(row['churn_prob'])} "
         f"({row['risk_band']} risk), segment '{row['segment']}'",
@@ -105,42 +106,51 @@ def _code(rule_id: str) -> str:
     return rule_id.split("_")[0]
 
 
-def _offer(offer_id: str, channel: str | None = None) -> str:
-    name = OFFER_NAMES.get(offer_id, offer_id)
+def _offer_names(session: Session) -> dict[str, str]:
+    return STATIC_OFFER_NAMES | {o.offer_id: o.name for o in catalog.list_offers(session)}
+
+
+def _offer(names: dict[str, str], offer_id: str, channel: str | None = None) -> str:
+    name = names.get(offer_id, offer_id)
     return f"{name} by {CHANNELS.get(channel, channel)}" if channel else name
 
 
-def _effect(rule: Rule) -> str:
+def _effect(rule: Rule, names: dict[str, str]) -> str:
     """What a rule does in words, for staff and the LLM ("concludes new member")."""
     then = rule.then
     if then.assert_ is not None:
         return "concludes " + ", ".join(k.replace("_", " ") for k in then.assert_)
     if then.propose is not None:
-        return "proposes " + _offer(then.propose.offer_id, then.propose.channel)
+        return "proposes " + _offer(names, then.propose.offer_id, then.propose.channel)
     targets = then.block
-    return "blocks " + ("all offers" if targets == "all" else ", ".join(map(_offer, targets)))
+    return "blocks " + (
+        "all offers" if targets == "all" else ", ".join(_offer(names, t) for t in targets)
+    )
 
 
 def _rule_lines(lines: _Lines, session: Session, member_id: str, detail: bool) -> None:
     _, rules = reasoning.active_rules(session)
     by_id = {r.id: r for r in rules}
-    outcome = run(rules, reasoning.all_facts()[member_id], member_id)
+    names = _offer_names(session)
+    outcome = reasoning.drop_inactive(
+        session, run(rules, reasoning.all_facts(session)[member_id], member_id)
+    )
     if detail:
         for f in outcome.firings:
             lines.add(
                 f"{member_id} rule {_code(f.rule_id)}: {f.description}; "
-                f"{_effect(by_id[f.rule_id])}",
+                f"{_effect(by_id[f.rule_id], names)}",
                 "rule",
                 f.rule_id,
             )
     for p in outcome.allowed:
         lines.add(
-            f"{member_id} allowed offer: {_offer(p.offer_id, p.channel)} (rule {_code(p.rule_id)})",
+            f"{member_id} allowed offer: {_offer(names, p.offer_id, p.channel)} (rule {_code(p.rule_id)})",
             "offer",
             p.offer_id,
         )
     for target, rule_id in outcome.blocked.items():
-        what = "all offers" if target == "all" else _offer(target)
+        what = "all offers" if target == "all" else _offer(names, target)
         lines.add(f"{member_id} blocked: {what} (guardrail {_code(rule_id)})", "rule", rule_id)
     if not outcome.allowed and "all" not in outcome.blocked:
         lines.add(f"{member_id}: no playbook rule proposes an offer", "member", member_id)
@@ -153,6 +163,7 @@ def _plan_lines(lines: _Lines, session: Session, member_id: str) -> None:
     plan = session.exec(select(Plan).order_by(Plan.week_start.desc(), Plan.id.desc())).first()
     if plan is None:
         return
+    names = _offer_names(session)
     week = f"{plan.week_start:%Y-%m-%d}"
     items = session.exec(
         select(PlanItem)
@@ -172,7 +183,7 @@ def _plan_lines(lines: _Lines, session: Session, member_id: str) -> None:
         return
     lines.add(
         f"{member_id} is in the plan for the week of {week}: "
-        f"{_offer(kept.offer_id, kept.channel)}, expected value {kept.expected_value:.2f}",
+        f"{_offer(names, kept.offer_id, kept.channel)}, expected value {kept.expected_value:.2f}",
         "plan",
         str(plan.id),
     )
@@ -190,11 +201,11 @@ def _plan_lines(lines: _Lines, session: Session, member_id: str) -> None:
 
 def member_risk(session: Session, slots: Slots) -> ToolResult:
     member_id = slots.member_ids[0]
-    if missing := _missing("member_risk", [member_id]):
+    if missing := _missing(session, "member_risk", [member_id]):
         return missing
     lines = _Lines()
-    _score_lines(lines, member_id)
-    for signal in graph_signals(reasoning.all_facts()[member_id]):
+    _score_lines(lines, session, member_id)
+    for signal in graph_signals(reasoning.all_facts(session)[member_id]):
         lines.add(f"{member_id} graph signal: {signal}", "member", member_id)
     _plan_lines(lines, session, member_id)
     return ToolResult(tool="member_risk", evidence=lines.items)
@@ -202,10 +213,10 @@ def member_risk(session: Session, slots: Slots) -> ToolResult:
 
 def member_actions(session: Session, slots: Slots) -> ToolResult:
     member_id = slots.member_ids[0]
-    if missing := _missing("member_actions", [member_id]):
+    if missing := _missing(session, "member_actions", [member_id]):
         return missing
     lines = _Lines()
-    lines.add(_profile(member_id, reasoning.all_facts()[member_id]), "member", member_id)
+    lines.add(_profile(member_id, reasoning.all_facts(session)[member_id]), "member", member_id)
     _rule_lines(lines, session, member_id, detail=True)
     _plan_lines(lines, session, member_id)
     return ToolResult(tool="member_actions", evidence=lines.items)
@@ -213,13 +224,13 @@ def member_actions(session: Session, slots: Slots) -> ToolResult:
 
 def compare_members(session: Session, slots: Slots) -> ToolResult:
     pair = slots.member_ids[:2]
-    if missing := _missing("compare_members", pair):
+    if missing := _missing(session, "compare_members", pair):
         return missing
     lines = _Lines()
     if len(slots.member_ids) > 2:
         lines.add(f"Only the first two members named are compared: {' and '.join(pair)}", "member")
     for member_id in pair:
-        _score_lines(lines, member_id)
+        _score_lines(lines, session, member_id)
         _rule_lines(lines, session, member_id, detail=False)
     for member_id in pair:
         _plan_lines(lines, session, member_id)
@@ -345,8 +356,9 @@ def plan_summary(session: Session, slots: Slots) -> ToolResult:
     counts: dict[str, int] = {}
     for item in items:
         counts[item.offer_id] = counts.get(item.offer_id, 0) + 1
+    names = _offer_names(session)
     for offer_id, n in sorted(counts.items(), key=lambda kv: -kv[1]):
-        lines.add(f"{n} plan contacts get {OFFER_NAMES.get(offer_id, offer_id)}", "offer", offer_id)
+        lines.add(f"{n} plan contacts get {names.get(offer_id, offer_id)}", "offer", offer_id)
     return ToolResult(tool="plan_summary", evidence=lines.items)
 
 
