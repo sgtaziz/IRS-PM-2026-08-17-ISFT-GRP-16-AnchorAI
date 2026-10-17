@@ -163,7 +163,7 @@ Stream C owns the two panels below.
 
 <!-- screenshot: Member 360 rule trace panel -->
 
-**Knowledge-graph neighbourhood panel.** It draws the member's club, classes, instructors and events as a graph. See "Member neighbourhood" in section 3. If Neo4j is down, the panel shows "Knowledge graph unavailable" and the rest of the page works.
+**Knowledge-graph neighbourhood panel.** It draws the member's club, classes, instructors and events as a graph. See "Neighbourhood" in section 3. If Neo4j is down, the panel shows "Knowledge graph unavailable" and the rest of the page works.
 
 ### Weekly plan: plan builder and review (W14, W15)
 
@@ -252,7 +252,7 @@ To be written by Stream B.
 
 **Who:** managers and admins. **Where:** sidebar, Planning, **Knowledge graph**.
 
-The page has two parts: **Simulate an event** and **Member neighbourhood**. A **Manage events & roster** link leads to the Events and roster page (section 4).
+The page has two parts: **Simulate an event** and **Neighbourhood**. A **Manage events & roster** link leads to the Events and roster page (section 4).
 
 ### Simulate an event
 
@@ -271,10 +271,12 @@ Use this to see who an instructor leaving or a class closing would affect. A sim
 
 If the banner says the knowledge graph is out of date, a roster edit has been saved but the graph has not been rebuilt, so counts may miss it. Reload the graph from the Events & roster page.
 
-### Member neighbourhood
+### Neighbourhood
 
-1. Type a member ID such as `M0155` and select **Show**, or pick a member from the simulation table.
-2. Read the graph. Each node has its name inside it, so colour is not the only cue.
+1. Choose **Member**, **Class** or **Instructor**. For a member, type an ID such as `M0155` and select **Show**, or pick a member from the simulation table. For a class or instructor, pick it from the list (type to filter) and select **Show**.
+2. A class or instructor can have a few hundred members, so the graph draws only the 40 highest-risk ones. A line above the graph says "Showing the 40 highest-risk of N members".
+3. Click a class, instructor or member node in the graph to open its neighbourhood.
+4. Read the graph. Each node has its name inside it, so colour is not the only cue.
 
 | Node | Colour |
 |---|---|
@@ -286,7 +288,7 @@ If the banner says the knowledge graph is out of date, a roster edit has been sa
 | Offer | amber |
 
    A member with a thick red border is in the high-risk band. The legend under the graph repeats this. Links are labelled with their type.
-3. Select **Open … in Member 360** under the graph to go to the member's page.
+5. For a member, select **Open … in Member 360** under the graph to go to their page.
 
 <!-- screenshot: neighbourhood graph with a high-risk member -->
 
