@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Path
 from pydantic import BaseModel, Field
 
 from anchorai.api.deps import SessionDep, require_role
@@ -136,7 +136,7 @@ def list_versions(session: SessionDep):
 
 
 @router.get("/versions/{version}", response_model=VersionDetail, dependencies=[AdminDep])
-def get_version(version: int, session: SessionDep):
+def get_version(version: Annotated[int, Path(le=2**63 - 1)], session: SessionDep):
     try:
         return versions.get_version(session, version)
     except UnknownVersion as e:
@@ -144,7 +144,9 @@ def get_version(version: int, session: SessionDep):
 
 
 @router.post("/versions/{version}/activate", response_model=VersionSummary)
-def activate_version(version: int, body: ActivateIn, session: SessionDep, user: Admin):
+def activate_version(
+    version: Annotated[int, Path(le=2**63 - 1)], body: ActivateIn, session: SessionDep, user: Admin
+):
     try:
         return versions.activate_version(session, user, version, body.base_version)
     except UnknownVersion as e:

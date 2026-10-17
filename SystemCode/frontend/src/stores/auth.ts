@@ -31,6 +31,16 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = await api<UserOut>('/auth/me')
   }
 
+  // Follows a login or logout made in another tab, which changed the stored token.
+  async function syncToken() {
+    const stored = getToken()
+    if (stored === token.value) return
+    token.value = stored
+    user.value = null
+    useAssistantStore().reset()
+    if (stored) await fetchMe()
+  }
+
   function logout() {
     clearToken()
     token.value = null
@@ -39,5 +49,5 @@ export const useAuthStore = defineStore('auth', () => {
     useAssistantStore().reset()
   }
 
-  return { token, user, isAuthenticated, role, homeRoute, hasRole, login, fetchMe, logout }
+  return { token, user, isAuthenticated, role, homeRoute, hasRole, login, fetchMe, syncToken, logout }
 })

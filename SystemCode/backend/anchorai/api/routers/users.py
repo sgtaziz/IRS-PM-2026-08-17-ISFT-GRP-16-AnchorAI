@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Path
 
 from anchorai.api.deps import SessionDep, require_role
 from anchorai.auth import users
@@ -25,7 +25,9 @@ def create_user(body: UserCreate, session: SessionDep, actor: Admin):
 
 
 @router.patch("/{user_id}", response_model=UserRow)
-def update_user(user_id: int, body: UserUpdate, session: SessionDep, actor: Admin):
+def update_user(
+    user_id: Annotated[int, Path(le=2**63 - 1)], body: UserUpdate, session: SessionDep, actor: Admin
+):
     try:
         return users.update_user(session, actor, user_id, body)
     except users.UnknownUser as e:
@@ -35,7 +37,12 @@ def update_user(user_id: int, body: UserUpdate, session: SessionDep, actor: Admi
 
 
 @router.post("/{user_id}/password", status_code=204)
-def reset_password(user_id: int, body: PasswordReset, session: SessionDep, actor: Admin):
+def reset_password(
+    user_id: Annotated[int, Path(le=2**63 - 1)],
+    body: PasswordReset,
+    session: SessionDep,
+    actor: Admin,
+):
     try:
         users.reset_password(session, actor, user_id, body)
     except users.UnknownUser as e:

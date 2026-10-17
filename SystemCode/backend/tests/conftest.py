@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 
+import bcrypt
 import numpy as np
 import pandas as pd
 import pytest
@@ -8,6 +9,7 @@ from fastapi.testclient import TestClient
 from sqlmodel import Session, SQLModel
 
 from anchorai.api.main import app
+from anchorai.auth import security
 from anchorai.config import get_settings
 from anchorai.db.seeds import run_seeds
 from anchorai.db.session import get_session, make_engine, reset_engine
@@ -28,6 +30,17 @@ def no_real_db(tmp_path_factory):
         reset_engine()
         yield
     reset_engine()
+
+
+@pytest.fixture(autouse=True, scope="session")
+def cheap_bcrypt():
+    """Hash at the minimum cost so logins in tests take milliseconds, not a quarter second."""
+    real = bcrypt.gensalt
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setattr(bcrypt, "gensalt", lambda rounds=4, prefix=b"2b": real(rounds=4, prefix=prefix))
+        security._dummy_hash.cache_clear()
+        yield
+    security._dummy_hash.cache_clear()
 
 
 @pytest.fixture(scope="module")

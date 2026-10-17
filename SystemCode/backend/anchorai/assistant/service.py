@@ -255,7 +255,7 @@ def save_feedback(session: Session, user: User, feedback: FeedbackIn) -> Assista
     record_audit(
         session,
         user,
-        "assistant_feedback",
+        "assistant.feedback",
         "assistant_feedback",
         str(row.id),
         after=feedback.model_dump(),

@@ -1,5 +1,5 @@
 // Typed fetch helpers. Mirror the pydantic models in backend/anchorai/schemas.py.
-const TOKEN_KEY = 'anchorai.token'
+export const TOKEN_KEY = 'anchorai.token'
 
 export const getToken = (): string | null => localStorage.getItem(TOKEN_KEY)
 export const setToken = (token: string) => localStorage.setItem(TOKEN_KEY, token)
@@ -20,6 +20,12 @@ export function setUnauthorizedHandler(handler: () => void) {
   onUnauthorized = handler
 }
 
+// A 403 usually means the user's role changed since the page loaded.
+let onForbidden: () => void = () => {}
+export function setForbiddenHandler(handler: () => void) {
+  onForbidden = handler
+}
+
 function detailMessage(detail: unknown): string | null {
   if (typeof detail === 'string') return detail
   if (Array.isArray(detail)) return detail.map((d) => d?.msg).filter(Boolean).join('; ') || null
@@ -38,10 +44,12 @@ async function request(path: string, init?: RequestInit): Promise<Response> {
   if (!res.ok) {
     const body = await res.json().catch(() => null)
     const message = detailMessage(body?.detail) ?? res.statusText
-    // A failed login is also a 401; only a rejected session should log out.
-    if (res.status === 401 && token) {
+    // A failed login is also a 401; any other 401 means the session is over, even if another tab ended it.
+    if (res.status === 401 && path !== '/auth/login') {
       clearToken()
       onUnauthorized()
+    } else if (res.status === 403) {
+      onForbidden()
     }
     throw new ApiError(res.status, message)
   }

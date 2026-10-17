@@ -57,14 +57,16 @@ async function exportCsv() {
     const text = String(v ?? '')
     return `"${(/^[=+\-@]/.test(text) ? `'${text}` : text).replaceAll('"', '""')}"`
   }
-  const rows = items.map((r) => [r.ts, r.username, r.action, r.entity, r.entity_id, change(r)].map(cell).join(','))
-  const csv = ['when,who,action,entity,entity_id,change', ...rows].join('\n')
+  const rows = items.map((r) => [r.ts, r.username, r.action, r.entity, r.entity_id, json(r.before), json(r.after)].map(cell).join(','))
+  const csv = ['when,who,action,entity,entity_id,before,after', ...rows].join('\n')
   const link = document.createElement('a')
   link.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }))
   link.download = 'audit-log.csv'
   link.click()
   URL.revokeObjectURL(link.href)
 }
+
+const json = (v: unknown) => (v ? JSON.stringify(v) : '')
 
 function change(r: AuditRow) {
   if (!r.before && !r.after) return '—'

@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Path
 
 from anchorai import catalog
 from anchorai.api.deps import SessionDep, require_role
@@ -37,7 +37,9 @@ def delete_offer(offer_id: str, session: SessionDep, user: Admin):
 
 
 @router.put("/staff/{user_id}", response_model=StaffRow)
-def update_staff(user_id: int, change: StaffIn, session: SessionDep, user: Admin):
+def update_staff(
+    user_id: Annotated[int, Path(le=2**63 - 1)], change: StaffIn, session: SessionDep, user: Admin
+):
     row = catalog.update_staff(session, user, user_id, change)
     if row is None:
         raise HTTPException(404, f"No staff user {user_id}")

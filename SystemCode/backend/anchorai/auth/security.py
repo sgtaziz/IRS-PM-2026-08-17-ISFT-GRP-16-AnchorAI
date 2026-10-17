@@ -40,8 +40,8 @@ def verify_password(password: str, password_hash: str) -> bool:
 
 
 def password_stamp(user: User) -> str:
-    """Changes whenever the password does, so a reset signs out the user's existing tokens."""
-    return hashlib.sha256(user.password_hash.encode()).hexdigest()[:16]
+    """Changes on a password reset or deactivation, signing out the user's existing tokens."""
+    return hashlib.sha256(f"{user.token_version}:{user.password_hash}".encode()).hexdigest()[:16]
 
 
 def create_access_token(user: User) -> str:

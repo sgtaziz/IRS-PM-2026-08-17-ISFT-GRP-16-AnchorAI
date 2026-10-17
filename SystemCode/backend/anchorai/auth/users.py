@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import Session, func, select
 
 from anchorai.auth.schemas import UserOut
@@ -87,8 +88,13 @@ def create_user(session: Session, actor: User, body: UserCreate) -> UserRow:
         password_hash=hash_password(body.password),
     )
     session.add(user)
-    session.flush()
-    record_audit(session, actor, "user_create", "user", str(user.id), after=_view(user))
+    try:
+        session.flush()
+    except IntegrityError:
+        # A concurrent create took the name while we were hashing.
+        session.rollback()
+        raise UserConflict(f"Username {body.username} is taken") from None
+    record_audit(session, actor, "user.create", "user", str(user.id), after=_view(user))
     session.commit()
     return UserRow.model_validate(user, from_attributes=True)
 
@@ -119,6 +125,8 @@ def update_user(session: Session, actor: User, user_id: int, body: UserUpdate) -
         user.role = body.role
     if body.is_active is not None:
         user.is_active = body.is_active
+    if deactivating:
+        user.token_version += 1
     session.add(user)
     session.flush()
     if (demoting or deactivating) and not _active_admins(session):
@@ -126,7 +134,7 @@ def update_user(session: Session, actor: User, user_id: int, body: UserUpdate) -
         session.rollback()
         raise UserRuleViolation("The last active admin cannot be demoted or deactivated")
     record_audit(
-        session, actor, "user_update", "user", str(user.id), before=before, after=_view(user)
+        session, actor, "user.update", "user", str(user.id), before=before, after=_view(user)
     )
     session.commit()
     return UserRow.model_validate(user, from_attributes=True)
@@ -135,11 +143,12 @@ def update_user(session: Session, actor: User, user_id: int, body: UserUpdate) -
 def reset_password(session: Session, actor: User, user_id: int, body: PasswordReset) -> None:
     user = _get(session, user_id)
     user.password_hash = hash_password(body.password)
+    user.token_version += 1
     session.add(user)
     record_audit(
         session,
         actor,
-        "user_password_reset",
+        "user.password_reset",
         "user",
         str(user.id),
         after={"username": user.username},

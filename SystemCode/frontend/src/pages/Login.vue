@@ -97,7 +97,7 @@ async function submit() {
         <div class="rounded-xl border border-ink-200 bg-ink-50 p-4 text-sm text-ink-600">
           <p class="m-0 flex flex-wrap items-baseline justify-between gap-2">
             <span class="font-semibold text-ink-800">Demo accounts</span>
-            <span class="text-xs">password <code class="id-chip">anchorai</code></span>
+            <span class="text-xs">password set by <code class="id-chip">ANCHORAI_DEMO_PASSWORD</code> (default <code class="id-chip">anchorai</code>)</span>
           </p>
           <p class="m-0 mt-2 flex flex-wrap gap-1.5">
             <code v-for="u in ['admin', 'manager', 'staff1', 'staff2']" :key="u" class="id-chip">{{ u }}</code>
