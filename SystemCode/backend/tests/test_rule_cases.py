@@ -1,7 +1,10 @@
 import pytest
 import yaml
 
+from anchorai.catalog import Constraints
+from anchorai.discovery import service
 from anchorai.reasoning.engine import load_rule_files, run
+from anchorai.reasoning.facts import build_facts
 from tests.conftest import FIXTURES
 
 SPEC = yaml.safe_load((FIXTURES / "rule_cases.yaml").read_text())
@@ -26,3 +29,20 @@ def test_rule_case(case):
     assert [p.offer_id for p in out.allowed] == expect["allowed"]
     if "blocked" in expect:
         assert out.blocked == expect["blocked"]
+
+
+def test_caps_follow_settings(built):
+    data = service.get_data()
+    args = (data.table, data.features, data.tables["interventions"])
+    default = build_facts(*args)
+    loose = build_facts(
+        *args,
+        caps=Constraints(
+            default_budget=0,
+            default_staff_minutes=0,
+            max_contacts_per_member_per_30d=5,
+            max_offers_per_member_per_90d=5,
+        ),
+    )
+    assert any(f["at_contact_cap"] for f in default.values())
+    assert not any(f["at_contact_cap"] or f["at_offer_cap"] for f in loose.values())

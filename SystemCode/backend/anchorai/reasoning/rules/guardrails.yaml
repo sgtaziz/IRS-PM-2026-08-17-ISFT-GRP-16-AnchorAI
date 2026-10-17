@@ -3,16 +3,16 @@
 - id: G01_contact_fatigue
   kind: guardrail
   salience: 100
-  description: Never contact a member more than once in 30 days
-  when: ["days_since_last_contact < 30"]
+  description: Never contact a member more often than the 30-day contact cap (default once)
+  when: ["at_contact_cap == true"]
   then: {block: all}
-  source: "team policy (hard constraint in the proposal); simulated interviews 2026-10-16 (owner, area manager, membership lead): two said 14 days, one about a month, so the stricter limit stays"
+  source: "team policy (hard constraint max_contacts_per_member_per_30d, set in the offer catalogue settings); simulated interviews 2026-10-16 (owner, area manager, membership lead): two said 14 days, one about a month, so the stricter limit stays"
 
 - id: G02_offer_cap
   kind: guardrail
   salience: 100
-  description: At most two offers per member in 90 days
-  when: ["offers_last_90d >= 2"]
+  description: At most the 90-day offer cap per member (default two offers)
+  when: ["at_offer_cap == true"]
   then: {block: all}
   source: "team policy (default constraint max_offers_per_member_per_90d); simulated interviews 2026-10-16 (owner, area manager, membership lead): two said 2 offers in 3 months, one said 1"
 
@@ -31,3 +31,11 @@
   when: ["risk_band == low"]
   then: {block: [free_pt_session, class_pass, discount_1m]}
   source: "simulated interviews 2026-10-16 (owner, area manager, membership lead): don't spend on members who are staying anyway"
+
+- id: G05_pt_eligibility
+  kind: guardrail
+  salience: 100
+  description: A free PT session is for members without one in the last 90 days
+  when: ["pt_last_90d == true"]
+  then: {block: [free_pt_session]}
+  source: "offer catalogue eligibility (members without PT in the last 90 days); review RULE-6 2026-10-17"

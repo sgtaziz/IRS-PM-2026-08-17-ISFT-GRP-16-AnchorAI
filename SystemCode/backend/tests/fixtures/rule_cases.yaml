@@ -9,10 +9,15 @@ base:
   trend_ratio: 1.0
   promo_friends: 0
   group_visits: 1
-  monthly_value: 40
+  monthly_value: 46
+  phone: 1
   risk_band: low
   churn_prob: 0.05
+  contacts_last_30d: 0
   offers_last_90d: 0
+  at_contact_cap: false
+  at_offer_cap: false
+  pt_last_90d: false
   lost_anchor_instructor: false
   class_cancelled: false
 base_drop: [days_since_last_contact]
@@ -37,7 +42,7 @@ cases:
 
   - id: high_value_at_risk
     title: High-value member at high risk gets a PT session; discount is blocked on a 6-month contract
-    facts: {risk_band: high, monthly_value: 60, contract_period: 6, lifetime: 10}
+    facts: {risk_band: high, monthly_value: 54, contract_period: 6, lifetime: 10}
     expect:
       fires: [D05_high_value_at_risk, P06_high_value_pt, G03_discount_eligibility]
       silent: [P05_month_to_month_discount]
@@ -45,17 +50,17 @@ cases:
       blocked: {discount_1m: G03_discount_eligibility}
 
   - id: month_to_month_high_risk
-    title: Month-to-month member at high risk, below the high-value fee, gets the discounted month
-    facts: {risk_band: high, monthly_value: 50, contract_period: 1}
+    title: Month-to-month member at high risk is high-value too; the PT session comes first, the discounted month last
+    facts: {risk_band: high, monthly_value: 72, contract_period: 1}
     expect:
-      fires: [P05_month_to_month_discount]
-      silent: [D05_high_value_at_risk, P06_high_value_pt, G03_discount_eligibility]
-      allowed: [discount_1m]
+      fires: [D05_high_value_at_risk, P06_high_value_pt, P05_month_to_month_discount]
+      silent: [G03_discount_eligibility]
+      allowed: [free_pt_session, discount_1m]
       blocked: {}
 
   - id: discount_never_proposed_off_month_to_month
-    title: High risk on a 6-month contract below the high-value fee; no playbook applies
-    facts: {risk_band: high, monthly_value: 45, contract_period: 6}
+    title: High risk on a 12-month contract below the high-value fee; no playbook applies
+    facts: {risk_band: high, monthly_value: 46, contract_period: 12}
     expect:
       fires: [G03_discount_eligibility]
       silent: [P05_month_to_month_discount, P06_high_value_pt]
@@ -64,7 +69,7 @@ cases:
 
   - id: recently_contacted
     title: A playbook proposes but the contact-fatigue guardrail blocks everything
-    facts: {risk_band: high, monthly_value: 60, contract_period: 6, days_since_last_contact: 10, offers_last_90d: 1}
+    facts: {risk_band: high, monthly_value: 54, contract_period: 6, days_since_last_contact: 10, contacts_last_30d: 1, at_contact_cap: true, offers_last_90d: 1}
     expect:
       fires: [P06_high_value_pt, G01_contact_fatigue]
       allowed: []
@@ -72,14 +77,14 @@ cases:
 
   - id: contact_30_days_ago
     title: Exactly 30 days since the last contact is allowed again
-    facts: {risk_band: high, monthly_value: 60, contract_period: 6, days_since_last_contact: 30, offers_last_90d: 1}
+    facts: {risk_band: high, monthly_value: 54, contract_period: 6, days_since_last_contact: 30, offers_last_90d: 1}
     expect:
       silent: [G01_contact_fatigue, G02_offer_cap]
       allowed: [free_pt_session]
 
   - id: offer_cap_reached
     title: Two offers in 90 days blocks everything even when the last contact is old
-    facts: {risk_band: high, monthly_value: 60, contract_period: 6, days_since_last_contact: 45, offers_last_90d: 2}
+    facts: {risk_band: high, monthly_value: 54, contract_period: 6, days_since_last_contact: 45, offers_last_90d: 2, at_offer_cap: true}
     expect:
       fires: [G02_offer_cap]
       silent: [G01_contact_fatigue]
@@ -87,11 +92,43 @@ cases:
       blocked: {all: G02_offer_cap, discount_1m: G03_discount_eligibility}
 
   - id: never_contacted
-    title: A never-contacted member has no contact facts, so fatigue cannot block
-    facts: {risk_band: high, monthly_value: 60, contract_period: 6}
+    title: A never-contacted member has no days-since fact and zero counts, so fatigue cannot block
+    facts: {risk_band: high, monthly_value: 54, contract_period: 6}
     expect:
       silent: [G01_contact_fatigue, G02_offer_cap]
       allowed: [free_pt_session]
+
+  - id: pt_last_90d
+    title: A recent free PT session blocks another one but not the discount offer
+    facts: {risk_band: high, monthly_value: 72, contract_period: 1, pt_last_90d: true, offers_last_90d: 1}
+    expect:
+      fires: [G05_pt_eligibility, P06_high_value_pt]
+      allowed: [discount_1m]
+      blocked: {free_pt_session: G05_pt_eligibility}
+
+  - id: no_phone_checkin
+    title: Medium risk without a phone gets the check-in by email, not SMS
+    facts: {risk_band: medium, phone: 0}
+    expect:
+      fires: [P08b_medium_risk_checkin_email]
+      silent: [P08_medium_risk_checkin]
+      allowed: [checkin_message]
+
+  - id: no_phone_pt_in_person
+    title: High-value member without a phone gets the PT session in person and the discount by email
+    facts: {risk_band: high, monthly_value: 72, contract_period: 1, phone: 0}
+    expect:
+      fires: [P06b_high_value_pt_in_person, P05b_month_to_month_discount_email]
+      silent: [P06_high_value_pt, P05_month_to_month_discount]
+      allowed: [free_pt_session, discount_1m]
+
+  - id: phone_missing
+    title: With no phone fact at all neither the phone nor the fallback playbooks fire
+    facts: {risk_band: medium}
+    drop: [phone]
+    expect:
+      silent: [P08_medium_risk_checkin, P08b_medium_risk_checkin_email]
+      allowed: []
 
   - id: lost_anchor_instructor
     title: Low-risk member whose instructor left still gets a check-in (cheap offers are not blocked)
@@ -102,7 +139,7 @@ cases:
       blocked: {discount_1m: G03_discount_eligibility, free_pt_session: G04_low_risk_no_paid_offers, class_pass: G04_low_risk_no_paid_offers}
 
   - id: class_cancelled_medium
-    title: Class cancelled at medium risk; the SMS check-in outranks the email one and is the only check-in kept
+    title: Class cancelled at medium risk; the disruption check-in outranks the generic one and is the only check-in kept
     facts: {class_cancelled: true, risk_band: medium}
     expect:
       fires: [D08_class_cancelled, P03_disrupted_checkin, P08_medium_risk_checkin]
@@ -110,7 +147,7 @@ cases:
 
   - id: lost_instructor_recently_contacted
     title: A disrupted routine does not override contact fatigue
-    facts: {lost_anchor_instructor: true, days_since_last_contact: 5, offers_last_90d: 1}
+    facts: {lost_anchor_instructor: true, days_since_last_contact: 5, contacts_last_30d: 1, at_contact_cap: true, offers_last_90d: 1}
     expect:
       fires: [P03_disrupted_checkin, G01_contact_fatigue]
       allowed: []
@@ -209,7 +246,7 @@ cases:
 
   - id: everything_at_once
     title: New, slipping, high-value, month-to-month, high risk; duplicate PT proposals collapse to the first
-    facts: {lifetime: 1, trend_ratio: 0.5, avg_class_frequency_total: 1.0, risk_band: high, monthly_value: 60, contract_period: 1}
+    facts: {lifetime: 1, trend_ratio: 0.5, avg_class_frequency_total: 1.0, risk_band: high, monthly_value: 72, contract_period: 1}
     expect:
       fires: [D02_new_member, D05_high_value_at_risk, P01_new_member_onboarding, P05_month_to_month_discount, P06_high_value_pt]
       allowed: [free_pt_session, discount_1m]

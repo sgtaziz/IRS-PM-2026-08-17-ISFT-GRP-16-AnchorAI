@@ -4,7 +4,7 @@
   kind: playbook
   salience: 40
   description: New and slipping members get a trainer onboarding session
-  when: ["new_member == true", "trend_ratio < 0.8"]
+  when: ["new_member == true", "trend_ratio < 0.8", "phone == 1"]
   then: {propose: {offer_id: free_pt_session, channel: call}}
   source: "simulated interviews 2026-10-16 (owner, area manager, membership lead): a PT session gives a slipping new member a person to meet"
 
@@ -12,15 +12,15 @@
   kind: playbook
   salience: 40
   description: Falling regulars get a personal check-in to ask what changed
-  when: ["falling_regular == true"]
-  then: {propose: {offer_id: checkin_message, channel: sms}}
-  source: "simulated interviews 2026-10-16 (owner, area manager, membership lead): for a fading regular a PT session feels salesy and a discount is wrong; ask what changed"
+  when: ["falling_regular == true", "phone == 1"]
+  then: {propose: {offer_id: checkin_message, channel: call}}
+  source: "simulated interviews 2026-10-16 (owner, area manager, membership lead): for a fading regular a PT session feels salesy and a discount is wrong; ask what changed, by phone call (owner)"
 
 - id: P03_disrupted_checkin
   kind: playbook
   salience: 45
   description: Members whose class routine was disrupted get a personal check-in about alternatives
-  when: ["routine_disrupted == true"]
+  when: ["routine_disrupted == true", "phone == 1"]
   then: {propose: {offer_id: checkin_message, channel: sms}}
   source: "simulated interview 2026-10-16 (area manager): a timetable or instructor change needs a service message, not a promotion"
 
@@ -28,7 +28,7 @@
   kind: playbook
   salience: 30
   description: Social members at medium or high risk get a bring-a-friend class pass
-  when: ["social_member == true", "risk_band in [medium, high]"]
+  when: ["social_member == true", "risk_band in [medium, high]", "phone == 1"]
   then: {propose: {offer_id: class_pass, channel: sms}}
   source: "simulated interviews 2026-10-16 (owner, area manager, membership lead): bring-a-friend works for members who joined with a friend"
 
@@ -36,7 +36,7 @@
   kind: playbook
   salience: 25
   description: High-risk month-to-month members get a discounted month, after the other offers
-  when: ["contract_period == 1", "risk_band == high"]
+  when: ["contract_period == 1", "risk_band == high", "phone == 1"]
   then: {propose: {offer_id: discount_1m, channel: call}}
   source: "simulated interviews 2026-10-16 (owner, area manager, membership lead): discounts only for month-to-month members, and as a last resort"
 
@@ -44,7 +44,7 @@
   kind: playbook
   salience: 35
   description: High-value members at high risk get a personal training session
-  when: ["high_value_at_risk == true"]
+  when: ["high_value_at_risk == true", "phone == 1"]
   then: {propose: {offer_id: free_pt_session, channel: call}}
   source: team assumption
 
@@ -52,14 +52,78 @@
   kind: playbook
   salience: 20
   description: Disengaged members get a low-cost check-in message
-  when: ["disengaged == true", "risk_band in [medium, high]"]
+  when: ["disengaged == true", "risk_band in [medium, high]", "phone == 1"]
   then: {propose: {offer_id: checkin_message, channel: sms}}
   source: "simulated interviews 2026-10-16 (membership lead, owner): a personal check-in beats any offer"
 
 - id: P08_medium_risk_checkin
   kind: playbook
   salience: 10
-  description: Any other medium-risk member gets a check-in message
-  when: ["risk_band == medium"]
+  description: Medium-risk members get a check-in message
+  when: ["risk_band == medium", "phone == 1"]
   then: {propose: {offer_id: checkin_message, channel: sms}}
   source: "simulated interviews 2026-10-16 (owner, area manager, membership lead): email is rarely read; SMS or a messaging app is"
+
+- id: P01b_new_member_onboarding_in_person
+  kind: playbook
+  salience: 40
+  description: New and slipping members get a trainer onboarding session (in person, no phone on file)
+  when: ["new_member == true", "trend_ratio < 0.8", "phone == 0"]
+  then: {propose: {offer_id: free_pt_session, channel: in_person}}
+  source: "channel fallback for members without a phone on file, same trigger as P01; review RULE-3 2026-10-17"
+
+- id: P02b_falling_regular_checkin_email
+  kind: playbook
+  salience: 40
+  description: Falling regulars get a personal check-in to ask what changed (email, no phone on file)
+  when: ["falling_regular == true", "phone == 0"]
+  then: {propose: {offer_id: checkin_message, channel: email}}
+  source: "channel fallback for members without a phone on file, same trigger as P02; review RULE-3 2026-10-17"
+
+- id: P03b_disrupted_checkin_email
+  kind: playbook
+  salience: 45
+  description: Members whose class routine was disrupted get a personal check-in about alternatives (email, no phone on file)
+  when: ["routine_disrupted == true", "phone == 0"]
+  then: {propose: {offer_id: checkin_message, channel: email}}
+  source: "channel fallback for members without a phone on file, same trigger as P03; review RULE-3 2026-10-17"
+
+- id: P04b_social_class_pass_email
+  kind: playbook
+  salience: 30
+  description: Social members at medium or high risk get a bring-a-friend class pass (email, no phone on file)
+  when: ["social_member == true", "risk_band in [medium, high]", "phone == 0"]
+  then: {propose: {offer_id: class_pass, channel: email}}
+  source: "channel fallback for members without a phone on file, same trigger as P04; review RULE-3 2026-10-17"
+
+- id: P05b_month_to_month_discount_email
+  kind: playbook
+  salience: 25
+  description: High-risk month-to-month members get a discounted month, after the other offers (email, no phone on file)
+  when: ["contract_period == 1", "risk_band == high", "phone == 0"]
+  then: {propose: {offer_id: discount_1m, channel: email}}
+  source: "channel fallback for members without a phone on file, same trigger as P05; review RULE-3 2026-10-17"
+
+- id: P06b_high_value_pt_in_person
+  kind: playbook
+  salience: 35
+  description: High-value members at high risk get a personal training session (in person, no phone on file)
+  when: ["high_value_at_risk == true", "phone == 0"]
+  then: {propose: {offer_id: free_pt_session, channel: in_person}}
+  source: "channel fallback for members without a phone on file, same trigger as P06; review RULE-3 2026-10-17"
+
+- id: P07b_disengaged_checkin_email
+  kind: playbook
+  salience: 20
+  description: Disengaged members get a low-cost check-in message (email, no phone on file)
+  when: ["disengaged == true", "risk_band in [medium, high]", "phone == 0"]
+  then: {propose: {offer_id: checkin_message, channel: email}}
+  source: "channel fallback for members without a phone on file, same trigger as P07; review RULE-3 2026-10-17"
+
+- id: P08b_medium_risk_checkin_email
+  kind: playbook
+  salience: 10
+  description: Medium-risk members get a check-in message (email, no phone on file)
+  when: ["risk_band == medium", "phone == 0"]
+  then: {propose: {offer_id: checkin_message, channel: email}}
+  source: "channel fallback for members without a phone on file, same trigger as P08; review RULE-3 2026-10-17"

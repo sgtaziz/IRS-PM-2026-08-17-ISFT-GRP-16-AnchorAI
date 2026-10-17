@@ -44,7 +44,7 @@
 - id: D06_social_member
   kind: derive
   salience: 50
-  description: Joined through a partner company or a friend, so social offers fit
+  description: Joined through a friend, so social offers fit
   when: ["promo_friends == 1"]
   then: {assert: {social_member: true}}
   source: "simulated interviews 2026-10-16 (owner, area manager, membership lead): friends join and leave together"
@@ -52,7 +52,7 @@
 - id: D07_lost_instructor
   kind: derive
   salience: 50
-  description: Most of their class visits were with an instructor who has left
+  description: Many of their class visits were with instructors who have left
   when: ["lost_anchor_instructor == true"]
   then: {assert: {routine_disrupted: true}}
   source: "simulated interviews 2026-10-16 (owner, area manager, membership lead): an instructor's regulars follow them out within weeks"
