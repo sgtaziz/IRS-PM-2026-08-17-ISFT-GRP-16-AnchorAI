@@ -325,7 +325,7 @@ The line at the top of the page shows when the graph was last reloaded. Select *
 ### When Neo4j is unavailable
 
 - The roster edits above are still saved. A warning toast says "the knowledge graph is not updated", and the page shows "Edits are saved, but the knowledge graph has not been rebuilt from them". Start Neo4j, then select **Reload knowledge graph**.
-- Simulations and neighbourhood graphs show "Knowledge graph unavailable".
+- Simulations and neighbourhood graphs show "Knowledge graph unavailable". During a reload they briefly say "Knowledge graph is reloading"; try again a moment later.
 - The rest of the app works. Rules that read graph signals do not fire for new events until the graph is reloaded.
 
 ## 5. Message drafts (W22)
@@ -434,9 +434,16 @@ The rule base decides which offers a member may be given. There are three kinds 
 | Playbook | Proposes an offer on a channel |
 | Guardrail | Blocks offers, or all offers |
 
-Guardrails fire first, then higher salience, then more specific rules. Every rule has a mandatory **source** (where the rule comes from).
+Rules fire in order of salience, then the number of conditions (more specific first), then file order, whatever their kind. When two rules conclude the same fact, the one that fires first sets it. Guardrail blocks are applied after all rules have fired, so a guardrail always wins over a playbook. Every rule has a mandatory **source** (where the rule comes from).
 
-The header shows the active **Version** number. Under it, a green banner says "Validation passed" or a list of issues (unknown facts, contradictions, unreachable rules). The page has three tabs: **Rules**, **Raw YAML** and **Versions**.
+Some guardrails follow other settings:
+
+- **Contact caps.** G01 and G02 block members who have reached the caps under **Max contacts per member per 30 days** and **Max offers per member per 90 days** on the Offers & constraints page. A changed cap applies from the next request.
+- **Free PT.** G05 blocks a free PT session for members who had one in the last 90 days.
+- **Phone.** Playbooks that use SMS or a call apply only to members with a phone on file. Each has a twin rule for members without one, with the same code plus "b" (for example P02b), which uses email or in person instead.
+- **Catalogue.** An inactive offer is never listed as allowed, even if a playbook proposes it.
+
+The header shows the active **Version** number. Under it, a green banner says "Validation passed" or a list of issues. Errors block saving: an unknown fact, a value of the wrong type (for example `risk_band >= 0.6`), conditions that contradict each other, or a channel the catalogue does not offer for that offer. Warnings do not: an unknown category value, an inactive offer, a playbook a guardrail always blocks, or a fact concluded only by disabled rules. The page has three tabs: **Rules**, **Raw YAML** and **Versions**.
 
 <!-- screenshot: Rules tab with the validation banner and the Test on a member panel -->
 
@@ -447,12 +454,12 @@ The **Rules** tab lists every rule, sorted by salience. Each row shows the descr
 ### Enable or disable a rule
 
 1. Switch the toggle in the **On** column.
-2. Add an optional note and confirm. This saves a new version.
+2. Add an optional note and confirm. This saves a new version. Any rule can be disabled, including a derive rule other rules read; the validation banner then warns that those rules cannot fire.
 
 ### Add or edit a rule
 
 1. Select **New rule**, or **Edit** on a row.
-2. Enter the **Rule ID** (new rules only), the **Kind** (new rules only), the **Salience** and a one-sentence **Description**.
+2. Enter the **Rule ID** (new rules only: letters, digits and underscores), the **Kind** (new rules only), the **Salience** and a one-sentence **Description**.
 3. Enter the **Source** (required).
 4. Under **When all of these hold**, build the conditions. Each row is a fact, a comparison and a value. Select **Add condition** for more rows. The fact list shows plain names with the technical name beside them. The value field fits the fact: a number box, a yes/no list, or a list of known choices. A condition the editor cannot show is greyed out with "edit it in the YAML tab".
 5. Under **Then**, fill in what the kind needs:
@@ -505,7 +512,7 @@ The **Versions** tab lists each version with its note, who saved it, when, and t
   version by default; pick any other from the list). It lists the rules added, removed and changed, then the YAML line
   by line: `+` added, `-` removed, with long unchanged runs folded into "… N unchanged lines" (click to expand).
   **Close** hides the card.
-- **Activate** on an older version rolls the rule base back to it after you confirm. Plans and traces use it straight away. Rolling back adds an audit entry. It does not delete newer versions.
+- **Activate** on an older version rolls the rule base back to it after you confirm. The Versions tab works even when the active version is broken and the Rules tab shows an error, so you can always roll back. Plans and traces use it straight away. Rolling back adds an audit entry. It does not delete newer versions.
 
 <!-- screenshot: Versions tab -->
 
@@ -583,7 +590,8 @@ To export, use the table's export button. It downloads every entry that matches 
 |---|---|
 | "Knowledge graph unavailable" on the Knowledge graph page or in a Member 360 panel | Neo4j is not running. Start it (`docker compose up -d neo4j`), then select **Reload knowledge graph** on the Events & roster page. The rest of the app keeps working |
 | "Edits are saved, but the knowledge graph has not been rebuilt from them" | A roster edit was made while Neo4j was down. Start Neo4j and select **Reload knowledge graph** |
-| Rules that use graph signals (lost instructor, cancelled class) do not fire | The graph was never loaded or is stale. Run `uv run anchorai kg load`, or reload from the page |
+| Rules that use graph signals (lost instructor, cancelled class) do not fire | The graph is stale: the page says "The graph has not been loaded yet" or "The graph was loaded before the last data build". Run `uv run anchorai kg load`, or reload from the page |
+| `anchorai kg load` exits with an error | It skips (exit 0) only when Neo4j is unreachable. Any other failure, such as wrong credentials, an invalid `NEO4J_URI` or data not built, is printed and exits 1. Fix the cause it names and run it again |
 | Assistant says "Language model offline" and shows plain evidence lines | The LLM endpoint in `.env` is unreachable. Answers are still correct, only not reworded. Check `LLM_BASE_URL`, `LLM_API_KEY` and `LLM_MODEL` |
 | Message drafts always say "Template" | The language model is offline, or its text was rejected by the checks in section 5. This is expected |
 | The assistant says "I don't know based on the data I have." | Nothing in the data answers the question. Name a member (`M0155`), or ask one of the topics in section 6 |
