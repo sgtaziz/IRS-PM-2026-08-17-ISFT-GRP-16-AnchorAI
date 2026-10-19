@@ -1,0 +1,5 @@
+method,mean,std
+CBR,-0.0061,0.004
+T-learner,-0.0049,0.0029
+random,0.0024,0.0068
+risk as uplift,0.0148,0.0

@@ -1,0 +1,5 @@
+variant,mean,std
+V0 current,-0.007,0.0034
+V1 pooled responsiveness,-0.0071,0.0045
+V2 segment prior,-0.009,0.0037
+V3 distance weighting,-0.0055,0.003

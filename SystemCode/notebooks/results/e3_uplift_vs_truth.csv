@@ -1,0 +1,21 @@
+method,offer,spearman,top10_true_uplift
+CBR,checkin_message,,0.0292
+CBR,class_pass,,0.0541
+CBR,discount_1m,0.4789,0.1051
+CBR,free_pt_session,0.6391,0.2479
+CBR,all pairs,0.393,0.1773
+T-learner,checkin_message,0.2643,0.0582
+T-learner,class_pass,0.3367,0.0842
+T-learner,discount_1m,0.2731,0.0855
+T-learner,free_pt_session,0.6081,0.2331
+T-learner,all pairs,0.3916,0.1593
+risk as uplift,checkin_message,0.8318,0.0776
+risk as uplift,class_pass,0.0674,0.0523
+risk as uplift,discount_1m,0.6843,0.1086
+risk as uplift,free_pt_session,0.8659,0.2613
+risk as uplift,all pairs,0.4166,0.1249
+random,checkin_message,0.0044,0.0295
+random,class_pass,0.0186,0.0519
+random,discount_1m,-0.0162,0.0279
+random,free_pt_session,-0.0162,0.1129
+random,all pairs,-0.0047,0.0557

@@ -1,0 +1,13 @@
+weighting,k,mean,std
+churn importance,50,0.0018,0.0031
+churn importance,100,-0.0042,0.0028
+churn importance,200,0.0014,0.003
+churn importance,400,0.0013,0.0037
+churn risk only,50,-0.0046,0.0022
+churn risk only,100,-0.0015,0.0022
+churn risk only,200,0.0002,0.0025
+churn risk only,400,-0.0021,0.0027
+equal,50,-0.0033,0.0026
+equal,100,-0.0047,0.0029
+equal,200,-0.0026,0.0027
+equal,400,0.003,0.0029
