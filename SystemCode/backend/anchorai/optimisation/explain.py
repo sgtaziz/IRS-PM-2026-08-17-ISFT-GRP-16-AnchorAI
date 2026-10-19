@@ -5,7 +5,7 @@ import json
 import numpy as np
 import pandas as pd
 
-from anchorai.cbr.reasoner import CONTROL, CaseBase, nearest
+from anchorai.cbr.reasoner import CONTROL, CaseBase, estimate_uplift, nearest
 from anchorai.features import LABELS
 from anchorai.knowledge.signals import graph_signals
 from anchorai.reasoning.models import RuleOutcome
@@ -15,7 +15,9 @@ SIMILAR_CASES = 10
 DRIVERS_IN_SUMMARY = 2
 
 
-def _similar(case_base: CaseBase, chosen: pd.DataFrame, offer_names: dict[str, str]) -> dict:
+def similar_cases_for(
+    case_base: CaseBase, chosen: pd.DataFrame, offer_names: dict[str, str]
+) -> dict:
     """The nearest past cases for each (member, offer) in the plan, one neighbour search per offer."""
     out = {}
     for offer_id, rows in chosen.groupby("offer_id"):
@@ -76,7 +78,7 @@ def explain_plan(
     offer_names: dict[str, str],
 ) -> list[Explanation]:
     """Explanations for the chosen option rows, in order. `scores` is indexed by member_id."""
-    similar = _similar(case_base, chosen, offer_names)
+    similar = similar_cases_for(case_base, chosen, offer_names)
     out = []
     for row, explanation_id in zip(chosen.itertuples(), explanation_ids, strict=True):
         outcome = outcomes[row.member_id]
@@ -96,3 +98,25 @@ def explain_plan(
             )
         )
     return out
+
+
+def member_evidence(case_base: CaseBase, member_id: str, offer_names: dict[str, str]) -> list[dict]:
+    """CBR's estimate for every offer for one member, with the past cases behind it, best estimate first."""
+    # Shrinkage reads the spread across all members, so estimate everyone and keep this member.
+    est = estimate_uplift(case_base)
+    est = est[est["member_id"] == member_id]
+    similar = similar_cases_for(case_base, est[["member_id", "offer_id"]], offer_names)
+    rows = [
+        {
+            "offer_id": r.offer_id,
+            "offer_name": offer_names.get(r.offer_id, r.offer_id),
+            "estimate": round(float(r.uplift), 4),
+            "local": None if pd.isna(r.local) else round(float(r.local), 4),
+            "weight_on_local": round(float(r.weight), 3),
+            "neighbours_treated": int(r.n_treated),
+            "neighbours_control": int(r.n_control),
+            "cases": similar[member_id, r.offer_id],
+        }
+        for r in est.itertuples()
+    ]
+    return sorted(rows, key=lambda r: -r["estimate"])

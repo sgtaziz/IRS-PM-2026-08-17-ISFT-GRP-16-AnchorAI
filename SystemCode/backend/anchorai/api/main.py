@@ -20,7 +20,9 @@ from anchorai.api.routers import (
     graph,
     health,
     members,
+    outcomes,
     plan,
+    plan_staff,
     rules,
     users,
 )
@@ -69,6 +71,12 @@ app.include_router(
 )
 app.include_router(
     plan.router, prefix="/api/plan", tags=["plan (Stream B)"], dependencies=manager_up
+)
+app.include_router(
+    plan_staff.router, prefix="/api/plan", tags=["plan (Stream B)"], dependencies=any_role
+)
+app.include_router(
+    outcomes.router, prefix="/api/outcomes", tags=["outcomes (Stream B)"], dependencies=any_role
 )
 app.include_router(
     rules.router, prefix="/api/rules", tags=["rules (Stream C)"], dependencies=any_role

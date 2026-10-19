@@ -155,3 +155,25 @@ def test_exact_full_model_scores_its_plan_like_the_ga_objective(options):
     genes, status, _, bound = solve_full(problem, limits, beta=0.5, decay=0.2)
     assert status == "OPTIMAL"
     assert objective(problem, chosen(problem, genes), 0.5, 0.2) == pytest.approx(bound, abs=0.05)
+
+
+def test_staff_can_read_similar_cases_and_contact_history(client, login, built):
+    staff = login("staff1")
+    r = client.get("/api/plan/similar-cases/M0001", headers=staff)
+    assert r.status_code == 200, r.text
+    evidence = r.json()
+    assert evidence and all(e["cases"] for e in evidence)
+    assert [e["estimate"] for e in evidence] == sorted(
+        (e["estimate"] for e in evidence), reverse=True
+    )
+    assert "M0001" not in {c["member_id"] for e in evidence for c in e["cases"]}
+    assert client.get("/api/plan/similar-cases/NOPE", headers=staff).status_code == 404
+
+    # A draft plan is not a contact: history only lists approved plans.
+    request = {"as_of": "2026-10-19", "budget": 100, "staff_minutes": 150, "solver": "greedy"}
+    assert client.post("/api/plan", json=request, headers=login("manager")).status_code == 200
+    history = client.get("/api/outcomes", params={"member_id": "M0001"}, headers=staff)
+    assert history.status_code == 200 and history.json() == []
+    assert (
+        client.get("/api/outcomes", params={"member_id": "NOPE"}, headers=staff).status_code == 404
+    )
