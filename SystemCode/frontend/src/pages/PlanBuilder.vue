@@ -1,14 +1,20 @@
 <script setup lang="ts">
-import { CalendarCheck, Clock, DollarSign, Play, UserCheck, Users } from 'lucide-vue-next'
+import { CalendarCheck, Clock, DollarSign, Lock, Play, Plus, Repeat, Trash2, UserCheck, Users } from 'lucide-vue-next'
 import Button from 'primevue/button'
 import Column from 'primevue/column'
 import InputNumber from 'primevue/inputnumber'
 import Message from 'primevue/message'
 import ProgressBar from 'primevue/progressbar'
+import Dialog from 'primevue/dialog'
 import SelectButton from 'primevue/selectbutton'
+import Textarea from 'primevue/textarea'
+import vTooltip from 'primevue/tooltip'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { ApiError, api } from '../api/client'
-import type { PlanJob, PlanRequest, SavedPlan } from '../api/types'
+import type { PlanItem, PlanJob, PlanRequest, SavedPlan } from '../api/types'
+import AddContactDialog from '../components/AddContactDialog.vue'
+import ConfirmAction from '../components/ConfirmAction.vue'
+import ExplanationDrawer from '../components/ExplanationDrawer.vue'
 import DataTableX from '../components/DataTableX.vue'
 import KpiTile from '../components/KpiTile.vue'
 import PageHeader from '../components/PageHeader.vue'
@@ -103,6 +109,54 @@ async function generate() {
 }
 
 const usedHours = computed(() => (plan.value ? plan.value.total_staff_minutes / 60 : 0))
+const isDraft = computed(() => plan.value?.status === 'draft')
+
+// W14: the "why" drawer.
+const whyItem = ref<PlanItem | null>(null)
+
+// W15: overrides on a draft plan, each with a reason, then approval locks it.
+const addOpen = ref(false)
+const swapMember = ref<string | null>(null)
+function openAdd(memberId: string | null = null) {
+  swapMember.value = memberId
+  addOpen.value = true
+}
+
+const removing = ref<PlanItem | null>(null)
+const removeReason = ref('')
+const removeError = ref<string | null>(null)
+const busy = ref(false)
+function openRemove(item: PlanItem) {
+  removing.value = item
+  removeReason.value = ''
+  removeError.value = null
+}
+async function remove() {
+  if (!plan.value || !removing.value) return
+  busy.value = true
+  try {
+    plan.value = await api<SavedPlan>(`/plan/${plan.value.id}/items/${removing.value.member_id}/remove`, {
+      method: 'POST',
+      body: JSON.stringify({ reason: removeReason.value.trim() }),
+    })
+    removing.value = null
+  } catch (e) {
+    removeError.value = errorMessage(e)
+  } finally {
+    busy.value = false
+  }
+}
+
+const approveError = ref<string | null>(null)
+async function approve() {
+  if (!plan.value) return
+  approveError.value = null
+  try {
+    plan.value = await api<SavedPlan>(`/plan/${plan.value.id}/approve`, { method: 'POST' })
+  } catch (e) {
+    approveError.value = errorMessage(e)
+  }
+}
 </script>
 
 <template>
@@ -167,6 +221,22 @@ const usedHours = computed(() => (plan.value ? plan.value.total_staff_minutes / 
           :subtitle="`Built ${dateTime(plan.created_at)} for the week of ${plan.request.as_of}`"
           flush
         >
+          <template #actions>
+            <template v-if="isDraft">
+              <Button label="Add contact" size="small" severity="secondary" outlined @click="openAdd()">
+                <template #icon><Plus :size="15" /></template>
+              </Button>
+              <ConfirmAction
+                label="Approve plan"
+                severity="primary"
+                header="Approve this plan?"
+                :message="`Approving locks plan #${plan.id}: no more changes, and its ${plan.items.length} contacts can be assigned to staff.`"
+                @confirm="approve"
+              />
+            </template>
+            <span v-else class="flex items-center gap-1.5 text-sm text-ink-500"><Lock :size="14" /> Approved and locked</span>
+          </template>
+          <Message v-if="approveError" severity="error" class="mx-5 mb-3">{{ approveError }}</Message>
           <DataTableX
             :value="plan.items"
             data-key="member_id"
@@ -187,9 +257,44 @@ const usedHours = computed(() => (plan.value ? plan.value.total_staff_minutes / 
             <Column field="expected_value" header="Expected value" sortable>
               <template #body="{ data }"><span class="tabular-nums">{{ money(data.expected_value) }}</span></template>
             </Column>
+            <Column header="" :exportable="false">
+              <template #body="{ data }">
+                <div class="flex justify-end gap-1">
+                  <Button label="Why" size="small" text @click="whyItem = data" />
+                  <template v-if="isDraft">
+                    <Button size="small" text severity="secondary" aria-label="Swap offer" v-tooltip.top="'Swap offer'" @click="openAdd(data.member_id)">
+                      <template #icon><Repeat :size="14" /></template>
+                    </Button>
+                    <Button size="small" text severity="danger" aria-label="Remove" v-tooltip.top="'Remove'" @click="openRemove(data)">
+                      <template #icon><Trash2 :size="14" /></template>
+                    </Button>
+                  </template>
+                </div>
+              </template>
+            </Column>
           </DataTableX>
         </SectionCard>
       </template>
     </PageState>
+
+    <ExplanationDrawer
+      :explanation-id="whyItem?.explanation_id ?? null"
+      :offer-name="whyItem ? glossary.offer(whyItem.offer_id) : undefined"
+      @close="whyItem = null"
+    />
+    <AddContactDialog v-if="plan" v-model:visible="addOpen" :plan-id="plan.id" :member-id="swapMember" @saved="plan = $event" />
+    <Dialog :visible="!!removing" modal :header="`Remove ${removing?.member_id} from the plan`" class="w-full max-w-md" @update:visible="removing = null">
+      <form class="flex flex-col gap-4" @submit.prevent="remove">
+        <label class="field">
+          <span>Reason (required)</span>
+          <Textarea v-model="removeReason" rows="2" auto-resize placeholder="Why should this member not be contacted?" fluid />
+        </label>
+        <Message v-if="removeError" severity="error">{{ removeError }}</Message>
+        <div class="flex justify-end gap-2">
+          <Button label="Cancel" severity="secondary" outlined type="button" @click="removing = null" />
+          <Button type="submit" label="Remove" severity="danger" :disabled="removeReason.trim().length < 3" :loading="busy" />
+        </div>
+      </form>
+    </Dialog>
   </div>
 </template>

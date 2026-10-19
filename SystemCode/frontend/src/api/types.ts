@@ -209,6 +209,30 @@ export interface ContactRow {
   outcomes: { outcome: string; note: string | null; logged_at: string }[]
 }
 
+// Mirrors Explanation in anchorai/schemas.py; similar_cases as written by anchorai/optimisation/explain.py.
+export interface Explanation {
+  explanation_id: string
+  member_id: string
+  churn_prob: number
+  top_drivers: [string, number][]
+  rule_trace: RuleFiring[]
+  similar_cases: SimilarCase[]
+  graph_signals: string[]
+  summary: string
+}
+
+// Mirrors ItemCheck in anchorai/reasoning/check.py (POST /api/rules/check).
+export interface ItemCheck {
+  member_id: string
+  offer_id: string
+  channel: Channel
+  allowed: boolean
+  violations: { rule_id: string; description: string; blocks: string }[]
+  on_playbook: boolean
+  channel_offered: boolean
+  offer_active: boolean
+}
+
 // Mirrors anchorai/optimisation/jobs.py JobStatus.
 export interface PlanJob {
   state: 'idle' | 'running' | 'done' | 'failed'
