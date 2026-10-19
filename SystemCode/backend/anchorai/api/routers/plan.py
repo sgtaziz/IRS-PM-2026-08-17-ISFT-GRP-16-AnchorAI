@@ -1,13 +1,15 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel, Field
 
 from anchorai.api.deps import SessionDep, require_role
 from anchorai.db.models import User
 from anchorai.discovery.service import DataNotBuilt
-from anchorai.optimisation import service
+from anchorai.optimisation import overrides, service
+from anchorai.reasoning.check import UnknownMember, UnknownOffer
 from anchorai.reasoning.service import InvalidRuleBase
-from anchorai.schemas import Explanation, PlanRequest
+from anchorai.schemas import Channel, Explanation, PlanRequest
 
 router = APIRouter()
 Manager = Annotated[User, Depends(require_role("manager", "admin"))]
@@ -48,3 +50,48 @@ def explanation(explanation_id: str, session: SessionDep):
     if found is None:
         raise HTTPException(404, f"No explanation {explanation_id}")
     return found
+
+
+class Reason(BaseModel):
+    reason: str = Field(min_length=3)
+
+
+class AddItem(Reason):
+    member_id: str
+    offer_id: str
+    channel: Channel
+
+
+def _override(call):
+    try:
+        call()
+    except overrides.PlanNotFound as e:
+        raise HTTPException(404, f"No plan {e}") from None
+    except overrides.PlanLocked as e:
+        raise HTTPException(409, str(e)) from None
+    except (UnknownMember, UnknownOffer) as e:
+        raise HTTPException(404, f"Unknown {e}") from None
+    except overrides.OverrideRejected as e:
+        raise HTTPException(422, {"message": str(e), "problems": e.problems}) from None
+
+
+@router.post("/{plan_id}/items", response_model=service.SavedPlan)
+def add_item(plan_id: int, body: AddItem, session: SessionDep, user: Manager):
+    _override(
+        lambda: overrides.add_item(
+            session, user, plan_id, body.member_id, body.offer_id, body.channel, body.reason
+        )
+    )
+    return service.saved(session, plan_id)
+
+
+@router.post("/{plan_id}/items/{member_id}/remove", response_model=service.SavedPlan)
+def remove_item(plan_id: int, member_id: str, body: Reason, session: SessionDep, user: Manager):
+    _override(lambda: overrides.remove_item(session, user, plan_id, member_id, body.reason))
+    return service.saved(session, plan_id)
+
+
+@router.post("/{plan_id}/approve", response_model=service.SavedPlan)
+def approve(plan_id: int, session: SessionDep, user: Manager):
+    _override(lambda: overrides.approve(session, user, plan_id))
+    return service.saved(session, plan_id)

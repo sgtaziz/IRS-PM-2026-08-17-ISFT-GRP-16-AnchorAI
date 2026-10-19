@@ -139,3 +139,7 @@ def explanation(session: Session, explanation_id: str) -> Explanation | None:
     if item is None or item.explanation is None:
         return None
     return Explanation.model_validate(item.explanation)
+
+
+def saved(session: Session, plan_id: int) -> SavedPlan:
+    return _saved(session, session.get(models.Plan, plan_id))

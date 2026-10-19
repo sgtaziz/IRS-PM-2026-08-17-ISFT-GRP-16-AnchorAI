@@ -8,6 +8,7 @@ from anchorai.optimisation.evaluate import Truth, evaluate
 from anchorai.optimisation.exact import solve_full, solve_linear
 from anchorai.optimisation.ga import build_problem, chosen, ga, objective
 from anchorai.optimisation.model import Limits, plan_value, violations
+from anchorai.reasoning.service import all_facts
 
 
 @pytest.fixture
@@ -177,3 +178,63 @@ def test_staff_can_read_similar_cases_and_contact_history(client, login, built):
     assert (
         client.get("/api/outcomes", params={"member_id": "NOPE"}, headers=staff).status_code == 404
     )
+
+
+def test_overrides_are_checked_audited_and_locked_by_approval(client, login, built, engine):
+    manager = login("manager")
+    request = {"as_of": "2026-10-19", "budget": 100, "staff_minutes": 150, "solver": "greedy"}
+    plan = client.post("/api/plan", json=request, headers=manager).json()
+    pid, first = plan["id"], plan["items"][0]["member_id"]
+
+    def post(path, body):
+        return client.post(f"/api/plan/{pid}{path}", json=body, headers=manager)
+
+    removed = post(f"/items/{first}/remove", {"reason": "already called on Monday"})
+    assert removed.status_code == 200, removed.text
+    assert first not in {i["member_id"] for i in removed.json()["items"]}
+    assert removed.json()["total_cost"] <= plan["total_cost"]
+
+    # Guardrail (G03): discounts are for month-to-month members only.
+    blocked = post(
+        "/items",
+        {"member_id": "M0007", "offer_id": "discount_1m", "channel": "email", "reason": "try it"},
+    )
+    assert blocked.status_code == 422
+    assert any("G03" in p for p in blocked.json()["detail"]["problems"])
+    # No phone on file: an SMS cannot reach them (HANDOFFS #30 guard).
+    no_phone = next(m for m, f in all_facts().items() if not f.get("phone"))
+    sms = post(
+        "/items",
+        {
+            "member_id": no_phone,
+            "offer_id": "checkin_message",
+            "channel": "sms",
+            "reason": "quick hello",
+        },
+    )
+    assert sms.status_code == 422
+    assert any("no phone" in p for p in sms.json()["detail"]["problems"])
+    short = {"member_id": first, "offer_id": "checkin_message", "channel": "email", "reason": "x"}
+    assert post("/items", short).status_code == 422, "a reason is mandatory"
+
+    added = post(
+        "/items",
+        {
+            "member_id": first,
+            "offer_id": "checkin_message",
+            "channel": "email",
+            "reason": "staff asked for it",
+        },
+    )
+    assert added.status_code == 200, added.text
+    item = next(i for i in added.json()["items"] if i["member_id"] == first)
+    why = client.get(f"/api/plan/explanations/{item['explanation_id']}", headers=manager).json()
+    assert why["summary"].startswith("Added by the manager: staff asked for it.")
+
+    assert post("/approve", {}).status_code == 200
+    locked = post(f"/items/{first}/remove", {"reason": "too late now"})
+    assert locked.status_code == 409
+    with Session(engine) as session:
+        actions = {a.action for a in session.exec(select(AuditLog)).all()}
+    assert {"plan_item.remove", "plan_item.add", "plan.approve"} <= actions
+    assert client.post(f"/api/plan/{pid}/approve", headers=login("staff1")).status_code == 403
