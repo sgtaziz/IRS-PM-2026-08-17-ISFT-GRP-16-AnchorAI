@@ -102,6 +102,18 @@ def test_plan_endpoint_saves_a_feasible_plan(client, login, built, engine):
     assert by_ga["total_cost"] <= 100 and by_ga["total_staff_minutes"] <= 150
     assert by_ga["solver_stats"]["solver"] == "ga"
 
+    item = plan["items"][0]
+    why = client.get(f"/api/plan/explanations/{item['explanation_id']}", headers=login("manager"))
+    assert why.status_code == 200, why.text
+    why = why.json()
+    assert why["member_id"] == item["member_id"] and why["summary"]
+    assert why["rule_trace"], "the rules that allowed the offer are part of the reason"
+    cases = why["similar_cases"]
+    assert cases and all(c["outcome"] for c in cases)
+    assert item["member_id"] not in {c["member_id"] for c in cases}
+    missing = client.get("/api/plan/explanations/nope", headers=login("manager"))
+    assert missing.status_code == 404
+
     unknown = client.post("/api/plan", json={**request, "solver": "nope"}, headers=login("manager"))
     assert unknown.status_code == 422
 

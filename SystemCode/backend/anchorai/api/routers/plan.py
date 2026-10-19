@@ -7,7 +7,7 @@ from anchorai.db.models import User
 from anchorai.discovery.service import DataNotBuilt
 from anchorai.optimisation import service
 from anchorai.reasoning.service import InvalidRuleBase
-from anchorai.schemas import PlanRequest
+from anchorai.schemas import Explanation, PlanRequest
 
 router = APIRouter()
 Manager = Annotated[User, Depends(require_role("manager", "admin"))]
@@ -42,6 +42,9 @@ def compare_policies(req: PlanRequest):
     raise HTTPException(501, "TODO Stream B: GA vs exact vs baselines on the same instance")
 
 
-@router.get("/explanations/{explanation_id}")
-def explanation(explanation_id: str):
-    raise HTTPException(501, "TODO Stream B/C: Explanation for one plan item")
+@router.get("/explanations/{explanation_id}", response_model=Explanation)
+def explanation(explanation_id: str, session: SessionDep):
+    found = service.explanation(session, explanation_id)
+    if found is None:
+        raise HTTPException(404, f"No explanation {explanation_id}")
+    return found

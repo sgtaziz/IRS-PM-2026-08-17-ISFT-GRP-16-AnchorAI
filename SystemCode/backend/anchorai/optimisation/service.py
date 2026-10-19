@@ -5,13 +5,17 @@ from datetime import datetime
 
 from sqlmodel import Session, col, select
 
+from anchorai import catalog
+from anchorai.cbr.reasoner import load_case_base
 from anchorai.db import models
 from anchorai.db.audit import record_audit
+from anchorai.discovery.scores import load_scores
 from anchorai.optimisation.baselines import greedy_uplift
 from anchorai.optimisation.exact import exact
+from anchorai.optimisation.explain import explain_plan
 from anchorai.optimisation.ga import ga
 from anchorai.optimisation.model import load_instance, violations
-from anchorai.schemas import Plan, PlanItem, PlanRequest
+from anchorai.schemas import Explanation, Plan, PlanItem, PlanRequest
 
 SOLVERS = {"ga": ga, "exact": exact, "greedy": greedy_uplift}
 
@@ -51,6 +55,16 @@ def build_plan(session: Session, user: models.User, req: PlanRequest) -> SavedPl
     )
     session.add(plan)
     session.flush()
+    ids = [f"p{plan.id}-{m}" for m in chosen["member_id"]]
+    offer_names = {o.offer_id: o.name for o in catalog.list_offers(session)}
+    explanations = explain_plan(
+        chosen,
+        ids,
+        instance.outcomes,
+        load_scores().set_index("member_id"),
+        load_case_base(),
+        offer_names,
+    )
     session.add_all(
         models.PlanItem(
             plan_id=plan.id,
@@ -58,9 +72,10 @@ def build_plan(session: Session, user: models.User, req: PlanRequest) -> SavedPl
             offer_id=r.offer_id,
             channel=r.channel,
             expected_value=float(r.value),
-            explanation_id=f"p{plan.id}-{r.member_id}",
+            explanation_id=e.explanation_id,
+            explanation=e.model_dump(mode="json"),
         )
-        for r in chosen.itertuples()
+        for r, e in zip(chosen.itertuples(), explanations, strict=True)
     )
     summary = {
         "solver": req.solver,
@@ -115,3 +130,12 @@ def _saved(session: Session, plan: models.Plan, stats: dict | None = None) -> Sa
         expected_members_retained=plan.expected_members_retained,
         solver_stats=stats or {},
     )
+
+
+def explanation(session: Session, explanation_id: str) -> Explanation | None:
+    item = session.exec(
+        select(models.PlanItem).where(models.PlanItem.explanation_id == explanation_id)
+    ).first()
+    if item is None or item.explanation is None:
+        return None
+    return Explanation.model_validate(item.explanation)
