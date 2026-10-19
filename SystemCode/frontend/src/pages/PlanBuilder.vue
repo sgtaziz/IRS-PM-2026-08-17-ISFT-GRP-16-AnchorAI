@@ -23,6 +23,7 @@ const budget = ref(1500)
 const staffHours = ref(36)
 const SOLVERS = [
   { label: 'Genetic algorithm', value: 'ga' },
+  { label: 'Exact (linear)', value: 'exact' },
   { label: 'Greedy', value: 'greedy' },
 ]
 const solver = ref('ga')
