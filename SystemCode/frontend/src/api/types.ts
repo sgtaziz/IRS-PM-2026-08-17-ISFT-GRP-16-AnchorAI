@@ -233,6 +233,22 @@ export interface ItemCheck {
   offer_active: boolean
 }
 
+// Mirrors anchorai/optimisation/assignment.py summary.
+export interface StaffAssignment {
+  user_id: number
+  full_name: string
+  skills: string[]
+  minutes_capacity: number
+  minutes_used: number
+  contacts: { member_id: string; offer_id: string; channel: Channel }[]
+}
+
+export interface AssignmentSummary {
+  plan_id: number
+  staff: StaffAssignment[]
+  unassigned: string[]
+}
+
 // Mirrors anchorai/optimisation/jobs.py JobStatus.
 export interface PlanJob {
   state: 'idle' | 'running' | 'done' | 'failed'

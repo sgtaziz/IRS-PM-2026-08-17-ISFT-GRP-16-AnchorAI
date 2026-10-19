@@ -15,6 +15,7 @@ import type { PlanItem, PlanJob, PlanRequest, SavedPlan } from '../api/types'
 import AddContactDialog from '../components/AddContactDialog.vue'
 import ConfirmAction from '../components/ConfirmAction.vue'
 import ExplanationDrawer from '../components/ExplanationDrawer.vue'
+import PlanAssignment from '../components/PlanAssignment.vue'
 import DataTableX from '../components/DataTableX.vue'
 import KpiTile from '../components/KpiTile.vue'
 import PageHeader from '../components/PageHeader.vue'
@@ -274,6 +275,7 @@ async function approve() {
             </Column>
           </DataTableX>
         </SectionCard>
+        <PlanAssignment v-if="!isDraft" :key="plan.id" :plan-id="plan.id" />
       </template>
     </PageState>
 
