@@ -1,9 +1,12 @@
 import pandas as pd
 import pytest
+from sqlmodel import Session, select
 
+from anchorai.db.models import AuditLog
 from anchorai.optimisation.baselines import POLICIES
 from anchorai.optimisation.evaluate import Truth, evaluate
 from anchorai.optimisation.model import Limits, violations
+from anchorai.scenario.tables import generated_dir, read_tables
 
 
 @pytest.fixture
@@ -70,3 +73,29 @@ def test_evaluator_adds_true_uplift_to_the_no_contact_baseline(options):
     assert result["extra_retained"] == pytest.approx(0.25)
     assert result["members_retained"] == pytest.approx(3.5 + 0.25)
     assert result["spend"] == 67.0
+
+
+def test_plan_endpoint_saves_a_feasible_plan(client, login, built, engine):
+    # The fixture has no T-learner output; its true uplift stands in for the estimates.
+    read_tables()["true_uplift"].to_parquet(generated_dir() / "uplift_tlearner.parquet")
+    request = {"as_of": "2026-10-19", "budget": 100, "staff_minutes": 150, "solver": "greedy"}
+
+    assert client.post("/api/plan", json=request, headers=login("staff1")).status_code == 403
+    assert client.get("/api/plan/latest", headers=login("manager")).status_code == 404
+
+    r = client.post("/api/plan", json=request, headers=login("manager"))
+    assert r.status_code == 200, r.text
+    plan = r.json()
+    members = [i["member_id"] for i in plan["items"]]
+    assert members and len(members) == len(set(members))
+    assert plan["total_cost"] <= 100 and plan["total_staff_minutes"] <= 150
+    assert plan["status"] == "draft"
+
+    latest = client.get("/api/plan/latest", headers=login("manager")).json()
+    assert latest["id"] == plan["id"] and latest["items"] == plan["items"]
+    with Session(engine) as session:
+        audit = session.exec(select(AuditLog).where(AuditLog.action == "plan.create")).one()
+    assert audit.entity_id == str(plan["id"])
+
+    unknown = client.post("/api/plan", json={**request, "solver": "nope"}, headers=login("manager"))
+    assert unknown.status_code == 422
