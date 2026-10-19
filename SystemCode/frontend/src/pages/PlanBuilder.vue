@@ -4,10 +4,11 @@ import Button from 'primevue/button'
 import Column from 'primevue/column'
 import InputNumber from 'primevue/inputnumber'
 import Message from 'primevue/message'
+import ProgressBar from 'primevue/progressbar'
 import SelectButton from 'primevue/selectbutton'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { ApiError, api } from '../api/client'
-import type { PlanRequest, SavedPlan } from '../api/types'
+import type { PlanJob, PlanRequest, SavedPlan } from '../api/types'
 import DataTableX from '../components/DataTableX.vue'
 import KpiTile from '../components/KpiTile.vue'
 import PageHeader from '../components/PageHeader.vue'
@@ -51,21 +52,52 @@ onMounted(async () => {
 
 const generating = ref(false)
 const generateError = ref<string | null>(null)
+const job = ref<PlanJob | null>(null)
+const STAGES: Record<string, string> = {
+  queued: 'Starting',
+  loading: 'Reading members, rules and estimates',
+  optimising: 'Searching for the best plan',
+  explaining: 'Writing the reasons',
+  saving: 'Saving',
+}
+let timer: ReturnType<typeof setTimeout> | undefined
+// The manager's own calendar day, not UTC: just after midnight UTC is still yesterday.
+const localDate = () => {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+onBeforeUnmount(() => clearTimeout(timer))
+
+// The GA takes about half a minute, so the plan is built as a background job and polled.
+async function poll() {
+  try {
+    job.value = await api<PlanJob>('/plan/jobs/current')
+    if (job.value.state === 'running') {
+      timer = setTimeout(poll, 700)
+      return
+    }
+    if (job.value.state === 'failed') generateError.value = job.value.error ?? 'The planner failed'
+    else if (job.value.plan_id) plan.value = await api<SavedPlan>(`/plan/${job.value.plan_id}`)
+  } catch (e) {
+    generateError.value = errorMessage(e)
+  }
+  generating.value = false
+}
 
 async function generate() {
   generating.value = true
   generateError.value = null
   const request: PlanRequest = {
-    as_of: new Date().toISOString().slice(0, 10),
+    as_of: localDate(),
     budget: budget.value,
     staff_minutes: Math.round(staffHours.value * 60),
     solver: solver.value,
   }
   try {
-    plan.value = await api<SavedPlan>('/plan', { method: 'POST', body: JSON.stringify(request) })
+    job.value = await api<PlanJob>('/plan/jobs', { method: 'POST', body: JSON.stringify(request) })
+    poll()
   } catch (e) {
     generateError.value = errorMessage(e)
-  } finally {
     generating.value = false
   }
 }
@@ -95,6 +127,10 @@ const usedHours = computed(() => (plan.value ? plan.value.total_staff_minutes / 
           <template #icon><Play :size="15" /></template>
         </Button>
       </form>
+      <div v-if="generating && job" class="mx-5 mb-5 flex flex-col gap-1.5" role="status" aria-live="polite">
+        <span class="text-sm text-ink-600">{{ STAGES[job.stage ?? 'queued'] ?? humanize(job.stage ?? '') }}…</span>
+        <ProgressBar :value="Math.round(job.progress * 100)" style="height: 0.5rem" :show-value="false" />
+      </div>
       <Message v-if="generateError" severity="error" class="mx-5 mb-5">{{ generateError }}</Message>
     </SectionCard>
 

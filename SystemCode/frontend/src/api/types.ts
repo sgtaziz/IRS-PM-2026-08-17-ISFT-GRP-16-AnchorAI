@@ -209,6 +209,19 @@ export interface ContactRow {
   outcomes: { outcome: string; note: string | null; logged_at: string }[]
 }
 
+// Mirrors anchorai/optimisation/jobs.py JobStatus.
+export interface PlanJob {
+  state: 'idle' | 'running' | 'done' | 'failed'
+  kind: 'plan' | 'compare' | null
+  stage: string | null
+  progress: number
+  started_at: string | null
+  finished_at: string | null
+  plan_id: number | null
+  comparison: Record<string, unknown> | null
+  error: string | null
+}
+
 export interface SavedPlan {
   id: number
   status: string
