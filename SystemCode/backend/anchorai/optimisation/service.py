@@ -6,11 +6,12 @@ from datetime import datetime
 from sqlmodel import Session, col, select
 
 from anchorai import catalog
-from anchorai.cbr.reasoner import load_case_base
+from anchorai.cbr.reasoner import uplift_series
 from anchorai.db import models
 from anchorai.db.audit import record_audit
 from anchorai.discovery.scores import load_scores
 from anchorai.optimisation.baselines import greedy_uplift
+from anchorai.optimisation.contacts import app_case_base
 from anchorai.optimisation.exact import exact
 from anchorai.optimisation.explain import explain_plan
 from anchorai.optimisation.ga import ga
@@ -37,7 +38,8 @@ def build_plan(session: Session, user: models.User, req: PlanRequest) -> SavedPl
     if req.solver not in SOLVERS:
         raise UnknownSolver(f"Unknown solver {req.solver!r}; available: {', '.join(SOLVERS)}")
     started = time.perf_counter()
-    instance = load_instance(session)
+    case_base = app_case_base(session)
+    instance = load_instance(session, uplift=uplift_series(case_base))
     limits = instance.limits(req.budget, req.staff_minutes)
     chosen = SOLVERS[req.solver](instance.options, limits, None)
     broken = violations(chosen, instance.options, limits)
@@ -62,7 +64,7 @@ def build_plan(session: Session, user: models.User, req: PlanRequest) -> SavedPl
         ids,
         instance.outcomes,
         load_scores().set_index("member_id"),
-        load_case_base(),
+        case_base,
         offer_names,
     )
     session.add_all(

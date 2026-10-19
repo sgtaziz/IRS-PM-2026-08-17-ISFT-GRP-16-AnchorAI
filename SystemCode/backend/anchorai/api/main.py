@@ -14,6 +14,7 @@ from anchorai.api.routers import (
     admin_gym,
     admin_kg,
     admin_offers,
+    assignments,
     assistant,
     auth,
     drafts,
@@ -77,6 +78,12 @@ app.include_router(
 )
 app.include_router(
     outcomes.router, prefix="/api/outcomes", tags=["outcomes (Stream B)"], dependencies=any_role
+)
+app.include_router(
+    assignments.router,
+    prefix="/api/assignments",
+    tags=["assignments (Stream B)"],
+    dependencies=any_role,
 )
 app.include_router(
     rules.router, prefix="/api/rules", tags=["rules (Stream C)"], dependencies=any_role

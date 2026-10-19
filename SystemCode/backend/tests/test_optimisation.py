@@ -6,8 +6,9 @@ from sqlmodel import Session, select
 
 from anchorai import catalog
 from anchorai.catalog import StaffIn
-from anchorai.db.models import AuditLog, Plan, PlanItem, User
-from anchorai.optimisation import assignment
+from anchorai.cbr.reasoner import load_case_base
+from anchorai.db.models import AuditLog, Outcome, Plan, PlanItem, User
+from anchorai.optimisation import assignment, contacts
 from anchorai.optimisation.baselines import POLICIES
 from anchorai.optimisation.evaluate import Truth, evaluate
 from anchorai.optimisation.exact import solve_full, solve_linear
@@ -249,6 +250,9 @@ def test_assignment_respects_skills_and_hours(engine):
     with Session(engine) as session:
         manager = session.exec(select(User).where(User.username == "manager")).one()
         staff = {s.username: s for s in catalog.list_staff(session)}
+        original = {
+            s.user_id: StaffIn(weekly_hours=s.weekly_hours, skills=s.skills) for s in staff.values()
+        }
         # One hour each: staff1 is the only trainer, both can make calls.
         catalog.update_staff(
             session,
@@ -297,6 +301,8 @@ def test_assignment_respects_skills_and_hours(engine):
         sheet = assignment.call_sheet(session, plan.id, caller["user_id"])
         assert sheet.splitlines()[0] == "priority,member_id,offer,channel,talking_point"
         assert len(sheet.splitlines()) == len(caller["contacts"]) + 1
+        for user_id, profile in original.items():
+            catalog.update_staff(session, manager, user_id, profile)
 
 
 def test_assignment_api_needs_an_approved_plan(client, login, built):
@@ -309,3 +315,51 @@ def test_assignment_api_needs_an_approved_plan(client, login, built):
     assigned = client.post(f"/api/plan/{pid}/assign", headers=manager)
     assert assigned.status_code == 200, assigned.text
     assert client.get(f"/api/plan/{pid}/assignments", headers=manager).json() == assigned.json()
+
+
+def test_staff_see_their_contacts_and_log_outcomes_that_feed_the_cbr(client, login, built, engine):
+    manager, staff1, staff2 = login("manager"), login("staff1"), login("staff2")
+    request = {"as_of": "2026-10-19", "budget": 100, "staff_minutes": 150, "solver": "greedy"}
+    pid = client.post("/api/plan", json=request, headers=manager).json()["id"]
+    client.post(f"/api/plan/{pid}/approve", headers=manager)
+    client.post(f"/api/plan/{pid}/assign", headers=manager)
+
+    mine = {
+        who: client.get("/api/assignments/mine", headers=h).json()
+        for who, h in [("1", staff1), ("2", staff2)]
+    }
+    owner, other = ("1", "2") if mine["1"] else ("2", "1")
+    contact = mine[owner][0]
+    assert contact["priority"] == 1 and contact["summary"] and contact["offer_name"]
+    item = contact["plan_item_id"]
+    headers = {"1": staff1, "2": staff2}
+
+    def log(h, outcome, note=None):
+        return client.post(
+            "/api/outcomes",
+            json={"plan_item_id": item, "outcome": outcome, "note": note},
+            headers=h,
+        )
+
+    assert log(headers[other], "accepted").status_code == 403, "staff log only their own contacts"
+    assert log(headers[owner], "maybe").status_code == 422
+    assert log(headers[owner], "follow_up", "call back Friday").status_code == 200
+    assert log(headers[owner], "accepted").status_code == 200
+
+    with Session(engine) as session:
+        rows = session.exec(select(Outcome).where(Outcome.plan_item_id == item)).all()
+        assert [r.outcome for r in rows] == ["accepted"], (
+            "one outcome per contact, updated in place"
+        )
+        cases = contacts.logged_cases(session)
+        assert len(cases) == 1 and bool(cases["stayed"].iloc[0])
+        grown = contacts.app_case_base(session)
+    assert len(grown.cases) == len(load_case_base().cases) + 1
+    assert (
+        client.get("/api/assignments/mine", headers=headers[owner]).json()[0]["outcome"]
+        == "accepted"
+    )
+    history = client.get(
+        "/api/outcomes", params={"member_id": contact["member_id"]}, headers=staff1
+    ).json()
+    assert history[0]["outcomes"][0]["outcome"] == "accepted"

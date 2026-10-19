@@ -4,11 +4,12 @@ import pandas as pd
 from sqlmodel import Session, col, select
 
 from anchorai import catalog
-from anchorai.cbr.reasoner import load_case_base, uplift_series
+from anchorai.cbr.reasoner import uplift_series
 from anchorai.db import models
 from anchorai.db.audit import record_audit
 from anchorai.db.models import utcnow
 from anchorai.discovery.scores import load_scores
+from anchorai.optimisation.contacts import app_case_base
 from anchorai.optimisation.explain import explain_plan
 from anchorai.optimisation.model import HORIZON_MONTHS, limits_for, violations
 from anchorai.reasoning import check, service
@@ -87,7 +88,7 @@ def remove_item(
         raise OverrideRejected(f"{member_id} is not in plan {plan_id}", [])
     item.removed, item.override_reason = True, reason
     session.add(item)
-    _refresh_totals(session, plan, uplift_series(load_case_base()))
+    _refresh_totals(session, plan, uplift_series(app_case_base(session)))
     after = {"member_id": member_id, "offer_id": item.offer_id, "reason": reason}
     record_audit(session, user, "plan_item.remove", "plan", str(plan_id), None, after)
     session.commit()
@@ -134,7 +135,7 @@ def add_item(
             [f"{name} over by {amount:g}" for name, amount in broken.items()],
         )
 
-    case_base = load_case_base()
+    case_base = app_case_base(session)
     uplift = uplift_series(case_base)
     scores = load_scores().set_index("member_id")
     _, rules = service.active_rules(session)
