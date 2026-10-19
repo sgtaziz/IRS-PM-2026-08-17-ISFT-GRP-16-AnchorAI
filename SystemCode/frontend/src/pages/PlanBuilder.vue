@@ -4,6 +4,7 @@ import Button from 'primevue/button'
 import Column from 'primevue/column'
 import InputNumber from 'primevue/inputnumber'
 import Message from 'primevue/message'
+import SelectButton from 'primevue/selectbutton'
 import { computed, onMounted, ref } from 'vue'
 import { ApiError, api } from '../api/client'
 import type { PlanRequest, SavedPlan } from '../api/types'
@@ -20,6 +21,11 @@ import { useGlossaryStore } from '../stores/glossary'
 const glossary = useGlossaryStore()
 const budget = ref(1500)
 const staffHours = ref(36)
+const SOLVERS = [
+  { label: 'Genetic algorithm', value: 'ga' },
+  { label: 'Greedy', value: 'greedy' },
+]
+const solver = ref('ga')
 
 // No plan yet is a normal state, not an error.
 const latest = useAsync(async () => {
@@ -38,6 +44,7 @@ onMounted(async () => {
   if (plan.value) {
     budget.value = plan.value.request.budget
     staffHours.value = plan.value.request.staff_minutes / 60
+    solver.value = plan.value.request.solver ?? 'ga'
   }
 })
 
@@ -51,7 +58,7 @@ async function generate() {
     as_of: new Date().toISOString().slice(0, 10),
     budget: budget.value,
     staff_minutes: Math.round(staffHours.value * 60),
-    solver: 'greedy',
+    solver: solver.value,
   }
   try {
     plan.value = await api<SavedPlan>('/plan', { method: 'POST', body: JSON.stringify(request) })
@@ -69,7 +76,7 @@ const usedHours = computed(() => (plan.value ? plan.value.total_staff_minutes / 
   <div class="page">
     <PageHeader title="Weekly plan" subtitle="Build, review and approve this week's retention contacts within budget and staff hours." />
 
-    <SectionCard title="Generate a plan" :icon="CalendarCheck" subtitle="Greedy planner on T-learner uplift for now; the genetic algorithm and CBR replace them later.">
+    <SectionCard title="Generate a plan" :icon="CalendarCheck" subtitle="Uplift from case-based reasoning over past interventions; the genetic algorithm takes up to a minute.">
       <form class="flex flex-wrap items-end gap-4 px-5 pb-5 pt-3" @submit.prevent="generate">
         <label class="field">
           <span>Weekly budget</span>
@@ -79,6 +86,10 @@ const usedHours = computed(() => (plan.value ? plan.value.total_staff_minutes / 
           <span>Staff hours this week</span>
           <InputNumber v-model="staffHours" :min="0" :max="1000" suffix=" h" />
         </label>
+        <div class="field">
+          <span>Planner</span>
+          <SelectButton v-model="solver" :options="SOLVERS" option-label="label" option-value="value" :allow-empty="false" aria-label="Planner" />
+        </div>
         <Button type="submit" label="Generate plan" :loading="generating">
           <template #icon><Play :size="15" /></template>
         </Button>
