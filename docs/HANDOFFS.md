@@ -27,7 +27,7 @@ What each stream needs from the others: blockers, reviews, decisions and promise
 |---|---|---|---|---|---|---|
 | 7 | C | decision | What shape do you want for KG spillover weights? (`member_id, class_id, weight` per class cohort, or member–member pairs) | The GA's spillover term; C builds it once B decides | open | 2026-10-16 |
 | 8 | C | deliver | `demo` seed layer: one approved past week with assignments and logged outcomes | Dashboards, audit log and the assistant's plan questions are empty without it | open | 2026-10-16 |
-| 9 | C | deliver | `POST /api/plan` and `Explanation` | Assistant intents about plans (C4, W30) | open | 2026-10-16 |
+| 9 | C | deliver | `POST /api/plan` and `Explanation` | Assistant intents about plans (C4, W30) | in progress: `POST /api/plan` and `GET /api/plan/latest` live (greedy planner on T-learner uplift), plans saved to `plans` / `plan_items` as the assistant reads them; `Explanation` comes in Phase 6 | 2026-10-16 |
 
 ## Stream C: Knowledge & Interaction
 
