@@ -208,7 +208,7 @@ def test_overrides_are_checked_audited_and_locked_by_approval(client, login, bui
         {"member_id": "M0007", "offer_id": "discount_1m", "channel": "email", "reason": "try it"},
     )
     assert blocked.status_code == 422
-    assert any("G03" in p for p in blocked.json()["detail"]["problems"])
+    assert "G03" in blocked.json()["detail"]
     # No phone on file: an SMS cannot reach them (HANDOFFS #30 guard).
     no_phone = next(m for m, f in all_facts().items() if not f.get("phone"))
     sms = post(
@@ -221,7 +221,7 @@ def test_overrides_are_checked_audited_and_locked_by_approval(client, login, bui
         },
     )
     assert sms.status_code == 422
-    assert any("no phone" in p for p in sms.json()["detail"]["problems"])
+    assert "no phone" in sms.json()["detail"]
     short = {"member_id": first, "offer_id": "checkin_message", "channel": "email", "reason": "x"}
     assert post("/items", short).status_code == 422, "a reason is mandatory"
 

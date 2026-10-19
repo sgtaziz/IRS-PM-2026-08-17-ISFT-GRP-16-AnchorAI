@@ -93,7 +93,8 @@ def _override(call):
     except (UnknownMember, UnknownOffer) as e:
         raise HTTPException(404, f"Unknown {e}") from None
     except overrides.OverrideRejected as e:
-        raise HTTPException(422, {"message": str(e), "problems": e.problems}) from None
+        detail = f"{e}: {'; '.join(e.problems)}" if e.problems else str(e)
+        raise HTTPException(422, detail) from None
     except assignment.NotApproved as e:
         raise HTTPException(409, str(e)) from None
     except assignment.CannotAssign as e:
