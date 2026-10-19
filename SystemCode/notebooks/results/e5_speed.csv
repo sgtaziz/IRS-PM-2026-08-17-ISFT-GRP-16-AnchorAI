@@ -1,0 +1,6 @@
+members,options,ga_seconds,ga_generations,seconds_per_generation,cp_sat_linear_seconds,cp_sat_status
+250,500,6.368,300,0.021,0.117,OPTIMAL
+500,1002,9.461,300,0.032,0.424,OPTIMAL
+1000,2028,15.949,300,0.053,0.715,OPTIMAL
+2000,4148,29.125,300,0.097,2.978,OPTIMAL
+4000,8008,58.196,300,0.194,5.732,OPTIMAL
