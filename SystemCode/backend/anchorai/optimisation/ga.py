@@ -6,6 +6,7 @@ Settings and their evidence: notebooks/b_ga.ipynb.
 
 import random
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 
 import numpy as np
@@ -179,6 +180,7 @@ def run_ga(
     use_repair: bool = True,
     seed: int = 0,
     patience: int = 60,
+    on_generation: Callable[[int, int], None] | None = None,
 ) -> tuple[np.ndarray, pd.DataFrame, float]:
     """Evolve plans from a greedy seed. Returns the best chromosome, a per-generation log and seconds."""
     if not hasattr(creator, "Plan"):
@@ -225,6 +227,8 @@ def run_ga(
         log.append({"generation": gen, "best": values.max(), "mean": values.mean()})
         stale = 0 if values.max() > best + 1e-6 else stale + 1
         best = max(best, values.max())
+        if on_generation:
+            on_generation(gen + 1, generations)
         if stale >= patience:
             break
     return np.asarray(tools.selBest(pop, 1)[0]), pd.DataFrame(log), time.perf_counter() - started

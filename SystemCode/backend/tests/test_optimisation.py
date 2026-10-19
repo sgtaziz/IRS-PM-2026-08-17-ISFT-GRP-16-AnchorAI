@@ -1,3 +1,4 @@
+import time
 from datetime import date
 
 import pandas as pd
@@ -8,13 +9,14 @@ from anchorai import catalog
 from anchorai.catalog import StaffIn
 from anchorai.cbr.reasoner import load_case_base
 from anchorai.db.models import AuditLog, Outcome, Plan, PlanItem, User
-from anchorai.optimisation import assignment, contacts
+from anchorai.optimisation import assignment, contacts, jobs
 from anchorai.optimisation.baselines import POLICIES
 from anchorai.optimisation.evaluate import Truth, evaluate
 from anchorai.optimisation.exact import solve_full, solve_linear
 from anchorai.optimisation.ga import build_problem, chosen, ga, objective
 from anchorai.optimisation.model import Limits, plan_value, violations
 from anchorai.reasoning.service import all_facts
+from anchorai.schemas import PlanRequest
 
 
 @pytest.fixture
@@ -363,3 +365,37 @@ def test_staff_see_their_contacts_and_log_outcomes_that_feed_the_cbr(client, log
         "/api/outcomes", params={"member_id": contact["member_id"]}, headers=staff1
     ).json()
     assert history[0]["outcomes"][0]["outcome"] == "accepted"
+
+
+def test_plan_job_runs_in_the_background_and_one_at_a_time(client, login, built, monkeypatch):
+    manager = login("manager")
+    request = {"as_of": "2026-10-19", "budget": 100, "staff_minutes": 150, "solver": "ga"}
+    started = client.post("/api/plan/jobs", json=request, headers=manager)
+    assert started.status_code == 202, started.text
+    for _ in range(300):
+        state = client.get("/api/plan/jobs/current", headers=manager).json()
+        if state["state"] != "running":
+            break
+        time.sleep(0.05)
+    assert state["state"] == "done", state
+    assert state["progress"] == 1.0 and state["plan_id"]
+    assert (
+        client.get(f"/api/plan/{state['plan_id']}", headers=manager).json()["id"]
+        == state["plan_id"]
+    )
+    assert client.get("/api/plan/999999", headers=manager).status_code == 404
+
+    monkeypatch.setattr(jobs, "_status", jobs.JobStatus(state="running", kind="plan"))
+    assert client.post("/api/plan/jobs", json=request, headers=manager).status_code == 409
+    assert client.post("/api/plan/jobs", json=request, headers=login("staff1")).status_code == 403
+
+
+def test_compare_runs_every_planner_on_the_same_limits(built, engine):
+    with Session(engine) as session:
+        req = PlanRequest(as_of=date(2026, 10, 19), budget=100, staff_minutes=150)
+        result = jobs.compare(session, req, report=lambda stage, done: None)
+    rows = {r["planner"]: r for r in result["planners"]}
+    assert set(rows) == {"contact-all", "risk-top-k", "greedy-uplift", "exact", "ga"}
+    assert all(r["feasible"] for r in rows.values())
+    assert rows["exact"]["linear_value"] >= max(r["linear_value"] for r in rows.values()) - 0.01
+    assert result["ga_convergence"]

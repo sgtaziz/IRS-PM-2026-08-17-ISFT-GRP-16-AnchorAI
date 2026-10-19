@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 from anchorai.api.deps import SessionDep, require_role
 from anchorai.db.models import User
 from anchorai.discovery.service import DataNotBuilt
-from anchorai.optimisation import assignment, overrides, service
+from anchorai.optimisation import assignment, jobs, overrides, service
 from anchorai.reasoning.check import UnknownMember, UnknownOffer
 from anchorai.reasoning.service import InvalidRuleBase
 from anchorai.schemas import Channel, Explanation, PlanRequest
@@ -40,9 +40,29 @@ def latest_plan(session: SessionDep):
     return plan
 
 
-@router.post("/compare")
-def compare_policies(req: PlanRequest):
-    raise HTTPException(501, "TODO Stream B: GA vs exact vs baselines on the same instance")
+@router.post("/jobs", status_code=202)
+def start_plan_job(req: PlanRequest, session: SessionDep, user: Manager) -> dict:
+    """Generate a plan in the background; poll GET /api/plan/jobs/current."""
+    try:
+        return jobs.start_plan(session.get_bind(), user.id, req)
+    except service.UnknownSolver as e:
+        raise HTTPException(422, str(e)) from None
+    except jobs.JobRunning as e:
+        raise HTTPException(409, str(e)) from None
+
+
+@router.post("/compare", status_code=202)
+def start_compare(req: PlanRequest, session: SessionDep) -> dict:
+    """Run every planner on the same week in the background (W17); poll GET /api/plan/jobs/current."""
+    try:
+        return jobs.start_compare(session.get_bind(), req)
+    except jobs.JobRunning as e:
+        raise HTTPException(409, str(e)) from None
+
+
+@router.get("/jobs/current")
+def current_job() -> dict:
+    return jobs.status()
 
 
 @router.get("/explanations/{explanation_id}", response_model=Explanation)
@@ -78,6 +98,14 @@ def _override(call):
         raise HTTPException(409, str(e)) from None
     except assignment.CannotAssign as e:
         raise HTTPException(422, str(e)) from None
+
+
+@router.get("/{plan_id}", response_model=service.SavedPlan)
+def get_plan(plan_id: int, session: SessionDep):
+    plan = service.get_plan(session, plan_id)
+    if plan is None:
+        raise HTTPException(404, f"No plan {plan_id}")
+    return plan
 
 
 @router.post("/{plan_id}/items", response_model=service.SavedPlan)

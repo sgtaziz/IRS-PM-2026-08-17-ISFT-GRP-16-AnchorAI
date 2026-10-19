@@ -1,6 +1,7 @@
 """Build, save and read weekly plans: the pipeline behind /api/plan."""
 
 import time
+from collections.abc import Callable
 from datetime import datetime
 
 from sqlmodel import Session, col, select
@@ -33,15 +34,26 @@ class UnknownSolver(ValueError):
     pass
 
 
-def build_plan(session: Session, user: models.User, req: PlanRequest) -> SavedPlan:
+Progress = Callable[[str, float], None]
+
+
+def build_plan(
+    session: Session, user: models.User, req: PlanRequest, progress: Progress | None = None
+) -> SavedPlan:
     """Run the planner for one week and save the result as a draft plan."""
+    report = progress or (lambda stage, done: None)
     if req.solver not in SOLVERS:
         raise UnknownSolver(f"Unknown solver {req.solver!r}; available: {', '.join(SOLVERS)}")
     started = time.perf_counter()
+    report("loading", 0.0)
     case_base = app_case_base(session)
     instance = load_instance(session, uplift=uplift_series(case_base))
     limits = instance.limits(req.budget, req.staff_minutes)
-    chosen = SOLVERS[req.solver](instance.options, limits, None)
+    report("optimising", 0.05)
+    extra = {}
+    if req.solver == "ga":
+        extra["on_generation"] = lambda gen, total: report("optimising", 0.05 + 0.85 * gen / total)
+    chosen = SOLVERS[req.solver](instance.options, limits, None, **extra)
     broken = violations(chosen, instance.options, limits)
     if broken:
         raise RuntimeError(f"Solver {req.solver} returned an infeasible plan: {broken}")
@@ -55,6 +67,7 @@ def build_plan(session: Session, user: models.User, req: PlanRequest) -> SavedPl
         expected_members_retained=float(chosen["est_uplift"].sum()),
         created_by_id=user.id,
     )
+    report("explaining", 0.9)
     session.add(plan)
     session.flush()
     ids = [f"p{plan.id}-{m}" for m in chosen["member_id"]]
@@ -86,6 +99,7 @@ def build_plan(session: Session, user: models.User, req: PlanRequest) -> SavedPl
         "contacts": len(chosen),
         "total_cost": plan.total_cost,
     }
+    report("saving", 0.97)
     record_audit(session, user, "plan.create", "plan", str(plan.id), None, summary)
     session.commit()
     session.refresh(plan)
@@ -145,3 +159,8 @@ def explanation(session: Session, explanation_id: str) -> Explanation | None:
 
 def saved(session: Session, plan_id: int) -> SavedPlan:
     return _saved(session, session.get(models.Plan, plan_id))
+
+
+def get_plan(session: Session, plan_id: int) -> SavedPlan | None:
+    plan = session.get(models.Plan, plan_id)
+    return None if plan is None else _saved(session, plan)
