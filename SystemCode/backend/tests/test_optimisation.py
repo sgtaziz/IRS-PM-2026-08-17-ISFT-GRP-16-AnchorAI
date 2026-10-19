@@ -1,8 +1,13 @@
+from datetime import date
+
 import pandas as pd
 import pytest
 from sqlmodel import Session, select
 
-from anchorai.db.models import AuditLog
+from anchorai import catalog
+from anchorai.catalog import StaffIn
+from anchorai.db.models import AuditLog, Plan, PlanItem, User
+from anchorai.optimisation import assignment
 from anchorai.optimisation.baselines import POLICIES
 from anchorai.optimisation.evaluate import Truth, evaluate
 from anchorai.optimisation.exact import solve_full, solve_linear
@@ -238,3 +243,69 @@ def test_overrides_are_checked_audited_and_locked_by_approval(client, login, bui
         actions = {a.action for a in session.exec(select(AuditLog)).all()}
     assert {"plan_item.remove", "plan_item.add", "plan.approve"} <= actions
     assert client.post(f"/api/plan/{pid}/approve", headers=login("staff1")).status_code == 403
+
+
+def test_assignment_respects_skills_and_hours(engine):
+    with Session(engine) as session:
+        manager = session.exec(select(User).where(User.username == "manager")).one()
+        staff = {s.username: s for s in catalog.list_staff(session)}
+        # One hour each: staff1 is the only trainer, both can make calls.
+        catalog.update_staff(
+            session,
+            manager,
+            staff["staff1"].user_id,
+            StaffIn(weekly_hours=1, skills=["trainer", "calls"]),
+        )
+        catalog.update_staff(
+            session, manager, staff["staff2"].user_id, StaffIn(weekly_hours=1, skills=["calls"])
+        )
+        plan = Plan(week_start=date(2026, 10, 19), status="approved", request={})
+        session.add(plan)
+        session.flush()
+        contacts = (
+            [("free_pt_session", "call")] * 2
+            + [("discount_1m", "call")] * 3
+            + [("checkin_message", "sms")] * 4
+        )
+        for k, (offer, channel) in enumerate(contacts):
+            session.add(
+                PlanItem(
+                    plan_id=plan.id,
+                    member_id=f"M9{k:03d}",
+                    offer_id=offer,
+                    channel=channel,
+                    expected_value=100 - k,
+                    explanation_id=f"x{k}",
+                )
+            )
+        session.commit()
+
+        result = assignment.assign(session, manager, plan.id)
+        by_name = {s["full_name"]: s for s in result["staff"]}
+        trainer = next(s for s in result["staff"] if "trainer" in s["skills"])
+        caller = next(s for s in result["staff"] if "trainer" not in s["skills"])
+        assert [c["offer_id"] for c in trainer["contacts"]].count("free_pt_session") == 1
+        assert all(c["offer_id"] != "free_pt_session" for c in caller["contacts"])
+        # The second PT session does not fit the trainer's hour; the caller's hour holds 3 calls (45 min)
+        # and 3 of the 4 SMS check-ins (15 min), so the least valuable check-in is left over too.
+        assert result["unassigned"] == ["M9001", "M9008"]
+        assert all(s["minutes_used"] <= s["minutes_capacity"] for s in by_name.values())
+        with pytest.raises(assignment.CannotAssign):
+            assignment.reassign(
+                session, manager, plan.id, trainer["contacts"][0]["member_id"], caller["user_id"]
+            )
+        sheet = assignment.call_sheet(session, plan.id, caller["user_id"])
+        assert sheet.splitlines()[0] == "priority,member_id,offer,channel,talking_point"
+        assert len(sheet.splitlines()) == len(caller["contacts"]) + 1
+
+
+def test_assignment_api_needs_an_approved_plan(client, login, built):
+    manager = login("manager")
+    request = {"as_of": "2026-10-19", "budget": 100, "staff_minutes": 150, "solver": "greedy"}
+    pid = client.post("/api/plan", json=request, headers=manager).json()["id"]
+    assert client.post(f"/api/plan/{pid}/assign", headers=manager).status_code == 409
+    assert client.post(f"/api/plan/{pid}/approve", headers=manager).status_code == 200
+    assert client.post(f"/api/plan/{pid}/assign", headers=login("staff1")).status_code == 403
+    assigned = client.post(f"/api/plan/{pid}/assign", headers=manager)
+    assert assigned.status_code == 200, assigned.text
+    assert client.get(f"/api/plan/{pid}/assignments", headers=manager).json() == assigned.json()
