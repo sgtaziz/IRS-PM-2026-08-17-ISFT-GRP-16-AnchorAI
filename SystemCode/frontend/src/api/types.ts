@@ -176,6 +176,39 @@ export interface PlanItem {
   explanation_id: string
 }
 
+// Mirrors anchorai/optimisation/explain.py member_evidence and contacts.history (Stream B).
+export interface SimilarCase {
+  member_id: string
+  offer_id: string | null
+  week_start: string
+  stayed: boolean
+  distance: number
+  outcome: string
+}
+
+export interface OfferEvidence {
+  offer_id: string
+  offer_name: string
+  estimate: number
+  local: number | null
+  weight_on_local: number
+  neighbours_treated: number
+  neighbours_control: number
+  cases: SimilarCase[]
+}
+
+export interface ContactRow {
+  plan_id: number
+  week_start: string
+  offer_id: string
+  offer_name: string
+  channel: Channel
+  removed: boolean
+  override_reason: string | null
+  assigned_to: string | null
+  outcomes: { outcome: string; note: string | null; logged_at: string }[]
+}
+
 export interface SavedPlan {
   id: number
   status: string
