@@ -28,7 +28,6 @@ What each stream needs from the others: blockers, reviews, decisions and promise
 | 7 | C | decision | What shape do you want for KG spillover weights? (`member_id, class_id, weight` per class cohort, or member–member pairs) | The GA's spillover term; C builds it once B decides | open | 2026-10-16 |
 | 8 | C | deliver | `demo` seed layer: one approved past week with assignments and logged outcomes | Dashboards, audit log and the assistant's plan questions are empty without it | open | 2026-10-16 |
 | 9 | C | deliver | `POST /api/plan` and `Explanation` | Assistant intents about plans (C4, W30) | open | 2026-10-16 |
-| 15 | C | deliver | Write ~10 questions a gym manager or staff member might ask the assistant, in your own words, each tagged with an intent (`member_risk`, `member_actions`, `compare_members`, `graph_impact`, `plan_summary`, `what_if_budget`) or `unknown` | E8 needs a test set the assistant's author never saw; the current one (`notebooks/c_intent_classifier.ipynb`) is optimistic | open | 2026-10-16 |
 
 ## Stream C: Knowledge & Interaction
 
@@ -41,6 +40,7 @@ What each stream needs from the others: blockers, reviews, decisions and promise
 
 | # | Requested by → Owner | Item | Closed |
 |---|---|---|---|
+| 15 | C → B | 9 questions added to `notebooks/data/e8_questions.yaml` (`stream_b_questions`, author `asiri`): 4 about one member (context M0008), 4 tagged `unknown`, 2 ranking questions tagged `graph_impact` (hard cases, noted) | 2026-10-19 |
 | 26 | A → B | Signed off. The evaluator scores a plan as Σ(1 − `true_churn.event_churn`) + Σ `true_uplift.uplift` over its items (`event_churn`, matching `true_uplift`); `true_uplift` has no channel, so channel affects only the call sheet. Offers, roster and caps come from `catalog.list_offers(active_only=True)`, `list_staff`, `get_constraints`. Staff routes (W20, W21, similar cases) go in a separate staff router | 2026-10-19 |
 | 17 | C → B | Reviewed the health split: public `GET /api/health` returns only `{"status": "ok"}`; `GET /api/health/details` gives 401 without login, 403 for manager, 200 for admin, which matches the admin-only Settings page (W45). Approved | 2026-10-19, `2cd0b2d` |
 | 13 | B → C | `graph_signals(facts)` confirmed: returns `list[str]` for `Explanation.graph_signals`; B passes `RuleOutcome.facts`, so no extra query (356 of 4,000 members get a signal; empty list when the graph isn't loaded) | 2026-10-19, `anchorai/knowledge/signals.py` |

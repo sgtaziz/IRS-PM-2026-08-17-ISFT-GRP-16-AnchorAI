@@ -293,7 +293,55 @@ questions:
   intent: unknown
   author: ai
 stream_a_questions: []
-stream_b_questions: []
+stream_b_questions:
+- id: b01
+  question: is a member sleeping dog?
+  intent: member_actions
+  author: asiri
+  context_member_id: M0008
+  notes: 'hard: asks whether contact backfires, which the assistant has no data for; it should say so'
+- id: b02
+  question: what is the type of this member?
+  intent: member_risk
+  author: asiri
+  context_member_id: M0008
+  notes: 'ambiguous: ''type'' read as segment'
+- id: b03
+  question: does this member attend PT sessions?
+  intent: unknown
+  author: asiri
+  context_member_id: M0008
+  notes: no tool for a member's attendance history
+- id: b04
+  question: what is the best offer for this member?
+  intent: member_actions
+  author: asiri
+  context_member_id: M0008
+- id: b05
+  question: what is the offer that most members like?
+  intent: unknown
+  author: asiri
+  notes: offer popularity across members is not an intent
+- id: b06
+  question: what is the offer that is best for the gym, low cost high value?
+  intent: unknown
+  author: asiri
+  notes: offer value across the gym is not an intent
+- id: b07
+  question: which instructor has the highest impact if left?
+  intent: graph_impact
+  author: asiri
+  notes: 'hard: ranks instructors rather than naming one'
+- id: b08
+  question: which club has the highest impact if closed?
+  intent: unknown
+  author: asiri
+  notes: club closure is not a modelled event
+- id: b09
+  question: which class has the highest impact if cancelled?
+  intent: graph_impact
+  author: asiri
+  notes: 'hard: ranks classes rather than naming one'
 faithfulness_cases:
 - id: f01
   description: Unsupported reason plus a wrong claim of missing data (seen in the live assistant)
