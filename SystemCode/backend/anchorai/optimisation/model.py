@@ -10,6 +10,7 @@ from sqlmodel import Session
 
 from anchorai import catalog
 from anchorai.catalog import Constraints, OfferIn, StaffRow
+from anchorai.cbr.reasoner import load_case_base, uplift_series
 from anchorai.discovery.scores import load_scores
 from anchorai.reasoning.engine import run_many
 from anchorai.reasoning.models import RuleOutcome
@@ -89,7 +90,7 @@ def load_tlearner_uplift() -> pd.Series:
 
 
 def load_instance(session: Session, uplift: pd.Series | None = None) -> Instance:
-    """This week's problem from the live catalogue, rule base and scores; T-learner uplift by default."""
+    """This week's problem from the live catalogue, rule base and scores; CBR uplift by default."""
     offers = catalog.list_offers(session, active_only=True)
     _, rules = active_rules(session)
     outcomes = {
@@ -97,7 +98,7 @@ def load_instance(session: Session, uplift: pd.Series | None = None) -> Instance
     }
     scores = load_scores().set_index("member_id")
     options = build_options(
-        outcomes, offers, scores, load_tlearner_uplift() if uplift is None else uplift
+        outcomes, offers, scores, uplift_series(load_case_base()) if uplift is None else uplift
     )
     return Instance(
         options, offers, catalog.list_staff(session), catalog.get_constraints(session), outcomes

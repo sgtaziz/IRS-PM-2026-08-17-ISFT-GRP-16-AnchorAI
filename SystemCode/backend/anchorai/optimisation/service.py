@@ -72,7 +72,7 @@ def build_plan(session: Session, user: models.User, req: PlanRequest) -> SavedPl
     session.refresh(plan)
     stats = {
         "solver": req.solver,
-        "uplift_source": "tlearner",
+        "uplift_source": "cbr",
         "options": len(instance.options),
         "seconds": round(time.perf_counter() - started, 2),
     }
