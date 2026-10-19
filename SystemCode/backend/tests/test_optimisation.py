@@ -5,6 +5,7 @@ from sqlmodel import Session, select
 from anchorai.db.models import AuditLog
 from anchorai.optimisation.baselines import POLICIES
 from anchorai.optimisation.evaluate import Truth, evaluate
+from anchorai.optimisation.ga import ga
 from anchorai.optimisation.model import Limits, violations
 
 
@@ -94,5 +95,26 @@ def test_plan_endpoint_saves_a_feasible_plan(client, login, built, engine):
         audit = session.exec(select(AuditLog).where(AuditLog.action == "plan.create")).one()
     assert audit.entity_id == str(plan["id"])
 
+    by_ga = client.post(
+        "/api/plan", json={**request, "solver": "ga"}, headers=login("manager")
+    ).json()
+    assert by_ga["total_cost"] <= 100 and by_ga["total_staff_minutes"] <= 150
+    assert by_ga["solver_stats"]["solver"] == "ga"
+
     unknown = client.post("/api/plan", json={**request, "solver": "nope"}, headers=login("manager"))
     assert unknown.status_code == 422
+
+
+@pytest.mark.parametrize("limit", BINDING)
+def test_ga_plans_are_feasible(options, limit):
+    cohorts = pd.DataFrame(
+        {
+            "member_id": ["M1", "M2", "M3", "M4"],
+            "class_id": ["K1", "K1", "K1", "K2"],
+            "weight": 1.0,
+            "instructor_id": ["I1", "I1", "I1", "I2"],
+        }
+    )
+    plan = ga(options, BINDING[limit], seed=0, cohorts=cohorts, generations=20, pop_size=20)
+    assert len(plan) > 0
+    assert violations(plan, options, BINDING[limit]) == {}
