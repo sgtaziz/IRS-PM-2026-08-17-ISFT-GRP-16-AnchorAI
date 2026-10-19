@@ -159,6 +159,35 @@ export interface CatalogView {
   skills: string[]
 }
 
+// Mirrors PlanRequest / PlanItem / Plan in anchorai/schemas.py and SavedPlan in anchorai/optimisation/service.py.
+export interface PlanRequest {
+  as_of: string
+  budget: number
+  staff_minutes: number
+  max_contacts_per_member_per_30d?: number
+  solver?: string
+}
+
+export interface PlanItem {
+  member_id: string
+  offer_id: string
+  channel: Channel
+  expected_value: number
+  explanation_id: string
+}
+
+export interface SavedPlan {
+  id: number
+  status: string
+  created_at: string
+  request: PlanRequest
+  items: PlanItem[]
+  total_cost: number
+  total_staff_minutes: number
+  expected_members_retained: number
+  solver_stats: Record<string, unknown>
+}
+
 // Mirrors model_card.json written by anchorai/pipeline.py plus the admin data router.
 export interface Metrics {
   f1: number
