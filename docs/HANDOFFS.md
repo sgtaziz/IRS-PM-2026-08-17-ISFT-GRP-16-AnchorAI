@@ -25,25 +25,26 @@ What each stream needs from the others: blockers, reviews, decisions and promise
 
 | # | Requested by | Kind | Item | Why it matters | Status | Added |
 |---|---|---|---|---|---|---|
-| 6 | C | decision | Agree the rule output contract: `RuleOutcome` (`anchorai/reasoning/models.py`) with `allowed`, `blocked`, `firings`. Batch call: `run_many(rules, build_facts(...))`. Should it move into `schemas.py`? | B's pipeline (B6) turns it into `CandidateAction` | open | 2026-10-16 |
 | 7 | C | decision | What shape do you want for KG spillover weights? (`member_id, class_id, weight` per class cohort, or member–member pairs) | The GA's spillover term; C builds it once B decides | open | 2026-10-16 |
 | 8 | C | deliver | `demo` seed layer: one approved past week with assignments and logged outcomes | Dashboards, audit log and the assistant's plan questions are empty without it | open | 2026-10-16 |
 | 9 | C | deliver | `POST /api/plan` and `Explanation` | Assistant intents about plans (C4, W30) | open | 2026-10-16 |
 | 15 | C | deliver | Write ~10 questions a gym manager or staff member might ask the assistant, in your own words, each tagged with an intent (`member_risk`, `member_actions`, `compare_members`, `graph_impact`, `plan_summary`, `what_if_budget`) or `unknown` | E8 needs a test set the assistant's author never saw; the current one (`notebooks/c_intent_classifier.ipynb`) is optimistic | open | 2026-10-16 |
-| 17 | C | review | `GET /api/health` (W45, your router) now returns only `{"status": "ok"}`; the LLM endpoint and model moved to admin-only `GET /api/health/details` for your Settings page | The public health check exposed the private LLM base URL | open | 2026-10-16 |
-| 26 | A | review | Sign off the same Stream A contracts as #25. For B in particular: score plans with `true_uplift` (contacting a member now) and `true_churn` (no-contact hazard); read offers, roster and caps from `offer_catalog`, `staff_profiles` and `app_settings` via `anchorai/catalog.py`. Also, `/api/plan` is mounted manager-only, so routes staff use (similar cases on Member 360, W20, W21) need their own router | AGENTS.md contract rule; avoids rework when B starts | open | 2026-10-17 |
 
 ## Stream C: Knowledge & Interaction
 
 | # | Requested by | Kind | Item | Why it matters | Status | Added |
 |---|---|---|---|---|---|---|
-| 13 | B | deliver | `graph_signals(facts)` strings for `Explanation.graph_signals` | Done in `anchorai/knowledge/signals.py`; B to confirm it fits | answered | 2026-10-16 |
 | 29 | A | review | RULE-2, remaining part: build `days_since_last_contact`, `contacts_last_30d` and `offers_last_90d` from approved plan items and logged outcomes too, not only the synthetic `interventions` | Once B logs real contacts, a member contacted yesterday must be blocked. Waits on B's plans and outcomes (#8, #9) | open | 2026-10-17 |
+| 30 | B | review | `POST /api/rules/check` passes SMS or call for a member with no phone on file: M0040 `checkin_message` via `sms` returns `allowed`, `on_playbook` and `channel_offered` all true. RULE-3 lives only in the playbooks, and `on_playbook` matches the offer, not the channel | A manager override (W15) could schedule an unreachable contact | open | 2026-10-19 |
 
 ## Done
 
 | # | Requested by → Owner | Item | Closed |
 |---|---|---|---|
+| 26 | A → B | Signed off. The evaluator scores a plan as Σ(1 − `true_churn.event_churn`) + Σ `true_uplift.uplift` over its items (`event_churn`, matching `true_uplift`); `true_uplift` has no channel, so channel affects only the call sheet. Offers, roster and caps come from `catalog.list_offers(active_only=True)`, `list_staff`, `get_constraints`. Staff routes (W20, W21, similar cases) go in a separate staff router | 2026-10-19 |
+| 17 | C → B | Reviewed the health split: public `GET /api/health` returns only `{"status": "ok"}`; `GET /api/health/details` gives 401 without login, 403 for manager, 200 for admin, which matches the admin-only Settings page (W45). Approved | 2026-10-19, `2cd0b2d` |
+| 13 | B → C | `graph_signals(facts)` confirmed: returns `list[str]` for `Explanation.graph_signals`; B passes `RuleOutcome.facts`, so no extra query (356 of 4,000 members get a signal; empty list when the graph isn't loaded) | 2026-10-19, `anchorai/knowledge/signals.py` |
+| 6 | C → B | `RuleOutcome` agreed as the C → B contract; it stays in `reasoning/models.py`. B builds `CandidateAction` from `allowed` (proposed and not blocked, one channel per offer), uses `firings` for the rule trace and `blocked` for "why not on the plan". Batch call: `active_rules(session)` + `all_facts(session)` + `run_many`, then `drop_inactive` per member (`run_many` alone keeps inactive offers). Please check with B before changing its fields | 2026-10-19 |
 | 24 | A → C | Re-ran `c_kg`, `c_rules`, `c_e6_rules` and `c_e8_assistant` on A's 2026-10-17 build, and measured E7 against `true_churn` in the new `c_e7_kg.ipynb`: KG flags reproduce A's within-member lifts (1.80 / 1.32) and add no ranking gain over `churn_prob`, but reach 243 low-risk members holding 57% of the event-driven excess hazard | 2026-10-17, `notebooks/results/e7_*.csv` |
 | 2 | C → A | Bimodal `churn_prob`: expected, bands match observed churn; training members now scored out-of-fold (2,861 / 169 / 970). C keeps the medium band as is (P08 now reaches 169 members) | 2026-10-17, `718508b` |
 | 20 | C → A | `call` added to `checkin_message`; P02 now proposes it by call (or email with no phone on file). Discount kept at 20%: agreed, "last resort" is handled by the playbooks | 2026-10-17, `636b825` |
@@ -60,4 +61,4 @@ What each stream needs from the others: blockers, reviews, decisions and promise
 | 19 | A → C | KG reload and roster-name refresh now use the request's DB session; `tests/conftest.py` points the default engine at an empty throwaway DB so no test can read the real `app.db` | 2026-10-16 |
 | 10 | A → C | Reusable Cytoscape ego-graph component for Member 360 (W18) | 2026-10-16, `src/components/EgoGraph.vue`, used in Member 360 and the graph explorer |
 | 11 | A → C | Rule-trace panel component for Member 360 | 2026-10-16, `src/components/RuleTrace.vue`, used in Member 360 and rules admin |
-| 12 | B → C | Live guardrail check for plan overrides (W15) | 2026-10-16, `POST /api/rules/check` (manager, admin): per item `allowed`, `violations`, `on_playbook`, `channel_offered`, `offer_active`. `allowed` is rules only: B must also read the other three (inactive offer, unsupported channel, off-playbook override); B to confirm |
+| 12 | B → C | Live guardrail check for plan overrides (W15) | 2026-10-16, `POST /api/rules/check` (manager, admin): per item `allowed`, `violations`, `on_playbook`, `channel_offered`, `offer_active`. `allowed` is rules only: B must also read the other three (inactive offer, unsupported channel, off-playbook override); B to confirm. B confirmed 2026-10-19; one gap filed as #30 |
