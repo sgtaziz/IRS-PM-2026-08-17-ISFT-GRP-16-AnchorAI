@@ -16,4 +16,4 @@ Feeds the report's AI-use appendix. One row per meaningful use.
 | 2026-10-17 | Abdulaziz | Claude Code | Review finding fixes | Reviewed and tested |
 | 2026-10-17 | Abdulaziz | Claude Code | Graph explorer class/instructor search + E8 prompt variant | Reviewed, queries checked on live graph |
 | 2026-10-19 | Asiri | Claude Code | Stream B handoff review: #6, #12, #13, #17, #26 replies and the #30 finding (override check misses no-phone members) | Each reply checked against the running API and the rule engine; candidate-set decision mine |
-| 2026-10-19 | Asiri | Claude Code | B1/B5 plan model notebook: options, objective, feasibility check, policy evaluator, baselines, first E4 grid | Ran every cell and checked the outputs; decisions (H = 6, baseline offer, E4 axes) mine |
+| 2026-10-19 | Asiri | Claude Code | B1/B5 plan model notebook: options, objective, feasibility check, policy evaluator, baselines, first E4 grid; moved into `anchorai.optimisation` with feasibility and evaluator tests | Ran every cell and checked the outputs; tests checked by removing each limit check in turn; decisions (H = 6, baseline offer, E4 axes) mine |
