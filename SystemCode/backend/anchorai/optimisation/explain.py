@@ -49,9 +49,15 @@ def _drivers(raw: str) -> list[tuple[str, float]]:
     return [(name, float(value)) for name, value in json.loads(raw)]
 
 
+def _probability(p: float) -> str:
+    """A model is never certain, so rounding must not print 0% or 100% (as the web app does)."""
+    shown = round(100 * p)
+    return ">99%" if shown >= 100 else "<1%" if shown <= 0 else f"{shown}%"
+
+
 def _summary(row, drivers, firings, cases, offer_name: str) -> str:
     up = [LABELS.get(n, n).lower() for n, v in drivers if v > 0][:DRIVERS_IN_SUMMARY]
-    risk = f"{row.risk_band.capitalize()} churn risk ({row.churn_prob:.0%})"
+    risk = f"{row.risk_band.capitalize()} churn risk ({_probability(row.churn_prob)})"
     risk += f", mainly {' and '.join(up)}." if up else "."
     rule = next((f for f in firings if f.rule_id == row.rule_id), None)
     why = f" {rule.description} ({row.rule_id.split('_')[0]})." if rule else ""
