@@ -450,7 +450,7 @@ The goal is that every member, the graders, and a fresh clone get **the same dat
 | E1 | Are segments meaningful? (**real data**) | silhouette vs k, profile table, stability across seeds | k = 2..10 | A |
 | E2 | Does the churn model beat simple rules? (**real data**) | F1 (churn class) + confusion matrix, PR-AUC, Brier, calibration curve on the untouched test set; SMOTE-NC vs class weights; with / without suspect features; fairness gaps | visit-threshold rule; single LR | A |
 | E3 | Can we find who is persuadable? | Qini / AUUC vs scenario ground truth | T-learner; risk score used as uplift proxy | B (A supplies T-learner) |
-| E4 | **Does AnchorAI retain more members per dollar?** | members retained (scenario ground truth) per budget level, 5 seeds | contact-all, risk-top-k, greedy-uplift | B |
+| E4 | **Does AnchorAI retain more members per dollar?** | members retained (scenario ground truth) per budget level at three staff levels (36, 72, 120 h), 5 seeds; per $1,000 and per staff hour | contact-all, risk-top-k, greedy-uplift | B |
 | E5 | How good and fast is the GA? | optimality gap vs CP-SAT, convergence curve, runtime vs n, parameter sensitivity | CP-SAT | B |
 | E6 | Are rules correct and do guardrails matter? | scenario test cases (expected firings), conflict check, plan value with vs without guardrails | no guardrails | C |
 | E7 | Do KG cohort signals add information? | inject instructor-leave events; churn lift of KG-flagged members; plan value with vs without KG facts | no KG | C |
