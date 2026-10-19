@@ -8,11 +8,12 @@ from sqlmodel import Session, col, select
 from anchorai.db import models
 from anchorai.db.audit import record_audit
 from anchorai.optimisation.baselines import greedy_uplift
+from anchorai.optimisation.exact import exact
 from anchorai.optimisation.ga import ga
 from anchorai.optimisation.model import load_instance, violations
 from anchorai.schemas import Plan, PlanItem, PlanRequest
 
-SOLVERS = {"ga": ga, "greedy": greedy_uplift}
+SOLVERS = {"ga": ga, "exact": exact, "greedy": greedy_uplift}
 
 
 class SavedPlan(Plan):

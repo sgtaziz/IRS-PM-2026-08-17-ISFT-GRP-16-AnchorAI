@@ -5,8 +5,9 @@ from sqlmodel import Session, select
 from anchorai.db.models import AuditLog
 from anchorai.optimisation.baselines import POLICIES
 from anchorai.optimisation.evaluate import Truth, evaluate
-from anchorai.optimisation.ga import ga
-from anchorai.optimisation.model import Limits, violations
+from anchorai.optimisation.exact import solve_full, solve_linear
+from anchorai.optimisation.ga import build_problem, chosen, ga, objective
+from anchorai.optimisation.model import Limits, plan_value, violations
 
 
 @pytest.fixture
@@ -118,3 +119,27 @@ def test_ga_plans_are_feasible(options, limit):
     plan = ga(options, BINDING[limit], seed=0, cohorts=cohorts, generations=20, pop_size=20)
     assert len(plan) > 0
     assert violations(plan, options, BINDING[limit]) == {}
+
+
+@pytest.mark.parametrize("limit", BINDING)
+def test_exact_plans_are_feasible_and_at_least_as_good_as_greedy(options, limit):
+    plan, status, _ = solve_linear(options, BINDING[limit])
+    assert status == "OPTIMAL"
+    assert violations(plan, options, BINDING[limit]) == {}
+    assert plan_value(plan) >= plan_value(POLICIES["greedy-uplift"](options, BINDING[limit])) - 1e-6
+
+
+def test_exact_full_model_scores_its_plan_like_the_ga_objective(options):
+    cohorts = pd.DataFrame(
+        {
+            "member_id": ["M1", "M2", "M3", "M4"],
+            "class_id": ["K1", "K1", "K1", "K2"],
+            "weight": 1.0,
+            "instructor_id": ["I1", "I1", "I1", "I1"],
+        }
+    )
+    limits = BINDING["staff minutes"]
+    problem = build_problem(options, cohorts, limits)
+    genes, status, _, bound = solve_full(problem, limits, beta=0.5, decay=0.2)
+    assert status == "OPTIMAL"
+    assert objective(problem, chosen(problem, genes), 0.5, 0.2) == pytest.approx(bound, abs=0.05)
