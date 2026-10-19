@@ -27,7 +27,6 @@ What each stream needs from the others: blockers, reviews, decisions and promise
 | # | Requested by | Kind | Item | Why it matters | Status | Added |
 |---|---|---|---|---|---|---|
 | 8 | C | deliver | `demo` seed layer: one approved past week with assignments and logged outcomes | Dashboards, audit log and the assistant's plan questions are empty without it | open | 2026-10-16 |
-| 9 | C | deliver | `POST /api/plan` and `Explanation` | Assistant intents about plans (C4, W30) | in progress: `POST /api/plan` and `GET /api/plan/latest` live (greedy planner on T-learner uplift), plans saved to `plans` / `plan_items` as the assistant reads them; `Explanation` comes in Phase 6 | 2026-10-16 |
 
 ## Stream C: Knowledge & Interaction
 
@@ -43,6 +42,7 @@ What each stream needs from the others: blockers, reviews, decisions and promise
 
 | # | Requested by → Owner | Item | Closed |
 |---|---|---|---|
+| 9 | C → B | `POST /api/plan` (solvers `ga`, `exact`, `greedy`), `GET /api/plan/latest` and `GET /api/plan/explanations/{id}`. Each saved plan item stores an `Explanation` in `plan_items.explanation`: A's drivers, C's rule trace and graph signals, B's 10 most similar past cases (each with an `outcome` sentence) and a one-line summary, so the assistant's plan answers now have data | 2026-10-20 |
 | 7 | C → B | Spillover shape decided: **class cohort rows** `member_id, class_id, weight` (weight = the member's share of their own class visits). B derives pair strengths within classes and diminishing-returns groups per instructor (class → instructor). Delivery requested as #34 | 2026-10-19 |
 | 15 | C → B | 9 questions added to `notebooks/data/e8_questions.yaml` (`stream_b_questions`, author `asiri`): 4 about one member (context M0008), 4 tagged `unknown`, 2 ranking questions tagged `graph_impact` (hard cases, noted) | 2026-10-19 |
 | 26 | A → B | Signed off. The evaluator scores a plan as Σ(1 − `true_churn.event_churn`) + Σ `true_uplift.uplift` over its items (`event_churn`, matching `true_uplift`); `true_uplift` has no channel, so channel affects only the call sheet. Offers, roster and caps come from `catalog.list_offers(active_only=True)`, `list_staff`, `get_constraints`. Staff routes (W20, W21, similar cases) go in a separate staff router | 2026-10-19 |
