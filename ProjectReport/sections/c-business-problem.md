@@ -1,12 +1,10 @@
-# Sponsor introduction, business problem and market research
+# Business problem and market research
 
 *Stream C. Sources: `Miscellaneous/Gate0_AnchorAI_Project_Proposal.docx` (11 Sep 2026), `Miscellaneous/AnchorAI — Project.pptx` (27 Sep 2026), `docs/PLAN.md` §4 (drift log), `Miscellaneous/interviews/`, `docs/AI_USE.md`.*
 
-## Sponsor
+## Target user
 
-The proposal names Aramco (Dhahran, Kingdom of Saudi Arabia) as sponsor, and the deck repeats it. Aramco sponsors the studies of the team. It is **not** a client or a data provider for this project, and it has not reviewed or validated the system (PLAN.md drift item 13).
-
-The problem is therefore framed for a **mid-market gym operator**, a business with one to five clubs. The target users are club managers, front-desk staff and trainers. No real operator was involved: we had no operator's data, and the manager interviews described below were simulated.
+AnchorAI is framed for a **mid-market gym operator**, a business with one to five clubs. The users are club managers, front-desk staff and trainers. No real operator was involved: we had no operator's data, and the manager interviews described below were simulated. Aramco, named in the proposal, sponsors the team's studies; it is not a client or data provider for this project and has not reviewed the system (PLAN.md drift item 13).
 
 ## Business problem
 

@@ -5,7 +5,7 @@ Final file: `IRS-PM-<date>-<batch>-GRP-<team>-AnchorAI-Group-Report.pdf`
 | Section | Owner |
 |---|---|
 | Executive summary | all (last) |
-| Sponsor introduction, business problem, market research | C |
+| Business problem and market research | C |
 | Project objectives and success measures | B |
 | Data collection and preparation, scenario layer | A |
 | System design and architecture | B |
