@@ -8,12 +8,12 @@ AnchorAI is framed for a **mid-market gym operator**, a business with one to fiv
 
 ## Business problem
 
-Members who stop attending cancel weeks or months later. That lag is the window AnchorAI targets. Each lost member takes dues and ancillary spend with them. The proposal and deck state two industry figures:
+Members who stop attending cancel weeks or months later. That lag is the window AnchorAI targets. Each lost member takes dues and ancillary spend with them. The scale of the problem:
 
-- 1 in 3 members leaves their gym every year.
-- 1 in 2 new joiners leaves within six months.
+- **About one member in three leaves each year.** The Health & Fitness Association's *2025 Fitness Industry Benchmarking Report* puts the median member retention rate at 66.4% in 2024, from 175 companies running more than 17,000 facilities in 27 countries [1].
+- **New members are the most fragile.** In a study of one fitness centre's members, 63% stopped before their third month and fewer than 4% stayed continuously active beyond twelve months [2]. It is a single facility, so it shows the shape of early attrition rather than an industry rate. Our data agrees: the Kaggle members in the "New and slipping" segment, under a month into membership on average, churn at 94.6% (`ProjectReport/sections/a-knowledge-discovery.md`).
 
-Both figures appear in the proposal and the deck without a per-figure citation. The proposal's source list for the whole market section is: Health and Fitness Association, *2025 Fitness Industry Benchmarking Report*; Keepme and Glofox product documentation; industry buyer guides published in 2026. [TODO: confirm each of the two figures against the HFA report and cite the page or table.]
+The proposal and deck quoted "1 in 2 new joiners leave within six months"; we could not trace that figure to a primary source, so this report uses [2] instead.
 
 The proposal says current practice fails in three ways:
 
@@ -27,7 +27,9 @@ AnchorAI answers with one weekly decision: segment members, predict who will lea
 
 ## Market research
 
-The proposal's market analysis is desk research from vendor documentation and buyer guides. We did not run a survey, and we have no market-size or pricing figures of our own. [TODO: market-size figure with citation, if the team wants one; the proposal gives none.]
+The proposal's market analysis is desk research from vendor documentation and buyer guides. We did not run a survey, and we have no pricing figures of our own.
+
+**Market growth.** The *2025 HFA Global Report* finds that in 2024 health-club memberships rose 6% year on year, revenue rose 8% on average and the number of facilities grew nearly 4% [3]; it gives no absolute market size, and we do not quote one. More members and more facilities mean more members to keep, and the retention rate in [1] says a third of them leave each year.
 
 **Landscape (from the proposal).**
 
@@ -37,7 +39,7 @@ The proposal's market analysis is desk research from vendor documentation and bu
 **Four gaps (from the proposal).**
 
 1. Competitors score risk but do not publicly expose constrained allocation: which flagged members to contact, with which offer, given a fixed budget and finite staff hours.
-2. Vendor messaging centres on targeting high-risk members, although the proposal cites academic evidence that risk ranking is suboptimal. [TODO: the proposal does not name that evidence; add the citation or drop the claim.]
+2. Vendor messaging centres on targeting high-risk members, but the members most likely to leave are not always the ones a contact keeps. Ascarza showed on field data from a wireless provider and a membership organisation that targeting by expected response to the intervention (lift) reduces churn more than targeting by risk of leaving [4]. AnchorAI plans on estimated uplift for this reason (Stream B's planner, E3 and E4).
 3. Scores trained on very large member pools are powerful but unauditable, and the proposal says mid-market operators cite staff distrust of black-box flags.
 4. The intelligence layer is priced for larger chains. The proposal says Keepme is generally recommended from 5+ locations, which leaves the one-to-five-club operator underserved.
 
@@ -61,3 +63,10 @@ Full list in `docs/PLAN.md` §4. Those that a reader of the business case should
 - **No longitudinal simulator.** The proposal planned an agent-based simulator. We use the 4,000 real Kaggle members plus a thin synthetic scenario layer (clubs, classes, instructors, offers, past interventions with known effects). Churn and segmentation results are on real data; plan-quality results use the scenario layer and test decision quality against a known ground truth, not real member behaviour (drift item 2).
 - **Fuzzy inference and Gaussian-mixture segmentation dropped**; class recommendations are not built (drift items 6, 7, 10).
 - **Interviews were simulated** (above), and the censoring step was dropped because the data is a single snapshot (drift item 12).
+
+## References
+
+1. Health & Fitness Association (2025). *2025 Fitness Industry Benchmarking Report*. https://www.healthandfitness.org/2025-fitness-industry-benchmarking-report/
+2. Sperandei, S., Vieira, M. C. and Reis, A. C. (2016). Adherence to physical activity in an unsupervised setting: explanatory variables for high attrition rates among fitness center members. *Journal of Science and Medicine in Sport*, 19(11), 916–920. https://doi.org/10.1016/j.jsams.2015.12.522
+3. Health & Fitness Association (2025). *2025 Global Fitness Industry Report Shows Record Growth and What's Next for the Market* (summary of the 2025 HFA Global Report), 18 August 2025. https://www.healthandfitness.org/2025-global-fitness-industry-report-shows-record-growth-and-whats-next-for-the-market/
+4. Ascarza, E. (2018). Retention futility: targeting high-risk customers might be ineffective. *Journal of Marketing Research*, 55(1), 80–98.
