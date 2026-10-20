@@ -207,6 +207,16 @@ def add_item(
 
 def approve(session: Session, user: models.User, plan_id: int) -> models.Plan:
     plan = _draft(session, plan_id)
+    # One approved plan per week, so staff lists, the dashboard and "last week" have one answer.
+    other = session.exec(
+        select(models.Plan).where(
+            models.Plan.week_start == plan.week_start,
+            models.Plan.status == "approved",
+            col(models.Plan.id) != plan_id,
+        )
+    ).first()
+    if other is not None:
+        raise PlanLocked(f"Plan #{other.id} is already approved for the week of {plan.week_start}")
     plan.status, plan.approved_by_id, plan.approved_at = "approved", user.id, utcnow()
     session.add(plan)
     after = {"status": "approved", "contacts": len(_kept(session, plan_id))}

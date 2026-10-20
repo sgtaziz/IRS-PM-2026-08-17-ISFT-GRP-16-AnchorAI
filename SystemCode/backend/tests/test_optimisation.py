@@ -193,7 +193,7 @@ def test_staff_can_read_similar_cases_and_contact_history(client, login, built):
 
 def test_overrides_are_checked_audited_and_locked_by_approval(client, login, built, engine):
     manager = login("manager")
-    request = {"as_of": "2026-10-19", "budget": 100, "staff_minutes": 150, "solver": "greedy"}
+    request = {"as_of": "2026-09-07", "budget": 100, "staff_minutes": 150, "solver": "greedy"}
     plan = client.post("/api/plan", json=request, headers=manager).json()
     pid, first = plan["id"], plan["items"][0]["member_id"]
 
@@ -268,7 +268,7 @@ def test_assignment_respects_skills_and_hours(engine):
         catalog.update_staff(
             session, manager, staff["staff2"].user_id, StaffIn(weekly_hours=1, skills=["calls"])
         )
-        plan = Plan(week_start=date(2026, 10, 19), status="approved", request={})
+        plan = Plan(week_start=date(2026, 8, 31), status="approved", request={})
         session.add(plan)
         session.flush()
         contacts = (
@@ -314,7 +314,7 @@ def test_assignment_respects_skills_and_hours(engine):
 
 def test_assignment_api_needs_an_approved_plan(client, login, built):
     manager = login("manager")
-    request = {"as_of": "2026-10-19", "budget": 100, "staff_minutes": 150, "solver": "greedy"}
+    request = {"as_of": "2026-09-14", "budget": 100, "staff_minutes": 150, "solver": "greedy"}
     pid = client.post("/api/plan", json=request, headers=manager).json()["id"]
     assert client.post(f"/api/plan/{pid}/assign", headers=manager).status_code == 409
     assert client.post(f"/api/plan/{pid}/approve", headers=manager).status_code == 200
@@ -326,7 +326,7 @@ def test_assignment_api_needs_an_approved_plan(client, login, built):
 
 def test_staff_see_their_contacts_and_log_outcomes_that_feed_the_cbr(client, login, built, engine):
     manager, staff1, staff2 = login("manager"), login("staff1"), login("staff2")
-    request = {"as_of": "2026-10-19", "budget": 100, "staff_minutes": 150, "solver": "greedy"}
+    request = {"as_of": "2026-09-21", "budget": 100, "staff_minutes": 150, "solver": "greedy"}
     pid = client.post("/api/plan", json=request, headers=manager).json()["id"]
     client.post(f"/api/plan/{pid}/approve", headers=manager)
     client.post(f"/api/plan/{pid}/assign", headers=manager)
@@ -473,7 +473,7 @@ def test_demo_seed_is_an_approved_past_week_and_is_deterministic(built, tmp_path
 
 def test_reoptimise_keeps_manager_changes_and_fills_the_rest(client, login, built, engine):
     manager = login("manager")
-    request = {"as_of": "2026-10-19", "budget": 100, "staff_minutes": 150, "solver": "greedy"}
+    request = {"as_of": "2026-09-28", "budget": 100, "staff_minutes": 150, "solver": "greedy"}
     plan = client.post("/api/plan", json=request, headers=manager).json()
     pid, items = plan["id"], plan["items"]
     removed, swapped = items[0]["member_id"], items[1]["member_id"]
@@ -508,10 +508,16 @@ def test_reoptimise_keeps_manager_changes_and_fills_the_rest(client, login, buil
     client.post(f"/api/plan/{pid}/approve", headers=manager)
     assert client.post(f"/api/plan/{pid}/reoptimise", headers=manager).status_code == 409
     later = client.post(
-        "/api/plan", json={**request, "as_of": "2026-10-26"}, headers=manager
+        "/api/plan", json={**request, "as_of": "2026-10-05"}, headers=manager
     ).json()
     previous = client.get(f"/api/plan/{later['id']}/previous", headers=manager).json()
-    assert previous["id"] == pid, "the approved plan before a draft is last week's"
+    assert previous["id"] == pid, "the approved plan of the week before is last week's"
+    same_week = client.post("/api/plan", json=request, headers=manager).json()
+    assert client.post(f"/api/plan/{same_week['id']}/approve", headers=manager).status_code == 409
+    earlier = client.get(f"/api/plan/{same_week['id']}/previous", headers=manager)
+    assert earlier.status_code == 404 or earlier.json()["id"] != pid, (
+        "the same week is not last week"
+    )
 
 
 def test_scenarios_save_only_what_the_server_compared(client, login, built, engine, monkeypatch):
