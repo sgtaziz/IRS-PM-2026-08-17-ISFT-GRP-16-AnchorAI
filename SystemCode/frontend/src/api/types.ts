@@ -270,6 +270,24 @@ export interface MyContact {
   note: string | null
 }
 
+// Mirrors anchorai/optimisation/jobs.py compare.
+export interface PlannerResult {
+  planner: string
+  contacts: number
+  spend: number
+  staff_minutes: number
+  linear_value: number
+  full_value: number
+  expected_extra_members: number
+  feasible: boolean
+}
+
+export interface Comparison {
+  request: PlanRequest
+  planners: PlannerResult[]
+  ga_convergence: { generation: number; best: number; mean: number }[]
+}
+
 // Mirrors anchorai/optimisation/jobs.py JobStatus.
 export interface PlanJob {
   state: 'idle' | 'running' | 'done' | 'failed'
@@ -279,7 +297,7 @@ export interface PlanJob {
   started_at: string | null
   finished_at: string | null
   plan_id: number | null
-  comparison: Record<string, unknown> | null
+  comparison: Comparison | null
   error: string | null
 }
 
