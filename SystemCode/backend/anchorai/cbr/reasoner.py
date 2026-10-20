@@ -30,7 +30,8 @@ class CaseBase:
 
 def case_base_from(cases: pd.DataFrame, features: pd.DataFrame) -> CaseBase:
     x = (features - features.mean()) / features.std().replace(0, 1)
-    cases = cases[CASE_COLUMNS].reset_index(drop=True)
+    randomised = cases.get("randomised", True)
+    cases = cases[CASE_COLUMNS].reset_index(drop=True).assign(randomised=np.asarray(randomised))
     return CaseBase(cases.assign(arm=cases["offer_id"].fillna(CONTROL)), x)
 
 
@@ -40,8 +41,14 @@ def load_case_base() -> CaseBase:
 
 
 def retain(case_base: CaseBase, new_cases: pd.DataFrame) -> CaseBase:
-    """Add logged outcomes as cases. Unlike the log, they were not randomised, so they can be confounded."""
-    cases = pd.concat([case_base.cases[CASE_COLUMNS], new_cases[CASE_COLUMNS]], ignore_index=True)
+    """Add logged outcomes as cases, marked as not randomised.
+
+    They serve as local precedents, but the offer averages that thin evidence shrinks toward come from
+    randomised cases only: the planner contacts high-risk members on purpose, so logged stay rates are
+    low for reasons that have nothing to do with the offer.
+    """
+    logged = new_cases[CASE_COLUMNS].assign(randomised=False)
+    cases = pd.concat([case_base.cases[[*CASE_COLUMNS, "randomised"]], logged], ignore_index=True)
     return case_base_from(cases, case_base.x)
 
 
@@ -97,7 +104,8 @@ def estimate_uplift(
     members / (spread + noise), i.e. (n·local + m·average) / (n + m) with n and m read from the data.
     """
     ids = case_base.x.index.to_numpy() if member_ids is None else np.asarray(member_ids)
-    rate = case_base.cases.groupby("arm")["stayed"].mean()
+    randomised = case_base.cases[case_base.cases["randomised"]]
+    rate = randomised.groupby("arm")["stayed"].mean()
     frames = []
     for offer_id in case_base.offers:
         est = _local(case_base, offer_id, ids, k, kernel)

@@ -46,3 +46,20 @@ def test_estimates_cover_every_member_and_offer_and_fall_back_without_signal(cas
     # Everyone stayed: there is nothing to learn, so every estimate is the offer's average (zero).
     flat = case_base_from(case_base.cases.assign(stayed=True), case_base.x)
     assert estimate_uplift(flat, k=20)["uplift"].abs().max() == pytest.approx(0)
+
+
+def test_logged_outcomes_do_not_shift_the_offer_averages(case_base):
+    # The planner contacts high-risk members on purpose, so logged stay rates are low for reasons other
+    # than the offer. Twenty logged check-ins that all left must not make check-ins look harmful on average.
+    before = estimate_uplift(case_base, k=20).groupby("offer_id")["prior"].first()
+    logged = pd.DataFrame(
+        {
+            "member_id": [f"M{i:04d}" for i in range(60, 80)],
+            "offer_id": "checkin_message",
+            "week_start": pd.Timestamp("2026-10-12"),
+            "treated": True,
+            "stayed": False,
+        }
+    )
+    after = estimate_uplift(retain(case_base, logged), k=20).groupby("offer_id")["prior"].first()
+    pd.testing.assert_series_equal(before, after)
