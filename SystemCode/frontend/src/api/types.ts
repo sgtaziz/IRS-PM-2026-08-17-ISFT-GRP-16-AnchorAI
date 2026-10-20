@@ -249,6 +249,27 @@ export interface AssignmentSummary {
   unassigned: string[]
 }
 
+// Mirrors anchorai/optimisation/contacts.py my_contacts and log_outcome.
+export type OutcomeCode = 'reached' | 'no_answer' | 'accepted' | 'declined' | 'follow_up'
+
+export interface MyContact {
+  plan_id: number
+  week_start: string
+  plan_item_id: number
+  priority: number
+  member_id: string
+  offer_id: string
+  offer_name: string
+  channel: Channel
+  explanation_id: string
+  summary: string
+  drivers: string[]
+  rule: string | null
+  graph_signals: string[]
+  outcome: OutcomeCode | null
+  note: string | null
+}
+
 // Mirrors anchorai/optimisation/jobs.py JobStatus.
 export interface PlanJob {
   state: 'idle' | 'running' | 'done' | 'failed'
