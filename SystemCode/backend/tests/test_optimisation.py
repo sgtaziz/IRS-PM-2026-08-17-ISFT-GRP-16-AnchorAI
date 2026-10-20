@@ -1,14 +1,14 @@
 import time
-from datetime import date
+from datetime import date, timedelta
 
 import pandas as pd
 import pytest
-from sqlmodel import Session, select
+from sqlmodel import Session, func, select
 
 from anchorai import catalog
 from anchorai.catalog import StaffIn
 from anchorai.cbr.reasoner import load_case_base
-from anchorai.db.models import AuditLog, Outcome, Plan, PlanItem, User
+from anchorai.db.models import Assignment, AuditLog, Outcome, Plan, PlanItem, User
 from anchorai.optimisation import assignment, contacts, jobs
 from anchorai.optimisation.baselines import POLICIES
 from anchorai.optimisation.evaluate import Truth, evaluate
@@ -428,3 +428,39 @@ def test_options_skip_offers_missing_from_the_catalogue():
         "the first available offer becomes the playbook's top offer"
     )
     assert options["cost"].notna().all()
+
+
+def test_demo_seed_is_an_approved_past_week_and_is_deterministic(built, tmp_path):
+    from sqlmodel import SQLModel
+
+    from anchorai.db.seeds import run_seeds
+    from anchorai.db.seeds.demo import DEMO_WEEK
+    from anchorai.db.session import make_engine
+
+    def fresh(name):
+        engine = make_engine(f"sqlite:///{tmp_path / name}")
+        SQLModel.metadata.create_all(engine)
+        with Session(engine) as session:
+            run_seeds(session, ("base", "demo"))
+            run_seeds(session, ("base", "demo"))  # idempotent: the second run adds nothing
+            plans = session.exec(select(Plan)).all()
+            outcomes = session.exec(select(Outcome).order_by(Outcome.plan_item_id)).all()
+            audit = session.exec(select(AuditLog).where(AuditLog.action.startswith("plan"))).all()
+            assigned = session.exec(select(func.count()).select_from(Assignment)).one()
+            result = (
+                plans,
+                [(o.member_id, o.outcome) for o in outcomes],
+                outcomes,
+                audit,
+                assigned,
+            )
+        engine.dispose()
+        return result
+
+    plans, logged, outcomes, audit, assigned = fresh("a.db")
+    assert len(plans) == 1 and plans[0].week_start == DEMO_WEEK and plans[0].status == "approved"
+    assert assigned and logged
+    week = {DEMO_WEEK + timedelta(days=d) for d in range(5)}
+    assert all(o.logged_at.date() in week for o in outcomes)
+    assert all(a.ts.date() in week for a in audit)
+    assert fresh("b.db")[1] == logged, "same seed, same outcomes"
