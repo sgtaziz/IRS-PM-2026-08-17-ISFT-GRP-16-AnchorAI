@@ -392,3 +392,31 @@ def test_no_plan_lines_without_a_plan(built, engine, classifier):
             session, "M0001 risk", role="manager", classifier=classifier, chat=lambda _: "ok"
         )
         assert reply.grounded and not texts(reply)
+
+
+def test_what_if_budget_plans_read_only_and_matches_saved_plan_summary(built, engine):
+    from sqlmodel import func, select
+
+    from anchorai.assistant.tools import plan_summary, what_if_budget
+    from anchorai.db.models import AuditLog, Plan, User
+    from anchorai.optimisation.service import build_plan
+    from anchorai.schemas import PlanRequest
+
+    def writes(session):
+        return session.exec(select(func.count()).select_from(Plan)).one(), session.exec(
+            select(func.count()).select_from(AuditLog)
+        ).one()
+
+    with Session(engine) as session:
+        before = writes(session)
+        result = what_if_budget(session, extract_slots("40 staff hours and $300", {}, {})[0])
+        assert writes(session) == before
+        asked, current = result.evidence[1].text, result.evidence[0].text
+        assert "budget $300, 40 staff hours" in asked and "Current limits" in current
+        assert "limits reached" in asked
+        assert what_if_budget(session, extract_slots("what if", {}, {})[0]).note
+
+        req = PlanRequest(as_of=date(2026, 10, 19), budget=100, staff_minutes=150, solver="greedy")
+        saved = build_plan(session, session.exec(select(User)).first(), req)
+        line = plan_summary(session, extract_slots("plan", {}, {})[0]).evidence[0].text
+        assert f"{len(saved.items)} contacts" in line and "week of 2026-10-19" in line

@@ -15,6 +15,11 @@ MONEY = [
         re.IGNORECASE,
     ),
 ]
+# "40 staff hours", "50 hours of staff time"; the number is taken out so it never reads as a member id.
+STAFF_HOURS = re.compile(
+    r"\b(\d+(?:\.\d+)?)(?=\s*(?:staff[\s-]*(?:hours?|hrs?)\b|(?:hours?|hrs?)\s+of\s+(?:staff|staffing)\b))",
+    re.IGNORECASE,
+)
 MEMBER = re.compile(r"\b(?:m|member\s*#?\s*|#)(\d{1,4})\b|\b(\d{2,4})\b", re.IGNORECASE)
 # A bare number is a member id ("why 1043 but not 2210?") unless its context says otherwise.
 NOT_MEMBER_BEFORE = re.compile(
@@ -53,6 +58,7 @@ YEAR = re.compile(r"^(19|20)\d\d$")
 class Slots(BaseModel):
     member_ids: list[str] = []
     amount: float | None = None
+    staff_hours: float | None = None
     instructor_ids: list[str] = []
     class_ids: list[str] = []
     limit: int | None = None
@@ -85,6 +91,9 @@ def extract_slots(
     slots = Slots()
     amounts, rest = _take_amounts(text)
     slots.amount = amounts[0] if amounts else None
+    if hours := STAFF_HOURS.search(rest):
+        slots.staff_hours = float(hours.group(1))
+        rest = STAFF_HOURS.sub(" N", rest, count=1)
 
     def take_count(match: re.Match) -> str:
         word = match.group(1).lower()

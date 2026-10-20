@@ -4,11 +4,13 @@ import json
 import math
 from typing import Any
 
+import pandas as pd
 from pydantic import BaseModel, ValidationError
 from sqlmodel import Session, select
 
 from anchorai import catalog
 from anchorai.assistant.slots import Slots
+from anchorai.cbr.reasoner import uplift_series
 from anchorai.db.models import Plan, PlanItem
 from anchorai.discovery import service as member_data
 from anchorai.features import LABELS
@@ -16,6 +18,9 @@ from anchorai.knowledge import queries, reload
 from anchorai.knowledge.entities import effective
 from anchorai.knowledge.graph import GraphUnavailable, read
 from anchorai.knowledge.signals import graph_signals
+from anchorai.optimisation.contacts import app_case_base
+from anchorai.optimisation.exact import solve_linear
+from anchorai.optimisation.model import Limits, load_instance
 from anchorai.reasoning import service as reasoning
 from anchorai.reasoning.engine import run
 from anchorai.reasoning.models import Rule
@@ -26,6 +31,7 @@ STATIC_OFFER_NAMES = {o["offer_id"]: o["name"] for o in OFFER_CATALOG}
 CHANNELS = {"sms": "SMS", "email": "email", "call": "phone call", "in_person": "in person"}
 TOP_AFFECTED = 5
 SIMILAR_CASES_SHOWN = 2
+WHAT_IF_SECONDS = 5
 
 
 class Evidence(BaseModel):
@@ -362,11 +368,66 @@ def plan_summary(session: Session, slots: Slots) -> ToolResult:
     return ToolResult(tool="plan_summary", evidence=lines.items)
 
 
-def what_if_budget(session: Session, slots: Slots) -> ToolResult:
-    return ToolResult(
-        tool="what_if_budget",
-        note="What-if budgets need the plan optimiser, which isn't connected yet.",
+def _binding(options: pd.DataFrame, plan: pd.DataFrame, limits: Limits) -> str:
+    """The limits that keep further worthwhile contacts out of the plan, by how many each blocks."""
+    left = options[(options["value"] > 0) & ~options["member_id"].isin(plan["member_id"])]
+    blocked = {
+        "money": int((left["cost"] > limits.budget - plan["cost"].sum()).sum()),
+        "staff time": int(
+            (left["staff_minutes"] > limits.staff_minutes - plan["staff_minutes"].sum()).sum()
+        ),
+    }
+    reached = [
+        f"{k} (blocks {n} contact options)"
+        for k, n in sorted(blocked.items(), key=lambda kv: -kv[1])
+        if n
+    ]
+    return "limits reached: " + (
+        ", ".join(reached) or "none, every worthwhile contact is in the plan"
     )
+
+
+def what_if_budget(session: Session, slots: Slots) -> ToolResult:
+    if slots.amount is None and slots.staff_hours is None:
+        return ToolResult(
+            tool="what_if_budget",
+            note="Say a budget (for example $2,000) or staff hours (for example 40 staff hours).",
+        )
+    try:
+        instance = load_instance(session, uplift=uplift_series(app_case_base(session)))
+    except OSError:
+        return ToolResult(
+            tool="what_if_budget", note="The member data isn't built yet, so I can't plan."
+        )
+    minutes = None if slots.staff_hours is None else round(slots.staff_hours * 60)
+    runs = [
+        ("Current limits", instance.limits()),
+        ("Asked limits", instance.limits(slots.amount, minutes)),
+    ]
+    lines = _Lines()
+    results = []
+    for label, limits in runs:
+        plan, status, _ = solve_linear(instance.options, limits, WHAT_IF_SECONDS)
+        if status not in ("OPTIMAL", "FEASIBLE"):
+            return ToolResult(tool="what_if_budget", note="The planner found no feasible plan.")
+        results.append((plan, limits))
+        lines.add(
+            f"{label}: budget ${limits.budget:,.0f}, {limits.staff_minutes / 60:g} staff hours. "
+            f"Best plan: {len(plan)} members contacted, "
+            f"{plan['est_uplift'].sum():.1f} extra members expected to stay, "
+            f"cost ${plan['cost'].sum():,.0f}, {plan['staff_minutes'].sum() / 60:.1f} staff hours "
+            f"({int(plan['staff_minutes'].sum())} minutes) used; "
+            f"{_binding(instance.options, plan, limits)}",
+            "plan",
+        )
+    (now, _), (asked, _) = results
+    lines.add(
+        f"Change from the current limits: {len(asked) - len(now):+d} contacts, "
+        f"{asked['est_uplift'].sum() - now['est_uplift'].sum():+.1f} extra members expected to "
+        f"stay, {asked['cost'].sum() - now['cost'].sum():+,.0f} dollars of cost",
+        "plan",
+    )
+    return ToolResult(tool="what_if_budget", evidence=lines.items)
 
 
 TOOLS = {
