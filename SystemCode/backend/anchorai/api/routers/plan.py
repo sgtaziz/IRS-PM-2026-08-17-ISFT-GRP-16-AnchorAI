@@ -7,7 +7,7 @@ from pydantic import BaseModel, Field
 from anchorai.api.deps import SessionDep, require_role
 from anchorai.db.models import User
 from anchorai.discovery.service import DataNotBuilt
-from anchorai.optimisation import assignment, jobs, overrides, service
+from anchorai.optimisation import assignment, jobs, overrides, scenarios, service
 from anchorai.reasoning.check import UnknownMember, UnknownOffer
 from anchorai.reasoning.service import InvalidRuleBase
 from anchorai.schemas import Channel, Explanation, PlanRequest
@@ -99,6 +99,38 @@ def _override(call):
         raise HTTPException(409, str(e)) from None
     except assignment.CannotAssign as e:
         raise HTTPException(422, str(e)) from None
+
+
+class ScenarioName(BaseModel):
+    name: str = Field(min_length=1, max_length=80)
+
+
+# Declared before /{plan_id}, which would otherwise try to read "scenarios" as a plan id.
+@router.get("/scenarios")
+def saved_scenarios(session: SessionDep) -> list[dict]:
+    return scenarios.list_saved(session)
+
+
+@router.post("/scenarios", status_code=201)
+def save_scenario(body: ScenarioName, session: SessionDep, user: Manager) -> dict:
+    try:
+        return scenarios.save(session, user, body.name.strip())
+    except scenarios.NothingToSave as e:
+        raise HTTPException(409, str(e)) from None
+
+
+@router.get("/scenarios/{scenario_id}")
+def saved_scenario(scenario_id: int, session: SessionDep) -> dict:
+    found = scenarios.get(session, scenario_id)
+    if found is None:
+        raise HTTPException(404, f"No saved scenario {scenario_id}")
+    return found
+
+
+@router.delete("/scenarios/{scenario_id}", status_code=204)
+def delete_scenario(scenario_id: int, session: SessionDep, user: Manager) -> None:
+    if not scenarios.delete(session, user, scenario_id):
+        raise HTTPException(404, f"No saved scenario {scenario_id}")
 
 
 @router.get("/{plan_id}/previous", response_model=service.SavedPlan)

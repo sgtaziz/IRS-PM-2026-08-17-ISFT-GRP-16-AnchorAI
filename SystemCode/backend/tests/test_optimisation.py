@@ -512,3 +512,50 @@ def test_reoptimise_keeps_manager_changes_and_fills_the_rest(client, login, buil
     ).json()
     previous = client.get(f"/api/plan/{later['id']}/previous", headers=manager).json()
     assert previous["id"] == pid, "the approved plan before a draft is last week's"
+
+
+def test_scenarios_save_only_what_the_server_compared(client, login, built, engine, monkeypatch):
+    manager = login("manager")
+    monkeypatch.setattr(jobs, "_status", jobs.JobStatus())
+    assert (
+        client.post(
+            "/api/plan/scenarios", json={"name": "nothing yet"}, headers=manager
+        ).status_code
+        == 409
+    )
+
+    with Session(engine) as session:
+        comparison = jobs.compare(
+            session,
+            PlanRequest(as_of=date(2026, 10, 19), budget=100, staff_minutes=150),
+            report=lambda s, d: None,
+        )
+    monkeypatch.setattr(
+        jobs, "_status", jobs.JobStatus(state="done", kind="compare", comparison=comparison)
+    )
+    saved = client.post(
+        "/api/plan/scenarios", json={"name": "Two more staff hours"}, headers=manager
+    )
+    assert saved.status_code == 201, saved.text
+    sid = saved.json()["id"]
+    assert saved.json()["best_planner"] in {
+        "exact",
+        "ga",
+        "greedy-uplift",
+        "risk-top-k",
+        "contact-all",
+    }
+
+    listed = client.get("/api/plan/scenarios", headers=manager).json()
+    assert [s["name"] for s in listed][:1] == ["Two more staff hours"]
+    full = client.get(f"/api/plan/scenarios/{sid}", headers=manager).json()
+    assert full["comparison"]["planners"] == comparison["planners"]
+    assert (
+        client.post("/api/plan/scenarios", json={"name": "x"}, headers=login("staff1")).status_code
+        == 403
+    )
+    assert client.delete(f"/api/plan/scenarios/{sid}", headers=manager).status_code == 204
+    assert client.get(f"/api/plan/scenarios/{sid}", headers=manager).status_code == 404
+    with Session(engine) as session:
+        actions = {a.action for a in session.exec(select(AuditLog)).all()}
+    assert {"scenario.save", "scenario.delete"} <= actions
