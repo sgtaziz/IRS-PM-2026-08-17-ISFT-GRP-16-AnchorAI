@@ -189,7 +189,10 @@ async function approve() {
   if (!plan.value) return
   approveError.value = null
   try {
-    plan.value = await api<SavedPlan>(`/plan/${plan.value.id}/approve`, { method: 'POST' })
+    const approved = await api<SavedPlan>(`/plan/${plan.value.id}/approve`, { method: 'POST' })
+    // PLAN §8.2: the manager approves and the calls are assigned; re-run or adjust it below.
+    await api(`/plan/${approved.id}/assign`, { method: 'POST' })
+    plan.value = approved
   } catch (e) {
     approveError.value = errorMessage(e)
   }
@@ -289,7 +292,7 @@ async function approve() {
                 label="Approve plan"
                 severity="primary"
                 header="Approve this plan?"
-                :message="`Approving locks plan #${plan.id}: no more changes, and its ${plan.items.length} contacts can be assigned to staff.`"
+                :message="`Approving locks plan #${plan.id} and assigns its ${plan.items.length} contacts to staff by hours and skills. No more changes after that.`"
                 @confirm="approve"
               />
             </template>
@@ -319,16 +322,16 @@ async function approve() {
             <Column field="expected_value" header="Expected value" sortable>
               <template #body="{ data }"><span class="tabular-nums">{{ money(data.expected_value) }}</span></template>
             </Column>
-            <Column header="" :exportable="false">
+            <Column header="" :exportable="false" :style="{ minWidth: '10rem' }">
               <template #body="{ data }">
-                <div class="flex justify-end gap-1">
+                <div class="flex flex-nowrap justify-end gap-1.5">
                   <Button label="Why" size="small" text @click="whyItem = data" />
                   <template v-if="isDraft">
-                    <Button size="small" text severity="secondary" aria-label="Swap offer" v-tooltip.top="'Swap offer'" @click="openAdd(data.member_id)">
-                      <template #icon><Repeat :size="14" /></template>
+                    <Button size="small" outlined severity="secondary" aria-label="Swap offer" v-tooltip.top="'Swap offer'" @click="openAdd(data.member_id)">
+                      <template #icon><Repeat :size="16" class="shrink-0" /></template>
                     </Button>
-                    <Button size="small" text severity="danger" aria-label="Remove" v-tooltip.top="'Remove'" @click="openRemove(data)">
-                      <template #icon><Trash2 :size="14" /></template>
+                    <Button size="small" outlined severity="danger" aria-label="Remove" v-tooltip.top="'Remove'" @click="openRemove(data)">
+                      <template #icon><Trash2 :size="16" class="shrink-0" /></template>
                     </Button>
                   </template>
                 </div>
