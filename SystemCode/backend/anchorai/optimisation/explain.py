@@ -126,3 +126,30 @@ def member_evidence(case_base: CaseBase, member_id: str, offer_names: dict[str, 
         for r in est.itertuples()
     ]
     return sorted(rows, key=lambda r: -r["estimate"])
+
+
+def one_line(explanation: dict | None, offer_id: str) -> str:
+    """A short reason for the plan table: risk, the main driver and the rule behind the offer."""
+    if not explanation:
+        return ""
+    if explanation.get("summary", "").startswith("Added by the manager"):
+        return explanation["summary"].split(". ")[0]
+    risk = f"{_probability(explanation['churn_prob'])} churn risk"
+    # The short form drops a label's bracketed detail: "change in weekly visits".
+    up = [
+        LABELS.get(n, n).split(" (")[0].lower()
+        for n, v in explanation.get("top_drivers", [])
+        if v > 0
+    ]
+    rule = next(
+        (
+            f["rule_id"].split("_")[0]
+            for f in explanation.get("rule_trace", [])
+            if f["effect"].startswith(f"propose {offer_id}")
+        ),
+        None,
+    )
+    parts = [risk + (f", mainly {up[0]}" if up else "")]
+    if rule:
+        parts.append(f"playbook {rule}")
+    return " · ".join(parts)

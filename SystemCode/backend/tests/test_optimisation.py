@@ -112,6 +112,9 @@ def test_plan_endpoint_saves_a_feasible_plan(client, login, built, engine):
     assert by_ga["solver_stats"]["solver"] == "ga"
 
     item = plan["items"][0]
+    assert all("churn risk" in i["reason"] for i in plan["items"]), (
+        "every row has a one-line reason"
+    )
     why = client.get(f"/api/plan/explanations/{item['explanation_id']}", headers=login("manager"))
     assert why.status_code == 200, why.text
     why = why.json()

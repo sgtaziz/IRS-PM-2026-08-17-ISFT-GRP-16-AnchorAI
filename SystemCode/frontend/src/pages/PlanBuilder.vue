@@ -242,7 +242,7 @@ async function approve() {
             :value="plan.items"
             data-key="member_id"
             :export-name="`plan-${plan.id}`"
-            :global-filter-fields="['member_id', 'offer_id', 'channel']"
+            :global-filter-fields="['member_id', 'offer_id', 'channel', 'reason']"
           >
             <Column field="member_id" header="Member" sortable>
               <template #body="{ data }">
@@ -254,6 +254,9 @@ async function approve() {
             </Column>
             <Column field="channel" header="Channel" sortable>
               <template #body="{ data }">{{ channelLabel(data.channel) }}</template>
+            </Column>
+            <Column field="reason" header="Reason">
+              <template #body="{ data }"><span class="block min-w-52 whitespace-normal text-sm text-ink-600">{{ data.reason }}</span></template>
             </Column>
             <Column field="expected_value" header="Expected value" sortable>
               <template #body="{ data }"><span class="tabular-nums">{{ money(data.expected_value) }}</span></template>

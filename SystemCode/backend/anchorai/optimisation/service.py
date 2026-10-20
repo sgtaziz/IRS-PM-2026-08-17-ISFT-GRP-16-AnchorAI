@@ -14,12 +14,18 @@ from anchorai.discovery.scores import load_scores
 from anchorai.optimisation.baselines import greedy_uplift
 from anchorai.optimisation.contacts import app_case_base
 from anchorai.optimisation.exact import exact
-from anchorai.optimisation.explain import explain_plan
+from anchorai.optimisation.explain import explain_plan, one_line
 from anchorai.optimisation.ga import ga
 from anchorai.optimisation.model import load_instance, violations
 from anchorai.schemas import Explanation, Plan, PlanItem, PlanRequest
 
 SOLVERS = {"ga": ga, "exact": exact, "greedy": greedy_uplift}
+
+
+class PlanRow(PlanItem):
+    """The shared `PlanItem` plus a one-line reason for the plan table (W14)."""
+
+    reason: str = ""
 
 
 class SavedPlan(Plan):
@@ -28,6 +34,7 @@ class SavedPlan(Plan):
     id: int
     status: str
     created_at: datetime
+    items: list[PlanRow]
 
 
 class UnknownSolver(ValueError):
@@ -132,12 +139,13 @@ def _saved(session: Session, plan: models.Plan, stats: dict | None = None) -> Sa
         created_at=plan.created_at,
         request=PlanRequest.model_validate(plan.request),
         items=[
-            PlanItem(
+            PlanRow(
                 member_id=r.member_id,
                 offer_id=r.offer_id,
                 channel=r.channel,
                 expected_value=r.expected_value,
                 explanation_id=r.explanation_id,
+                reason=one_line(r.explanation, r.offer_id),
             )
             for r in rows
         ],

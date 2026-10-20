@@ -174,6 +174,8 @@ export interface PlanItem {
   channel: Channel
   expected_value: number
   explanation_id: string
+  // Stream B's PlanRow adds a one-line reason (anchorai/optimisation/service.py).
+  reason?: string
 }
 
 // Mirrors anchorai/optimisation/explain.py member_evidence and contacts.history (Stream B).
