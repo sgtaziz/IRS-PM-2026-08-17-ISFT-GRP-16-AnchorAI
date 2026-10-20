@@ -78,6 +78,19 @@ class Outcome(SQLModel, table=True):
     logged_at: datetime = Field(default_factory=utcnow)
 
 
+class Scenario(SQLModel, table=True):
+    """A saved planner comparison (W17): the limits tried and every planner's result."""
+
+    __tablename__ = "scenarios"
+
+    id: int | None = Field(default=None, primary_key=True)
+    name: str
+    request: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON, nullable=False))
+    result: dict[str, Any] = Field(default_factory=dict, sa_column=Column(JSON, nullable=False))
+    created_by_id: int | None = Field(default=None, foreign_key="users.id")
+    created_at: datetime = Field(default_factory=utcnow)
+
+
 class RuleVersion(SQLModel, table=True):
     __tablename__ = "rule_versions"
 
