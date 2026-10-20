@@ -176,6 +176,11 @@ def reassign(
     )
 
 
+@router.get("/{plan_id}/call-sheet")
+def call_sheet_rows(plan_id: int, staff_id: int, session: SessionDep) -> list[dict]:
+    return assignment.call_sheet_rows(session, plan_id, staff_id)
+
+
 @router.get("/{plan_id}/call-sheet.csv", response_class=PlainTextResponse)
 def call_sheet(plan_id: int, staff_id: int, session: SessionDep):
     text = assignment.call_sheet(session, plan_id, staff_id)

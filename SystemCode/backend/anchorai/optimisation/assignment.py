@@ -157,8 +157,8 @@ def summary(session: Session, plan_id: int) -> dict:
     return {"plan_id": plan_id, "staff": staff, "unassigned": unassigned}
 
 
-def call_sheet(session: Session, plan_id: int, staff_user_id: int) -> str:
-    """CSV call sheet for one staff member: priority, member, offer, channel and the talking point."""
+def call_sheet_rows(session: Session, plan_id: int, staff_user_id: int) -> list[dict]:
+    """One staff member's contacts in priority order, each with its talking point."""
     offers = {o.offer_id: o.name for o in catalog.list_offers(session)}
     rows = session.exec(
         select(models.Assignment, models.PlanItem)
@@ -170,18 +170,25 @@ def call_sheet(session: Session, plan_id: int, staff_user_id: int) -> str:
         )
         .order_by(col(models.Assignment.priority))
     ).all()
+    return [
+        {
+            "priority": a.priority,
+            "member_id": item.member_id,
+            "offer": offers.get(item.offer_id, item.offer_id),
+            "channel": item.channel,
+            "talking_point": (item.explanation or {}).get("summary", ""),
+        }
+        for a, item in rows
+    ]
+
+
+def call_sheet(session: Session, plan_id: int, staff_user_id: int) -> str:
+    """The call sheet as CSV."""
     out = io.StringIO()
     writer = csv.writer(out)
     writer.writerow(["priority", "member_id", "offer", "channel", "talking_point"])
-    for a, item in rows:
-        point = (item.explanation or {}).get("summary", "")
+    for r in call_sheet_rows(session, plan_id, staff_user_id):
         writer.writerow(
-            [
-                a.priority,
-                item.member_id,
-                offers.get(item.offer_id, item.offer_id),
-                item.channel,
-                point,
-            ]
+            [r["priority"], r["member_id"], r["offer"], r["channel"], r["talking_point"]]
         )
     return out.getvalue()

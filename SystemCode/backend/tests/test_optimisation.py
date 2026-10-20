@@ -303,6 +303,8 @@ def test_assignment_respects_skills_and_hours(engine):
             assignment.reassign(
                 session, manager, plan.id, trainer["contacts"][0]["member_id"], caller["user_id"]
             )
+        rows = assignment.call_sheet_rows(session, plan.id, caller["user_id"])
+        assert [r["priority"] for r in rows] == list(range(1, len(rows) + 1))
         sheet = assignment.call_sheet(session, plan.id, caller["user_id"])
         assert sheet.splitlines()[0] == "priority,member_id,offer,channel,talking_point"
         assert len(sheet.splitlines()) == len(caller["contacts"]) + 1
