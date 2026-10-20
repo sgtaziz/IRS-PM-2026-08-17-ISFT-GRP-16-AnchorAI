@@ -399,11 +399,15 @@ def what_if_budget(session: Session, slots: Slots) -> ToolResult:
         return ToolResult(
             tool="what_if_budget", note="The member data isn't built yet, so I can't plan."
         )
-    minutes = None if slots.staff_hours is None else round(slots.staff_hours * 60)
-    runs = [
-        ("Current limits", instance.limits()),
-        ("Asked limits", instance.limits(slots.amount, minutes)),
-    ]
+    current = instance.limits()
+    budget, minutes = slots.amount, None
+    if budget is not None and slots.extra_amount:
+        budget += current.budget
+    if slots.staff_hours is not None:
+        minutes = round(slots.staff_hours * 60) + (
+            current.staff_minutes if slots.extra_hours else 0
+        )
+    runs = [("Current limits", current), ("Asked limits", instance.limits(budget, minutes))]
     lines = _Lines()
     results = []
     for label, limits in runs:

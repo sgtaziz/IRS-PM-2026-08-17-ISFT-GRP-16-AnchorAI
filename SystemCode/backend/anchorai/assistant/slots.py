@@ -17,9 +17,13 @@ MONEY = [
 ]
 # "40 staff hours", "50 hours of staff time"; the number is taken out so it never reads as a member id.
 STAFF_HOURS = re.compile(
-    r"\b(\d+(?:\.\d+)?)(?=\s*(?:staff[\s-]*(?:hours?|hrs?)\b|(?:hours?|hrs?)\s+of\s+(?:staff|staffing)\b))",
+    r"\b(\d+(?:\.\d+)?)(?=\s*(?:(?:more|extra|additional)\s+)?"
+    r"(?:staff[\s-]*(?:hours?|hrs?)\b|(?:hours?|hrs?)\s+of\s+(?:staff|staffing)\b))",
     re.IGNORECASE,
 )
+# "another $1,500", "$1,000 more", "10 extra staff hours": on top of the current limit, not instead of it.
+EXTRA_BEFORE = re.compile(r"\b(?:another|extra|additional)\s+(AMOUNT|N)\b", re.IGNORECASE)
+EXTRA_AFTER = re.compile(r"\b(AMOUNT|N)\s+(?:more|extra|additional)\b", re.IGNORECASE)
 MEMBER = re.compile(r"\b(?:m|member\s*#?\s*|#)(\d{1,4})\b|\b(\d{2,4})\b", re.IGNORECASE)
 # A bare number is a member id ("why 1043 but not 2210?") unless its context says otherwise.
 NOT_MEMBER_BEFORE = re.compile(
@@ -59,6 +63,8 @@ class Slots(BaseModel):
     member_ids: list[str] = []
     amount: float | None = None
     staff_hours: float | None = None
+    extra_amount: bool = False
+    extra_hours: bool = False
     instructor_ids: list[str] = []
     class_ids: list[str] = []
     limit: int | None = None
@@ -94,6 +100,9 @@ def extract_slots(
     if hours := STAFF_HOURS.search(rest):
         slots.staff_hours = float(hours.group(1))
         rest = STAFF_HOURS.sub(" N", rest, count=1)
+    extra = {m.group(1).upper() for p in (EXTRA_BEFORE, EXTRA_AFTER) for m in p.finditer(rest)}
+    slots.extra_amount = slots.amount is not None and "AMOUNT" in extra
+    slots.extra_hours = slots.staff_hours is not None and "N" in extra
 
     def take_count(match: re.Match) -> str:
         word = match.group(1).lower()

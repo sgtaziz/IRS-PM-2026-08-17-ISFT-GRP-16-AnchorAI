@@ -35,6 +35,22 @@ def test_money_never_becomes_a_member(text, members, amount):
     assert slots.member_ids == members and slots.amount == amount
 
 
+@pytest.mark.parametrize(
+    ("text", "amount", "extra_amount", "hours", "extra_hours"),
+    [
+        ("Is another $1,500 worth it?", 1500.0, True, None, False),
+        ("How many more members could we keep with $1,000 more?", 1000.0, True, None, False),
+        ("What if the budget were $2000?", 2000.0, False, None, False),
+        ("What if we had 10 more staff hours?", None, False, 10.0, True),
+        ("What if we had 40 staff hours?", None, False, 40.0, False),
+    ],
+)
+def test_what_if_reads_extra_limits_as_on_top(text, amount, extra_amount, hours, extra_hours):
+    slots, _ = extract_slots(text, INSTRUCTORS, CLASSES)
+    assert (slots.amount, slots.extra_amount) == (amount, extra_amount)
+    assert (slots.staff_hours, slots.extra_hours, slots.member_ids) == (hours, extra_hours, [])
+
+
 def test_names_and_common_word_classes():
     slots, text = extract_slots("who goes to Maya's hiit class", INSTRUCTORS, CLASSES)
     assert slots.instructor_ids == ["I04"] and slots.class_ids == ["K02"]
