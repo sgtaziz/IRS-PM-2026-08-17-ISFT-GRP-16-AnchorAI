@@ -3,6 +3,7 @@ import { Check, ClipboardList, MessageSquareText, Network, Scale, StickyNote } f
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
 import ProgressBar from 'primevue/progressbar'
+import SelectButton from 'primevue/selectbutton'
 import { computed, onMounted, ref } from 'vue'
 import { api } from '../api/client'
 import type { MyContact, OutcomeCode } from '../api/types'
@@ -37,6 +38,17 @@ async function load() {
 }
 onMounted(load)
 const logged = computed(() => contacts.value.filter((c) => c.outcome).length)
+
+// The plan is weekly, so "today" means what is still to do: open contacts by default, in priority order.
+const VIEWS = [
+  { label: 'To do', value: 'todo' },
+  { label: 'Done', value: 'done' },
+  { label: 'All', value: 'all' },
+]
+const view = ref('todo')
+const shown = computed(() =>
+  contacts.value.filter((c) => view.value === 'all' || (view.value === 'done') === !!c.outcome),
+)
 
 const saving = ref<number | null>(null)
 const errors = ref<Record<number, string>>({})
@@ -80,13 +92,22 @@ const draftOpen = computed({
       </template>
 
       <div class="mb-5 flex flex-col gap-1.5">
-        <span class="text-sm text-ink-600">{{ logged }} of {{ contacts.length }} logged</span>
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <span class="text-sm text-ink-600">{{ logged }} of {{ contacts.length }} logged</span>
+          <SelectButton v-model="view" :options="VIEWS" option-label="label" option-value="value" :allow-empty="false" aria-label="Show contacts" />
+        </div>
         <ProgressBar :value="Math.round((100 * logged) / contacts.length)" :show-value="false" style="height: 0.5rem" />
       </div>
 
+      <EmptyState
+        v-if="!shown.length"
+        compact
+        :title="view === 'todo' ? 'All done' : 'Nothing logged yet'"
+        :text="view === 'todo' ? 'Every contact on your list has an outcome. Switch to Done to review or change one.' : 'Outcomes you log appear here.'"
+      />
       <ol class="m-0 grid list-none gap-4 p-0 md:grid-cols-2">
         <li
-          v-for="c in contacts"
+          v-for="c in shown"
           :key="c.plan_item_id"
           class="flex flex-col gap-3 rounded-card border bg-card p-4 shadow-card"
           :class="c.outcome ? 'border-ink-200 opacity-80' : 'border-ink-200'"
