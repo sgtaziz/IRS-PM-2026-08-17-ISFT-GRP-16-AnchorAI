@@ -6,6 +6,7 @@ from anchorai.discovery import service
 from anchorai.reasoning.conditions import parse_condition
 from anchorai.reasoning.engine import load_rule_files, load_rules, run
 from anchorai.reasoning.facts import KNOWN_FACTS, build_facts
+from anchorai.reasoning.service import all_facts
 from anchorai.reasoning.validate import validate
 from anchorai.scenario.offers import OFFER_CATALOG
 from anchorai.schemas import Channel
@@ -230,6 +231,15 @@ def test_guardrail_check_reports_blocks(client, login, built):
     assert fatigued["violations"][0]["blocks"] == "all"
     assert fatigued["violations"][0]["rule_id"] == "G01_contact_fatigue"
 
+    no_phone = next(m for m, f in all_facts().items() if not f.get("phone"))
+    by_sms, by_email = post(
+        [
+            {"member_id": no_phone, "offer_id": "checkin_message", "channel": ch}
+            for ch in ("sms", "email")
+        ]
+    ).json()
+    assert not by_sms["channel_offered"] and by_email["channel_offered"]
+
     unknown_member = [{"member_id": "NOPE", "offer_id": "class_pass", "channel": "sms"}]
     unknown_offer = [{"member_id": "M0001", "offer_id": "nope", "channel": "sms"}]
     assert post(unknown_member).status_code == 404
@@ -350,3 +360,53 @@ def test_contact_cap_setting_reaches_the_rule_trace(client, login, built, engine
             client.put(
                 "/api/admin/offers/constraints", json=caps.model_dump(), headers=login("admin")
             )
+
+
+def test_logged_outcome_counts_as_a_contact(engine, built):
+    from datetime import timedelta
+
+    from sqlmodel import Session, select
+
+    from anchorai.db.models import Outcome, Plan, PlanItem, User, utcnow
+    from anchorai.reasoning import service as reasoning
+    from anchorai.scenario.build import AS_OF
+
+    with Session(engine) as session:
+        member = next(
+            m for m, f in reasoning.all_facts(session).items() if not f.get("contacts_last_30d")
+        )
+        assert "G01_contact_fatigue" not in reasoning.trace(session, member).blocked.values()
+        user = session.exec(select(User)).first()
+        plan = Plan(week_start=AS_OF, status="approved")
+        session.add(plan)
+        session.flush()
+        item = PlanItem(
+            plan_id=plan.id,
+            member_id=member,
+            offer_id="checkin_message",
+            channel="sms",
+            expected_value=1.0,
+            explanation_id="x",
+        )
+        session.add(item)
+        session.flush()
+        session.add(
+            Outcome(
+                plan_item_id=item.id,
+                member_id=member,
+                logged_by_id=user.id,
+                outcome="reached",
+                logged_at=utcnow() - timedelta(days=1),
+            )
+        )
+        session.commit()
+        try:
+            assert "G01_contact_fatigue" in reasoning.trace(session, member).blocked.values()
+        finally:
+            for row in session.exec(select(Outcome)).all():
+                session.delete(row)
+            session.flush()
+            session.delete(item)
+            session.flush()
+            session.delete(plan)
+            session.commit()

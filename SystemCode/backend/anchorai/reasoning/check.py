@@ -9,6 +9,8 @@ from anchorai.reasoning.engine import run
 from anchorai.reasoning.models import Rule
 from anchorai.schemas import Channel
 
+NEEDS_PHONE = {Channel.SMS, Channel.CALL}
+
 
 class ProposedItem(BaseModel):
     member_id: str
@@ -28,6 +30,7 @@ class ItemCheck(ProposedItem):
     allowed: bool
     violations: list[Violation]
     on_playbook: bool
+    # The offer supports the channel and the member can be reached on it (sms and call need a phone).
     channel_offered: bool
     offer_active: bool
 
@@ -67,7 +70,8 @@ def check_items(session: Session, items: list[ProposedItem]) -> list[ItemCheck]:
                 allowed=not violations,
                 violations=violations,
                 on_playbook=any(p.offer_id == item.offer_id for p in outcome.proposals),
-                channel_offered=item.channel in offers[item.offer_id].channels,
+                channel_offered=item.channel in offers[item.offer_id].channels
+                and (item.channel not in NEEDS_PHONE or bool(facts[item.member_id].get("phone"))),
                 offer_active=offers[item.offer_id].active,
             )
         )

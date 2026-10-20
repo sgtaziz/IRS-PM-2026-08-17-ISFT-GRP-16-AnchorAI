@@ -28,18 +28,28 @@ KNOWN_FACTS: dict[str, FactSpec] = {
     "monthly_value": FactSpec("number", "Monthly membership value", "members"),
     "club_id": FactSpec("category", "Home club", "members"),
     "days_since_last_contact": FactSpec(
-        "number", "Days since the last retention contact (absent if never)", "interventions"
+        "number",
+        "Days since the last retention contact (absent if never)",
+        "interventions + logged outcomes",
     ),
     "contacts_last_30d": FactSpec(
-        "number", "Retention contacts in the last 30 days", "interventions"
+        "number", "Retention contacts in the last 30 days", "interventions + logged outcomes"
     ),
-    "offers_last_90d": FactSpec("number", "Offers received in the last 90 days", "interventions"),
-    "pt_last_90d": FactSpec("bool", "Had a free PT session in the last 90 days", "interventions"),
+    "offers_last_90d": FactSpec(
+        "number", "Offers received in the last 90 days", "interventions + logged outcomes"
+    ),
+    "pt_last_90d": FactSpec(
+        "bool", "Had a free PT session in the last 90 days", "interventions + logged outcomes"
+    ),
     "at_contact_cap": FactSpec(
-        "bool", "Contacts in the last 30 days have reached the contact cap", "interventions"
+        "bool",
+        "Contacts in the last 30 days have reached the contact cap",
+        "interventions + logged outcomes",
     ),
     "at_offer_cap": FactSpec(
-        "bool", "Offers in the last 90 days have reached the offer cap", "interventions"
+        "bool",
+        "Offers in the last 90 days have reached the offer cap",
+        "interventions + logged outcomes",
     ),
     "lost_anchor_instructor": FactSpec(
         "bool", "An instructor who taught most of their classes has left", "knowledge graph"
@@ -63,20 +73,53 @@ def value_type(value: object) -> FactType:
 SCORE_FACTS = ["churn_prob", "risk_band", "segment", "monthly_value", "club_id"]
 
 
-def contact_facts(interventions: pd.DataFrame) -> pd.DataFrame:
+FREE_PT = "free_pt_session"
+
+
+def contact_facts(interventions: pd.DataFrame, logged: pd.DataFrame | None = None) -> pd.DataFrame:
+    """Contact history from the intervention log plus contacts logged in the app.
+
+    Every treated intervention is a contact and an offer. Every logged outcome is a contact, dated
+    by `logged_at` (columns: member_id, week_start, offer_id, outcome); it is an offer unless
+    the outcome is `no_answer`, and a free PT only if accepted. Days are counted from AS_OF, the
+    scenario's "today", and contacts logged after it count as day 0.
+    """
     treated = interventions[interventions["treated"]]
+    history = pd.DataFrame(
+        {
+            "member_id": treated["member_id"],
+            "week_start": treated["week_start"],
+            "offered": True,
+            "pt": treated["offer_id"] == FREE_PT,
+        }
+    )
+    if logged is not None and len(logged):
+        history = pd.concat(
+            [
+                history,
+                pd.DataFrame(
+                    {
+                        "member_id": logged["member_id"],
+                        "week_start": pd.to_datetime(logged["week_start"]),
+                        "offered": logged["outcome"] != "no_answer",
+                        "pt": (logged["offer_id"] == FREE_PT) & (logged["outcome"] == "accepted"),
+                    }
+                ),
+            ],
+            ignore_index=True,
+        )
     as_of = pd.Timestamp(AS_OF)
-    by_member = treated.groupby("member_id")["week_start"]
-    recent = treated[treated["week_start"] >= as_of - pd.Timedelta(days=90)]
+    by_member = history.groupby("member_id")["week_start"]
+    recent = history[history["week_start"] >= as_of - pd.Timedelta(days=90)]
     # Strict, so "contacted fewer than 30 days ago" and "a contact in the window" agree.
-    last_30d = treated[treated["week_start"] > as_of - pd.Timedelta(days=30)]
-    pt = recent[recent["offer_id"] == "free_pt_session"]
+    last_30d = history[history["week_start"] > as_of - pd.Timedelta(days=30)]
+    offers = recent[recent["offered"]]
     return pd.DataFrame(
         {
-            "days_since_last_contact": (as_of - by_member.max()).dt.days,
+            "days_since_last_contact": (as_of - by_member.max()).dt.days.clip(lower=0),
             "contacts_last_30d": last_30d.groupby("member_id").size(),
-            "offers_last_90d": recent.groupby("member_id").size(),
-            "pt_last_90d": pt.groupby("member_id").size() > 0,
+            "offers_last_90d": offers.groupby("member_id").size(),
+            "pt_last_90d": recent[recent["pt"]].groupby("member_id").size() > 0,
         }
     )
 
@@ -87,17 +130,18 @@ def build_facts(
     interventions: pd.DataFrame,
     kg: pd.DataFrame | None = None,
     caps: Constraints | None = None,
+    logged: pd.DataFrame | None = None,
 ) -> dict[str, dict[str, Any]]:
     """Facts per member. `scores` and `features` are indexed by member_id.
 
     Missing facts are left out rather than defaulted, so rules on them simply don't match:
     never-contacted members have no `days_since_last_contact`, and without the KG there are
     no KG facts at all. `caps` sets the contact and offer limits behind `at_contact_cap` and
-    `at_offer_cap`; it defaults to the catalogue defaults.
+    `at_offer_cap`; it defaults to the catalogue defaults. `logged` is the app's logged contacts.
     """
     caps = caps or Constraints(**DEFAULT_CONSTRAINTS)
     frame = features[FEATURES].join(scores[SCORE_FACTS], how="inner")
-    contacts = contact_facts(interventions).reindex(frame.index)
+    contacts = contact_facts(interventions, logged).reindex(frame.index)
     for col in ("contacts_last_30d", "offers_last_90d"):
         contacts[col] = contacts[col].fillna(0)
     contacts["pt_last_90d"] = contacts["pt_last_90d"].fillna(False).astype(bool)

@@ -3,12 +3,13 @@
 import threading
 from typing import Any
 
+import pandas as pd
 import yaml
 from pydantic import BaseModel
-from sqlmodel import Session, select
+from sqlmodel import Session, col, func, select
 
 from anchorai import catalog
-from anchorai.db.models import RuleVersion
+from anchorai.db.models import Outcome, Plan, PlanItem, RuleVersion
 from anchorai.discovery import service as member_data
 from anchorai.knowledge.signals import kg_facts_path, load_kg_facts
 from anchorai.reasoning.engine import load_rule_files, load_rules, run
@@ -108,10 +109,45 @@ def glossary(session: Session) -> Glossary:
     )
 
 
-def all_facts(session: Session | None = None) -> dict[str, dict[str, Any]]:
-    """Facts for every member, rebuilt when Stream A's data, the KG facts or the caps change.
+def _logged_query():
+    return (
+        select(Outcome, PlanItem)
+        .join(PlanItem, col(PlanItem.id) == col(Outcome.plan_item_id))
+        .join(Plan, col(Plan.id) == col(PlanItem.plan_id))
+        .where(Plan.status == "approved", col(PlanItem.removed).is_(False))
+    )
 
-    Without a session the caps are the catalogue defaults.
+
+def _logged_stamp(session: Session) -> tuple[Any, ...]:
+    q = _logged_query().with_only_columns(
+        func.count(col(Outcome.id)), func.max(col(Outcome.id)), func.max(col(Outcome.logged_at))
+    )
+    return tuple(session.exec(q).one())
+
+
+def logged_contacts(session: Session) -> pd.DataFrame:
+    """Outcomes logged on contacts in approved plans (removed contacts excluded)."""
+    frame = pd.DataFrame(
+        [
+            {
+                "member_id": o.member_id,
+                "week_start": o.logged_at,
+                "offer_id": item.offer_id,
+                "outcome": o.outcome,
+            }
+            for o, item in session.exec(_logged_query()).all()
+        ],
+        columns=["member_id", "week_start", "offer_id", "outcome"],
+    )
+    # Stored as UTC; SQLite returns naive values, but a fresh in-session row can be aware.
+    frame["week_start"] = pd.to_datetime(frame["week_start"], utc=True).dt.tz_localize(None)
+    return frame
+
+
+def all_facts(session: Session | None = None) -> dict[str, dict[str, Any]]:
+    """Facts for every member, rebuilt when the data, KG facts, caps or logged contacts change.
+
+    Without a session the caps are the catalogue defaults and no app contacts are counted.
     """
     global _facts
     data = member_data.get_data()
@@ -121,11 +157,18 @@ def all_facts(session: Session | None = None) -> dict[str, dict[str, Any]]:
         data.stamp,
         kg_path.stat().st_mtime if kg_path.exists() else None,
         tuple(caps.model_dump().items()) if caps else None,
+        _logged_stamp(session) if session is not None else None,
     )
     with _lock:
         if _facts is None or _facts[0] != key:
+            logged = logged_contacts(session) if session is not None else None
             facts = build_facts(
-                data.table, data.features, data.tables["interventions"], load_kg_facts(), caps
+                data.table,
+                data.features,
+                data.tables["interventions"],
+                load_kg_facts(),
+                caps,
+                logged,
             )
             _facts = (key, facts)
         return _facts[1]
