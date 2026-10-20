@@ -172,3 +172,17 @@ def saved(session: Session, plan_id: int) -> SavedPlan:
 def get_plan(session: Session, plan_id: int) -> SavedPlan | None:
     plan = session.get(models.Plan, plan_id)
     return None if plan is None else _saved(session, plan)
+
+
+def previous_plan(session: Session, plan_id: int) -> SavedPlan | None:
+    """The approved plan before this one, for the week-on-week comparison (W15)."""
+    current = session.get(models.Plan, plan_id)
+    if current is None:
+        return None
+    before = session.exec(
+        select(models.Plan)
+        .where(models.Plan.status == "approved", col(models.Plan.id) != plan_id)
+        .where(col(models.Plan.week_start) <= current.week_start)
+        .order_by(col(models.Plan.week_start).desc(), col(models.Plan.id).desc())
+    ).first()
+    return None if before is None else _saved(session, before)

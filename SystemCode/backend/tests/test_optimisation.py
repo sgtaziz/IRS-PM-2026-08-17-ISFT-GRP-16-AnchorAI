@@ -9,7 +9,7 @@ from anchorai import catalog
 from anchorai.catalog import StaffIn
 from anchorai.cbr.reasoner import load_case_base
 from anchorai.db.models import Assignment, AuditLog, Outcome, Plan, PlanItem, User
-from anchorai.optimisation import assignment, contacts, jobs
+from anchorai.optimisation import assignment, contacts, jobs, overrides
 from anchorai.optimisation.baselines import POLICIES
 from anchorai.optimisation.evaluate import Truth, evaluate
 from anchorai.optimisation.exact import solve_full, solve_linear
@@ -467,3 +467,46 @@ def test_demo_seed_is_an_approved_past_week_and_is_deterministic(built, tmp_path
     assert all(o.logged_at.date() in week for o in outcomes)
     assert all(a.ts.date() in week for a in audit)
     assert fresh("b.db")[1] == logged, "same seed, same outcomes"
+
+
+def test_reoptimise_keeps_manager_changes_and_fills_the_rest(client, login, built, engine):
+    manager = login("manager")
+    request = {"as_of": "2026-10-19", "budget": 100, "staff_minutes": 150, "solver": "greedy"}
+    plan = client.post("/api/plan", json=request, headers=manager).json()
+    pid, items = plan["id"], plan["items"]
+    removed, swapped = items[0]["member_id"], items[1]["member_id"]
+    client.post(
+        f"/api/plan/{pid}/items/{removed}/remove",
+        json={"reason": "spoke to them today"},
+        headers=manager,
+    )
+    swap = {
+        "member_id": swapped,
+        "offer_id": "checkin_message",
+        "channel": "email",
+        "reason": "prefers email",
+    }
+    assert client.post(f"/api/plan/{pid}/items", json=swap, headers=manager).status_code == 200
+
+    with Session(engine) as session:
+        overrides.reoptimise(
+            session, session.exec(select(User).where(User.username == "manager")).one(), pid
+        )
+    after = client.get(f"/api/plan/{pid}", headers=manager).json()
+    members = [i["member_id"] for i in after["items"]]
+    assert removed not in members, "a member removed by hand stays out"
+    kept = next(i for i in after["items"] if i["member_id"] == swapped)
+    assert kept["offer_id"] == "checkin_message" and kept["channel"] == "email", (
+        "a hand-made swap stays"
+    )
+    assert len(members) == len(set(members))
+    assert after["total_cost"] <= 100 and after["total_staff_minutes"] <= 150
+
+    assert client.get(f"/api/plan/{pid}/previous", headers=manager).status_code in (200, 404)
+    client.post(f"/api/plan/{pid}/approve", headers=manager)
+    assert client.post(f"/api/plan/{pid}/reoptimise", headers=manager).status_code == 409
+    later = client.post(
+        "/api/plan", json={**request, "as_of": "2026-10-26"}, headers=manager
+    ).json()
+    previous = client.get(f"/api/plan/{later['id']}/previous", headers=manager).json()
+    assert previous["id"] == pid, "the approved plan before a draft is last week's"

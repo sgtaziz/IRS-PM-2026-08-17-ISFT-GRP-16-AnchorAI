@@ -101,6 +101,28 @@ def _override(call):
         raise HTTPException(422, str(e)) from None
 
 
+@router.get("/{plan_id}/previous", response_model=service.SavedPlan)
+def previous_plan(plan_id: int, session: SessionDep):
+    plan = service.previous_plan(session, plan_id)
+    if plan is None:
+        raise HTTPException(404, "No earlier approved plan")
+    return plan
+
+
+@router.post("/{plan_id}/reoptimise", status_code=202)
+def reoptimise(plan_id: int, session: SessionDep, user: Manager) -> dict:
+    """Keep the manager's changes and re-plan the rest in the background; poll /api/plan/jobs/current."""
+    plan = service.get_plan(session, plan_id)
+    if plan is None:
+        raise HTTPException(404, f"No plan {plan_id}")
+    if plan.status != "draft":
+        raise HTTPException(409, f"Plan {plan_id} is {plan.status} and can no longer change")
+    try:
+        return jobs.start_reoptimise(session.get_bind(), user.id, plan_id, plan.request)
+    except jobs.JobRunning as e:
+        raise HTTPException(409, str(e)) from None
+
+
 @router.get("/{plan_id}", response_model=service.SavedPlan)
 def get_plan(plan_id: int, session: SessionDep):
     plan = service.get_plan(session, plan_id)

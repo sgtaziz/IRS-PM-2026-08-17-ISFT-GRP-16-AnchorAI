@@ -10,7 +10,7 @@ from sqlmodel import Session
 
 from anchorai.cbr.reasoner import uplift_series
 from anchorai.db import models
-from anchorai.optimisation import service
+from anchorai.optimisation import overrides, service
 from anchorai.optimisation.baselines import POLICIES
 from anchorai.optimisation.contacts import app_case_base
 from anchorai.optimisation.exact import solve_linear
@@ -85,6 +85,17 @@ def start_plan(engine: Engine, user_id: int, req: PlanRequest) -> dict:
             _status.plan_id = service.build_plan(session, user, req, _report).id
 
     return _start("plan", req, work)
+
+
+def start_reoptimise(engine: Engine, user_id: int, plan_id: int, req: PlanRequest) -> dict:
+    """Re-plan a draft's remaining limits in the background (W15)."""
+
+    def work() -> None:
+        with Session(engine) as session:
+            overrides.reoptimise(session, session.get(models.User, user_id), plan_id, _report)
+            _status.plan_id = plan_id
+
+    return _start("reoptimise", req, work)
 
 
 def compare(session: Session, req: PlanRequest, report=_report) -> dict:

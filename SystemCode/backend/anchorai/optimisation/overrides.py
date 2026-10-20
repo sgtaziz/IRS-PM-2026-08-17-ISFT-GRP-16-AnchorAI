@@ -9,9 +9,18 @@ from anchorai.db import models
 from anchorai.db.audit import record_audit
 from anchorai.db.models import utcnow
 from anchorai.discovery.scores import load_scores
+from anchorai.optimisation import service as plan_service
 from anchorai.optimisation.contacts import app_case_base
 from anchorai.optimisation.explain import explain_plan
-from anchorai.optimisation.model import HORIZON_MONTHS, limits_for, violations
+from anchorai.optimisation.model import (
+    HORIZON_MONTHS,
+    TRAINER,
+    Limits,
+    limits_for,
+    load_instance,
+    violations,
+)
+from anchorai.optimisation.service import Progress
 from anchorai.reasoning import check, service
 from anchorai.reasoning.engine import run
 from anchorai.schemas import Channel
@@ -205,3 +214,79 @@ def approve(session: Session, user: models.User, plan_id: int) -> models.Plan:
     session.commit()
     session.refresh(plan)
     return plan
+
+
+def reoptimise(
+    session: Session, user: models.User, plan_id: int, progress: Progress | None = None
+) -> None:
+    """Keep the manager's own decisions and re-plan the rest of the week's limits (W15).
+
+    Items added or swapped by hand stay; members removed by hand stay out; every other draft item is
+    replaced by what the planner now chooses with the budget, staff time and stock that are left.
+    """
+    report = progress or (lambda stage, done: None)
+    plan = _draft(session, plan_id)
+    items = list(
+        session.exec(select(models.PlanItem).where(models.PlanItem.plan_id == plan_id)).all()
+    )
+    fixed = [i for i in items if not i.removed and i.override_reason]
+    # Members the manager added, swapped or removed by hand.
+    excluded = {i.member_id for i in items if i.override_reason}
+    report("loading", 0.0)
+    case_base = app_case_base(session)
+    uplift = uplift_series(case_base)
+    instance = load_instance(session, uplift=uplift)
+    used = _items_frame(session, fixed)
+    full = instance.limits(plan.request["budget"], plan.request["staff_minutes"])
+    trainer_used = used.loc[used["required_skill"] == TRAINER, "staff_minutes"].sum()
+    stock_used = used["offer_id"].value_counts()
+    left = Limits(
+        full.budget - float(used["cost"].sum()),
+        full.staff_minutes - int(used["staff_minutes"].sum()),
+        full.trainer_minutes - int(trainer_used),
+        {o: s - int(stock_used.get(o, 0)) for o, s in full.stock.items()},
+    )
+    options = instance.options[~instance.options["member_id"].isin(excluded)]
+    solver = plan.request.get("solver", "ga")
+    extra = {}
+    if solver == "ga":
+        extra["on_generation"] = lambda gen, total: report("optimising", 0.05 + 0.85 * gen / total)
+    report("optimising", 0.05)
+    chosen = plan_service.SOLVERS[solver](options, left, None, **extra)
+    broken = violations(chosen, options, left)
+    if broken:
+        raise RuntimeError(f"Re-optimising returned an infeasible plan: {broken}")
+
+    report("explaining", 0.9)
+    replaced = [i for i in items if not i.removed and not i.override_reason]
+    for item in replaced:  # a draft item is not a contact yet, so nothing is lost by dropping it
+        session.delete(item)
+    session.flush()
+    start = len(items) + 1
+    ids = [f"p{plan_id}-{m}-{start + k}" for k, m in enumerate(chosen["member_id"])]
+    names = {o.offer_id: o.name for o in catalog.list_offers(session)}
+    scores = load_scores().set_index("member_id")
+    explanations = explain_plan(chosen, ids, instance.outcomes, scores, case_base, names)
+    session.add_all(
+        models.PlanItem(
+            plan_id=plan_id,
+            member_id=r.member_id,
+            offer_id=r.offer_id,
+            channel=r.channel,
+            expected_value=float(r.value),
+            explanation_id=e.explanation_id,
+            explanation=e.model_dump(mode="json"),
+        )
+        for r, e in zip(chosen.itertuples(), explanations, strict=True)
+    )
+    session.flush()
+    _refresh_totals(session, plan, uplift)
+    after = {
+        "kept": len(fixed),
+        "replaced": len(replaced),
+        "planned": len(chosen),
+        "solver": solver,
+    }
+    report("saving", 0.97)
+    record_audit(session, user, "plan.reoptimise", "plan", str(plan_id), None, after)
+    session.commit()
