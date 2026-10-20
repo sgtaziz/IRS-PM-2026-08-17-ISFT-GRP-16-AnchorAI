@@ -12,28 +12,20 @@ from dataclasses import dataclass
 import numpy as np
 import pandas as pd
 from deap import base, creator, tools
+from sqlmodel import Session
 
 from anchorai.config import get_settings
+from anchorai.knowledge.entities import class_cohorts
 from anchorai.optimisation.baselines import greedy_uplift
 from anchorai.optimisation.model import HORIZON_MONTHS, TRAINER, Limits
-from anchorai.scenario.tables import read_tables
 
 # Spillover strength and diminishing-returns rate (decision #5; sensitivity in E5).
 BETA, DECAY = 0.5, 0.02
 
 
-def load_cohorts() -> pd.DataFrame:
-    """Class cohort rows (HANDOFFS #7): member, class, share of their own class visits, instructor.
-
-    Built from Stream A's attendance table until C's KG function lands (HANDOFFS #34).
-    """
-    tables = read_tables()
-    att = tables["attendance"]
-    share = att["visits_per_week"] / att.groupby("member_id")["visits_per_week"].transform("sum")
-    rows = att.assign(weight=share).merge(
-        tables["classes"][["class_id", "instructor_id"]], on="class_id"
-    )
-    return rows[["member_id", "class_id", "weight", "instructor_id"]]
+def load_cohorts(session: Session | None = None) -> pd.DataFrame:
+    """Class cohort rows (HANDOFFS #7): member, class, share of their own class visits, instructor."""
+    return class_cohorts(session)
 
 
 @dataclass

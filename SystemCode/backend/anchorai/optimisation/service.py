@@ -15,7 +15,7 @@ from anchorai.optimisation.baselines import greedy_uplift
 from anchorai.optimisation.contacts import app_case_base
 from anchorai.optimisation.exact import exact
 from anchorai.optimisation.explain import explain_plan, one_line
-from anchorai.optimisation.ga import ga
+from anchorai.optimisation.ga import ga, load_cohorts
 from anchorai.optimisation.model import load_instance, violations
 from anchorai.schemas import Explanation, Plan, PlanItem, PlanRequest
 
@@ -60,6 +60,7 @@ def build_plan(
     extra = {}
     if req.solver == "ga":
         extra["on_generation"] = lambda gen, total: report("optimising", 0.05 + 0.85 * gen / total)
+        extra["cohorts"] = load_cohorts(session)
     chosen = SOLVERS[req.solver](instance.options, limits, None, **extra)
     broken = violations(chosen, instance.options, limits)
     if broken:

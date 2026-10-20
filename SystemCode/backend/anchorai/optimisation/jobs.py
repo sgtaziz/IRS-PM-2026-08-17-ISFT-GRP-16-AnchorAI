@@ -106,7 +106,7 @@ def compare(session: Session, req: PlanRequest, report=_report) -> dict:
     plans = {name: policy(options, limits, 0) for name, policy in POLICIES.items()}
     report("optimising", 0.1)
     plans["exact"] = solve_linear(options, limits)[0]
-    problem = build_problem(options, load_cohorts(), limits)
+    problem = build_problem(options, load_cohorts(session), limits)
     start = encode(problem, options.index.get_indexer(plans["greedy-uplift"].index))
     genes, log, _ = run_ga(
         problem,

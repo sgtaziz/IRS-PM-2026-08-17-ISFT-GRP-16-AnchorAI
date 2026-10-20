@@ -12,6 +12,7 @@ from anchorai.discovery.scores import load_scores
 from anchorai.optimisation import service as plan_service
 from anchorai.optimisation.contacts import app_case_base
 from anchorai.optimisation.explain import explain_plan
+from anchorai.optimisation.ga import load_cohorts
 from anchorai.optimisation.model import (
     HORIZON_MONTHS,
     TRAINER,
@@ -261,6 +262,7 @@ def reoptimise(
     extra = {}
     if solver == "ga":
         extra["on_generation"] = lambda gen, total: report("optimising", 0.05 + 0.85 * gen / total)
+        extra["cohorts"] = load_cohorts(session)
     report("optimising", 0.05)
     chosen = plan_service.SOLVERS[solver](options, left, None, **extra)
     broken = violations(chosen, options, left)
