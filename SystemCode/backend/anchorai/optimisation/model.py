@@ -68,10 +68,12 @@ def build_options(
 
     `scores` is indexed by member_id; `uplift` by (member_id, offer_id).
     """
+    # Rules can still propose an offer an admin deleted from the catalogue; it is not available.
+    available = {o.offer_id for o in offers}
     rows = [
         (m, p.offer_id, p.channel, p.rule_id, rank)
         for m, outcome in outcomes.items()
-        for rank, p in enumerate(outcome.allowed)
+        for rank, p in enumerate(p for p in outcome.allowed if p.offer_id in available)
     ]
     options = pd.DataFrame(rows, columns=OPTION_COLUMNS)
     catalogue = pd.DataFrame([o.model_dump() for o in offers]).set_index("offer_id")

@@ -399,3 +399,32 @@ def test_compare_runs_every_planner_on_the_same_limits(built, engine):
     assert all(r["feasible"] for r in rows.values())
     assert rows["exact"]["linear_value"] >= max(r["linear_value"] for r in rows.values()) - 0.01
     assert result["ga_convergence"]
+
+
+def test_options_skip_offers_missing_from_the_catalogue():
+    from anchorai.catalog import OfferIn
+    from anchorai.optimisation.model import build_options
+    from anchorai.reasoning.models import Proposal, RuleOutcome
+
+    allowed = [
+        Proposal(offer_id="gone", channel="sms"),
+        Proposal(offer_id="checkin_message", channel="sms"),
+    ]
+    outcome = RuleOutcome(
+        member_id="M1", facts={}, firings=[], proposals=allowed, blocked={}, allowed=allowed
+    )
+    offers = [
+        OfferIn(
+            offer_id="checkin_message", name="Check-in", cost=0, staff_minutes=5, channels=["sms"]
+        )
+    ]
+    scores = pd.DataFrame(
+        {"churn_prob": [0.5], "risk_band": ["high"], "monthly_value": [72.0]}, index=["M1"]
+    )
+    uplift = pd.Series([0.1], index=pd.MultiIndex.from_tuples([("M1", "checkin_message")]))
+    options = build_options({"M1": outcome}, offers, scores, uplift)
+    assert options["offer_id"].tolist() == ["checkin_message"]
+    assert options["rank"].tolist() == [0], (
+        "the first available offer becomes the playbook's top offer"
+    )
+    assert options["cost"].notna().all()
