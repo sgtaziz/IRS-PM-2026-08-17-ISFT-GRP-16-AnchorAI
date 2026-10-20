@@ -27,7 +27,6 @@ What each stream needs from the others: blockers, reviews, decisions and promise
 
 | # | Requested by | Kind | Item | Why it matters | Status | Added |
 |---|---|---|---|---|---|---|
-| 8 | C | deliver | `demo` seed layer: one approved past week with assignments and logged outcomes | Dashboards, audit log and the assistant's plan questions are empty without it | open | 2026-10-16 |
 
 ## Stream C: Knowledge & Interaction
 
@@ -43,6 +42,7 @@ What each stream needs from the others: blockers, reviews, decisions and promise
 
 | # | Requested by → Owner | Item | Closed |
 |---|---|---|---|
+| 8 | C → B | `demo` seed layer (`db/seeds/demo.py`): the week of 2026-10-12, planned by the planner at the default $1,500 / 36 h (182 contacts), approved, auto-assigned, with outcomes simulated by the scenario's response model (69 accepted, 70 declined, 27 no answer, 16 follow-up) and plan, outcome and audit times backdated into that week. Deterministic and idempotent; skipped when the data tables are not built. `db reset` takes ~6 s | 2026-10-20 |
 | 9 | C → B | `POST /api/plan` (solvers `ga`, `exact`, `greedy`), `GET /api/plan/latest` and `GET /api/plan/explanations/{id}`. Each saved plan item stores an `Explanation` in `plan_items.explanation`: A's drivers, C's rule trace and graph signals, B's 10 most similar past cases (each with an `outcome` sentence) and a one-line summary, so the assistant's plan answers now have data | 2026-10-20 |
 | 7 | C → B | Spillover shape decided: **class cohort rows** `member_id, class_id, weight` (weight = the member's share of their own class visits). B derives pair strengths within classes and diminishing-returns groups per instructor (class → instructor). Delivery requested as #34 | 2026-10-19 |
 | 15 | C → B | 9 questions added to `notebooks/data/e8_questions.yaml` (`stream_b_questions`, author `asiri`): 4 about one member (context M0008), 4 tagged `unknown`, 2 ranking questions tagged `graph_impact` (hard cases, noted) | 2026-10-19 |
