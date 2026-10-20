@@ -125,7 +125,11 @@ async function save() {
               <ShieldAlert :size="14" /> {{ ruleCode(v.rule_id) }}: {{ v.description }}
             </span>
             <span v-if="!check.offer_active">This offer is switched off in the catalogue.</span>
-            <span v-if="!check.channel_offered">This offer cannot be sent by {{ channelLabel(check.channel).toLowerCase() }}.</span>
+            <template v-if="!check.channel_offered">
+              <!-- The channel list only holds the offer's own channels, so a refusal here means no phone on file. -->
+              <span v-if="channels.some((c) => c.value === check?.channel)">{{ check.member_id }} has no phone on file, so {{ channelLabel(check.channel).toLowerCase() }} can't reach them.</span>
+              <span v-else>This offer cannot be sent by {{ channelLabel(check.channel).toLowerCase() }}.</span>
+            </template>
           </div>
         </Message>
         <Message v-else-if="!check.on_playbook" severity="warn">
