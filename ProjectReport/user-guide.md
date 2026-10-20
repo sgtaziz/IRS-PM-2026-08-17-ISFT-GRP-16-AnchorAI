@@ -420,7 +420,7 @@ Select the thumbs-up (Helpful) or thumbs-down (Not helpful) under a grounded ans
 
 - It cannot change anything. It does not edit plans, rules, rosters or users, and it does not send messages.
 - It cannot answer plan questions for staff. Staff get "Plan details are only available to managers."
-- "What if the budget were …" questions need the plan optimiser, which the assistant does not run yet. Use Scenarios instead.
+- "What if the budget were $3,000?" and "What if we had 50 staff hours?" are answered with the planner's best plan at the asked limits next to the current limits, without saving anything. It says which limit stops further contacts (with the seeded roster staff time runs out first, so a bigger budget alone changes little). It does not compare planners or save a plan; use Scenarios for that.
 - It does not remember a conversation after a refresh.
 - With the language model offline it cannot answer a follow-up that only rewording can handle, and says so.
 
@@ -440,7 +440,7 @@ Rules fire in order of salience, then the number of conditions (more specific fi
 
 Some guardrails follow other settings:
 
-- **Contact caps.** G01 and G02 block members who have reached the caps under **Max contacts per member per 30 days** and **Max offers per member per 90 days** on the Offers & constraints page. A changed cap applies from the next request.
+- **Contact caps.** G01 and G02 block members who have reached the caps under **Max contacts per member per 30 days** and **Max offers per member per 90 days** on the Offers & constraints page. Both counts include contacts staff have logged in the app (any outcome counts as a contact; a no-answer call is not counted as an offer), as well as the earlier contact history. A changed cap or a newly logged outcome applies from the next request.
 - **Free PT.** G05 blocks a free PT session for members who had one in the last 90 days.
 - **Phone.** Playbooks that use SMS or a call apply only to members with a phone on file. Each has a twin rule for members without one, with the same code plus "b" (for example P02b), which uses email or in person instead.
 - **Catalogue.** An inactive offer is never listed as allowed, even if a playbook proposes it.
@@ -520,7 +520,7 @@ The **Versions** tab lists each version with its note, who saved it, when, and t
 
 ### Guardrails in plan review
 
-Guardrails are not only shown here. When a manager overrides or adds a contact in plan review, AnchorAI runs the proposed offer for that member through the active rule base. A violation (a blocked offer, an inactive offer, or an offer not available on that channel) is shown next to the item. This is why a guardrail rule you add takes effect on the next plan review check.
+Guardrails are not only shown here. When a manager overrides or adds a contact in plan review, AnchorAI runs the proposed offer for that member through the active rule base. A violation (a blocked offer, an inactive offer, or an offer not available on that channel, including a text or call to a member with no phone on file) is shown next to the item. This is why a guardrail rule you add takes effect on the next plan review check.
 
 ### Links from the assistant
 
