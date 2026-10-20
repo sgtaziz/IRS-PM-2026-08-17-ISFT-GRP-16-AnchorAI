@@ -420,7 +420,7 @@ Select the thumbs-up (Helpful) or thumbs-down (Not helpful) under a grounded ans
 
 - It cannot change anything. It does not edit plans, rules, rosters or users, and it does not send messages.
 - It cannot answer plan questions for staff. Staff get "Plan details are only available to managers."
-- "What if the budget were $3,000?" and "What if we had 50 staff hours?" are answered with the planner's best plan at the asked limits next to the current limits, without saving anything. It says which limit stops further contacts (with the seeded roster staff time runs out first, so a bigger budget alone changes little). It does not compare planners or save a plan; use Scenarios for that.
+- "What if the budget were $3,000?" and "What if we had 50 staff hours?" are answered with the planner's best plan at the asked limits next to the current limits, without saving anything. "Another $1,500" or "10 more staff hours" is added to the current limit. It says which limit stops further contacts (with the seeded roster staff time runs out first, so a bigger budget alone changes little). It does not compare planners or save a plan; use Scenarios for that.
 - It does not remember a conversation after a refresh.
 - With the language model offline it cannot answer a follow-up that only rewording can handle, and says so.
 
