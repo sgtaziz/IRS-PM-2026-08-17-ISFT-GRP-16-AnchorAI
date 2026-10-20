@@ -26,8 +26,6 @@ from anchorai.reasoning import check, service
 from anchorai.reasoning.engine import run
 from anchorai.schemas import Channel
 
-NEEDS_PHONE = {Channel.SMS, Channel.CALL}
-
 
 class PlanNotFound(LookupError):
     pass
@@ -123,10 +121,12 @@ def add_item(
     if not result.offer_active:
         problems.append(f"{offer_id} is not an active offer")
     if not result.channel_offered:
-        problems.append(f"{offer_id} cannot be sent by {channel.value}")
-    # HANDOFFS #30: the rule check does not yet stop SMS or calls to members with no phone on file.
-    if channel in NEEDS_PHONE and not facts.get("phone"):
-        problems.append(f"{member_id} has no phone on file, so {channel.value} cannot reach them")
+        if channel in check.NEEDS_PHONE and not facts.get("phone"):
+            problems.append(
+                f"{member_id} has no phone on file, so {channel.value} cannot reach them"
+            )
+        else:
+            problems.append(f"{offer_id} cannot be sent by {channel.value}")
     if problems:
         raise OverrideRejected("The change breaks the rules", problems)
 
