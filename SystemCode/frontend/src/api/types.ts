@@ -326,6 +326,18 @@ export interface LlmTest {
   error?: string
 }
 
+// Mirrors anchorai/optimisation/scenarios.py (W17).
+export interface SavedScenario {
+  id: number
+  name: string
+  created_at: string
+  budget: number
+  staff_minutes: number
+  best_planner: string | null
+  best_extra_members: number | null
+  comparison?: Comparison
+}
+
 // Mirrors anchorai/optimisation/jobs.py JobStatus.
 export interface PlanJob {
   state: 'idle' | 'running' | 'done' | 'failed'

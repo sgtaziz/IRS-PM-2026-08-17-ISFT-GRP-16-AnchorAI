@@ -1,22 +1,24 @@
 <script setup lang="ts">
 import type { EChartsOption } from 'echarts'
-import { Activity, BarChart3, Info, Play, SlidersHorizontal, Trophy } from 'lucide-vue-next'
+import { Activity, BarChart3, Bookmark, FolderOpen, Info, Play, Save, SlidersHorizontal, Trophy } from 'lucide-vue-next'
 import Button from 'primevue/button'
 import Column from 'primevue/column'
 import DataTable from 'primevue/datatable'
 import InputNumber from 'primevue/inputnumber'
+import InputText from 'primevue/inputtext'
 import Message from 'primevue/message'
 import ProgressBar from 'primevue/progressbar'
 import Slider from 'primevue/slider'
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { api } from '../api/client'
-import type { Comparison, PlanJob, PlannerResult } from '../api/types'
+import type { Comparison, PlanJob, PlannerResult, SavedScenario } from '../api/types'
 import { palette } from '../charts'
 import ChartCard from '../components/ChartCard.vue'
+import ConfirmAction from '../components/ConfirmAction.vue'
 import PageHeader from '../components/PageHeader.vue'
 import SectionCard from '../components/SectionCard.vue'
 import { errorMessage } from '../composables/useAsync'
-import { money, num } from '../format'
+import { dateTime, money, num } from '../format'
 
 // W17: what-if budgets and staff hours, every planner on the same week, scored by the planner's own estimates.
 const NAMES: Record<string, string> = {
@@ -43,6 +45,7 @@ onMounted(async () => {
     const last = await api<PlanJob>('/plan/jobs/current')
     if (last.kind === 'compare' && last.state === 'done' && last.comparison) {
       result.value = last.comparison
+      fresh.value = true // the server's last comparison, so it can still be saved
       budget.value = last.comparison.request.budget
       staffHours.value = last.comparison.request.staff_minutes / 60
     }
@@ -59,7 +62,11 @@ async function poll() {
       return
     }
     if (job.value.state === 'failed') error.value = job.value.error ?? 'The comparison failed'
-    else result.value = job.value.comparison
+    else {
+      result.value = job.value.comparison
+      fresh.value = true
+      openedName.value = null
+    }
   } catch (e) {
     error.value = errorMessage(e)
   }
@@ -81,6 +88,63 @@ async function run() {
   } catch (e) {
     error.value = errorMessage(e)
     running.value = false
+  }
+}
+
+// Saved scenarios: name the comparison just run, or reopen an earlier one.
+const fresh = ref(false) // the shown result is the comparison just run, so it can be saved
+const openedName = ref<string | null>(null)
+const scenarioName = ref('')
+const saving = ref(false)
+const saved = ref<SavedScenario[]>([])
+const savedError = ref<string | null>(null)
+
+async function loadSaved() {
+  try {
+    saved.value = await api<SavedScenario[]>('/plan/scenarios')
+  } catch (e) {
+    savedError.value = errorMessage(e)
+  }
+}
+onMounted(loadSaved)
+
+async function save() {
+  saving.value = true
+  savedError.value = null
+  try {
+    await api<SavedScenario>('/plan/scenarios', { method: 'POST', body: JSON.stringify({ name: scenarioName.value.trim() }) })
+    openedName.value = scenarioName.value.trim()
+    scenarioName.value = ''
+    fresh.value = false
+    await loadSaved()
+  } catch (e) {
+    savedError.value = errorMessage(e)
+  } finally {
+    saving.value = false
+  }
+}
+
+async function open(s: SavedScenario) {
+  savedError.value = null
+  try {
+    const full = await api<SavedScenario>(`/plan/scenarios/${s.id}`)
+    result.value = full.comparison ?? null
+    budget.value = full.budget
+    staffHours.value = full.staff_minutes / 60
+    openedName.value = full.name
+    fresh.value = false
+  } catch (e) {
+    savedError.value = errorMessage(e)
+  }
+}
+
+async function remove(s: SavedScenario) {
+  savedError.value = null
+  try {
+    await api<void>(`/plan/scenarios/${s.id}`, { method: 'DELETE' })
+    await loadSaved()
+  } catch (e) {
+    savedError.value = errorMessage(e)
   }
 }
 
@@ -169,6 +233,18 @@ const convergenceOption = computed<EChartsOption | null>(() => {
     </SectionCard>
 
     <template v-if="result">
+      <SectionCard v-if="fresh" class="mt-6" title="Save this comparison" :icon="Save">
+        <form class="flex flex-wrap items-end gap-3 px-5 pb-5 pt-3" @submit.prevent="save">
+          <label class="field min-w-64 flex-1">
+            <span>Name</span>
+            <InputText v-model="scenarioName" maxlength="80" placeholder="e.g. Two extra staff hours on weekends" fluid />
+          </label>
+          <Button type="submit" label="Save" :disabled="!scenarioName.trim()" :loading="saving">
+            <template #icon><Save :size="15" /></template>
+          </Button>
+        </form>
+      </SectionCard>
+      <p v-if="openedName" class="m-0 mt-6 flex items-center gap-2 text-sm text-ink-600"><Bookmark :size="15" /> Showing saved scenario “{{ openedName }}”</p>
       <Message severity="info" class="mt-6">
         <span class="flex items-start gap-2">
           <Info :size="16" class="mt-0.5 shrink-0" />
@@ -209,5 +285,28 @@ const convergenceOption = computed<EChartsOption | null>(() => {
         />
       </div>
     </template>
+
+    <SectionCard class="mt-6" title="Saved scenarios" :icon="Bookmark" flush>
+      <Message v-if="savedError" severity="error" class="mx-5 mb-3">{{ savedError }}</Message>
+      <p v-if="!saved.length" class="m-0 px-5 pb-5 text-sm text-ink-500">None yet. Run a comparison, then give it a name to keep it.</p>
+      <DataTable v-else :value="saved" data-key="id">
+        <Column field="name" header="Name" />
+        <Column header="Saved"><template #body="{ data }">{{ dateTime(data.created_at) }}</template></Column>
+        <Column header="Limits"><template #body="{ data }">{{ money(data.budget) }} · {{ num(data.staff_minutes / 60, 0) }} h</template></Column>
+        <Column header="Best planner">
+          <template #body="{ data }">{{ NAMES[data.best_planner] ?? '—' }} · {{ num(data.best_extra_members, 1) }} extra members</template>
+        </Column>
+        <Column header="" :exportable="false">
+          <template #body="{ data }">
+            <div class="flex justify-end gap-1">
+              <Button label="Open" size="small" text @click="open(data)">
+                <template #icon><FolderOpen :size="14" /></template>
+              </Button>
+              <ConfirmAction label="Delete" header="Delete this scenario?" :message="`Delete the saved scenario “${data.name}”?`" @confirm="remove(data)" />
+            </div>
+          </template>
+        </Column>
+      </DataTable>
+    </SectionCard>
   </div>
 </template>
