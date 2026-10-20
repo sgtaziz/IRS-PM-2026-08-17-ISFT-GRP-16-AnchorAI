@@ -158,7 +158,10 @@ const rows = computed<(PlannerResult & { name: string; perThousand: number | nul
       perHour: r.staff_minutes ? (60 * r.expected_extra_members) / r.staff_minutes : null,
     })),
 )
-const best = computed(() => [...rows.value].sort((a, b) => b.full_value - a.full_value)[0]?.planner ?? null)
+// Every planner within 50 cents of the top value is a best plan; when several tie, all are marked.
+const bestValue = computed(() => Math.max(...rows.value.map((r) => r.full_value)))
+const isBest = (r: PlannerResult) => r.full_value >= bestValue.value - 0.5
+const tied = computed(() => rows.value.filter(isBest).length > 1)
 
 const barOption = computed<EChartsOption | null>(() =>
   rows.value.length
@@ -259,8 +262,8 @@ const convergenceOption = computed<EChartsOption | null>(() => {
         <DataTable :value="rows" data-key="planner" scrollable>
           <Column field="name" header="Planner">
             <template #body="{ data }">
-              <span class="font-medium" :class="{ 'text-brand-700': data.planner === best }">{{ data.name }}</span>
-              <span v-if="data.planner === best" class="ml-2 rounded-full bg-brand-50 px-2 py-0.5 text-xs text-brand-700">best value</span>
+              <span class="font-medium" :class="{ 'text-brand-700': isBest(data) }">{{ data.name }}</span>
+              <span v-if="isBest(data)" class="ml-2 rounded-full bg-brand-50 px-2 py-0.5 text-xs text-brand-700">{{ tied ? 'tied best' : 'best value' }}</span>
               <span v-if="!data.feasible" class="ml-2 text-xs text-danger">breaks a limit</span>
             </template>
           </Column>
