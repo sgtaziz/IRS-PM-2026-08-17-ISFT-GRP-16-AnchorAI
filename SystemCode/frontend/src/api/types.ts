@@ -288,6 +288,42 @@ export interface Comparison {
   ga_convergence: { generation: number; best: number; mean: number }[]
 }
 
+// Mirrors anchorai/health.py (W45, admin only).
+export interface HealthDetails {
+  status: string
+  llm: { base_url: string; model: string; api_key: string | null; tool_calling: boolean }
+  knowledge_graph: {
+    uri: string
+    reachable: boolean
+    stale: boolean
+    problem: string | null
+    last_reloaded_at: string | null
+    counts: Record<string, number> | null
+  }
+  models: {
+    built: boolean
+    built_at?: string
+    seed?: number
+    members?: number
+    churn_model?: string
+    churn_test?: { f1: number | null; pr_auc: number | null; brier: number | null }
+    uplift_baseline?: string
+  }
+  database: { revision: string | null; latest: string[]; up_to_date: boolean }
+  planner: {
+    latest_plan: { id: number; status: string; created_at: string } | null
+    uplift_source: string
+    case_base: { randomised: number | null; logged: number }
+  }
+}
+
+export interface LlmTest {
+  ok: boolean
+  seconds: number
+  reply?: string
+  error?: string
+}
+
 // Mirrors anchorai/optimisation/jobs.py JobStatus.
 export interface PlanJob {
   state: 'idle' | 'running' | 'done' | 'failed'
