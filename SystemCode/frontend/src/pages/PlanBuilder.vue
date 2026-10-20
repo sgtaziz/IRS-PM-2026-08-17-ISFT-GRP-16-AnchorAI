@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CalendarCheck, Clock, DollarSign, Lock, Play, Plus, Repeat, Trash2, UserCheck, Users } from 'lucide-vue-next'
+import { CalendarCheck, Clock, DollarSign, Lock, Play, Plus, Repeat, Trash2, UserCheck, Users, Wand2 } from 'lucide-vue-next'
 import Button from 'primevue/button'
 import Column from 'primevue/column'
 import InputNumber from 'primevue/inputnumber'
@@ -9,7 +9,7 @@ import Dialog from 'primevue/dialog'
 import SelectButton from 'primevue/selectbutton'
 import Textarea from 'primevue/textarea'
 import vTooltip from 'primevue/tooltip'
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { ApiError, api } from '../api/client'
 import type { PlanItem, PlanJob, PlanRequest, SavedPlan } from '../api/types'
 import AddContactDialog from '../components/AddContactDialog.vue'
@@ -85,10 +85,46 @@ async function poll() {
     }
     if (job.value.state === 'failed') generateError.value = job.value.error ?? 'The planner failed'
     else if (job.value.plan_id) plan.value = await api<SavedPlan>(`/plan/${job.value.plan_id}`)
+    reoptimising.value = false
   } catch (e) {
     generateError.value = errorMessage(e)
   }
   generating.value = false
+}
+
+// W15: keep the manager's changes and re-plan the rest of the week's limits.
+const reoptimising = ref(false)
+async function reoptimise() {
+  if (!plan.value) return
+  generating.value = reoptimising.value = true
+  generateError.value = null
+  try {
+    job.value = await api<PlanJob>(`/plan/${plan.value.id}/reoptimise`, { method: 'POST' })
+    poll()
+  } catch (e) {
+    generateError.value = errorMessage(e)
+    generating.value = reoptimising.value = false
+  }
+}
+
+// W15: last week's approved plan, for the week-on-week comparison in the totals.
+const previous = ref<SavedPlan | null>(null)
+watch(
+  () => plan.value?.id,
+  async (id) => {
+    previous.value = null
+    if (!id) return
+    try {
+      previous.value = await api<SavedPlan>(`/plan/${id}/previous`)
+    } catch {
+      // No earlier approved plan: the tiles simply show no comparison.
+    }
+  },
+)
+const versus = (now: number, before: number | undefined, show: (v: number) => string) => {
+  if (before === undefined) return ''
+  const d = now - before
+  return `${d >= 0 ? '+' : '−'}${show(Math.abs(d))} vs last week`
 }
 
 async function generate() {
@@ -199,18 +235,28 @@ async function approve() {
     >
       <template v-if="plan">
         <section class="mt-6 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4" aria-label="Plan totals">
-          <KpiTile label="Members to contact" :value="plan.items.length.toLocaleString()" :icon="Users" />
-          <KpiTile label="Spend" :value="money(plan.total_cost)" :hint="`of ${money(plan.request.budget)} budget`" :icon="DollarSign" />
+          <KpiTile
+            label="Members to contact"
+            :value="plan.items.length.toLocaleString()"
+            :hint="versus(plan.items.length, previous?.items.length, (v) => String(v))"
+            :icon="Users"
+          />
+          <KpiTile
+            label="Spend"
+            :value="money(plan.total_cost)"
+            :hint="[`of ${money(plan.request.budget)} budget`, versus(plan.total_cost, previous?.total_cost, money)].filter(Boolean).join(' · ')"
+            :icon="DollarSign"
+          />
           <KpiTile
             label="Staff time"
             :value="`${num(usedHours, 1)} h`"
-            :hint="`of ${num(plan.request.staff_minutes / 60, 1)} h available`"
+            :hint="[`of ${num(plan.request.staff_minutes / 60, 1)} h available`, versus(usedHours, previous ? previous.total_staff_minutes / 60 : undefined, (v) => `${num(v, 1)} h`)].filter(Boolean).join(' · ')"
             :icon="Clock"
           />
           <KpiTile
             label="Extra members expected to stay"
             :value="num(plan.expected_members_retained, 1)"
-            hint="by the planner's own estimates"
+            :hint="['by the planner\'s own estimates', versus(plan.expected_members_retained, previous?.expected_members_retained, (v) => num(v, 1))].filter(Boolean).join(' · ')"
             :icon="UserCheck"
             tone="good"
           />
@@ -224,6 +270,18 @@ async function approve() {
         >
           <template #actions>
             <template v-if="isDraft">
+              <Button
+                label="Re-optimise the rest"
+                size="small"
+                severity="secondary"
+                outlined
+                :loading="reoptimising"
+                :disabled="generating"
+                v-tooltip.top="'Keep your changes and re-plan the remaining budget and staff time'"
+                @click="reoptimise"
+              >
+                <template #icon><Wand2 :size="15" /></template>
+              </Button>
               <Button label="Add contact" size="small" severity="secondary" outlined @click="openAdd()">
                 <template #icon><Plus :size="15" /></template>
               </Button>
