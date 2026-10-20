@@ -5,7 +5,7 @@ from sqlmodel import Session, select
 
 from anchorai.db.models import AuditLog, ClassInstructorOverride, GymClass, GymEvent, GymInstructor
 from anchorai.knowledge import reload
-from anchorai.knowledge.entities import merge
+from anchorai.knowledge.entities import cohort_rows, merge
 from anchorai.knowledge.reload import GraphDown
 from anchorai.scenario.tables import read_tables
 from tests.conftest import FIXTURES
@@ -32,6 +32,14 @@ def test_overlay_merge():
     assert "E001" not in events.index and "E002" in events.index
     assert events.loc["EX002", "entity_id"] == "KX01"
     assert "IX01" in set(eff.instructors["instructor_id"])
+
+
+def test_cohort_rows_follow_a_reassigned_class():
+    tables = read_tables(FIXTURES)
+    eff = merge(tables, [], [], [ClassInstructorOverride(class_id="K03", instructor_id="I01")], [])
+    rows = cohort_rows({**tables, "classes": eff.classes})
+    assert set(rows.loc[rows["class_id"] == "K03", "instructor_id"]) == {"I01"}
+    assert rows.groupby("member_id")["weight"].sum().round(9).eq(1).all()
 
 
 @pytest.fixture

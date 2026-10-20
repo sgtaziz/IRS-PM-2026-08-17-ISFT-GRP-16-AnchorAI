@@ -119,3 +119,19 @@ def effective_tables(session: Session | None = None) -> dict[str, pd.DataFrame]:
         "classes": eff.classes,
         "events": eff.events,
     }
+
+
+def cohort_rows(tables: dict[str, pd.DataFrame]) -> pd.DataFrame:
+    """Class cohort rows for B's planner (HANDOFFS #7): `weight` is the member's share of their
+    own class visits, `instructor_id` who teaches the class now."""
+    att = tables["attendance"]
+    share = att["visits_per_week"] / att.groupby("member_id")["visits_per_week"].transform("sum")
+    rows = att.assign(weight=share).merge(
+        tables["classes"][["class_id", "instructor_id"]], on="class_id"
+    )
+    return rows[["member_id", "class_id", "weight", "instructor_id"]]
+
+
+def class_cohorts(session: Session | None = None) -> pd.DataFrame:
+    """Cohort rows on the effective roster, so a reassigned class counts for its new instructor."""
+    return cohort_rows(effective_tables(session))
