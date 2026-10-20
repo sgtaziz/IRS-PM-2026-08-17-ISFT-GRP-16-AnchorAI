@@ -14,6 +14,7 @@ import PageState from '../components/PageState.vue'
 import { errorMessage, useAsync } from '../composables/useAsync'
 import { date } from '../format'
 import { channelLabel } from '../labels'
+import { useAuthStore } from '../stores/auth'
 import { useGlossaryStore } from '../stores/glossary'
 
 // W20 + W21: the signed-in user's contacts in the latest approved plan, and one-tap outcome logging.
@@ -31,6 +32,7 @@ const list = useAsync(() => api<MyContact[]>('/assignments/mine'))
 const contacts = ref<MyContact[]>([])
 // C's message-draft dialog names offers through the shared glossary.
 const glossary = useGlossaryStore()
+const auth = useAuthStore()
 onMounted(glossary.load)
 
 async function load() {
@@ -88,7 +90,18 @@ const draftOpen = computed({
     />
     <PageState :loading="list.loading.value" :error="list.error.value" :empty="!contacts.length" @retry="load">
       <template #empty>
-        <EmptyState :icon="ClipboardList" title="No contacts for you yet" text="Once a manager approves this week's plan and assigns it, your members appear here." />
+        <EmptyState
+          v-if="auth.role === 'staff'"
+          :icon="ClipboardList"
+          title="No contacts for you yet"
+          text="Once a manager approves this week's plan, the members assigned to you appear here."
+        />
+        <EmptyState
+          v-else
+          :icon="ClipboardList"
+          title="Contacts go to staff"
+          text="Approving a plan assigns its contacts to staff members. Sign in as one of them (for example staff1) to see their list."
+        />
       </template>
 
       <div class="mb-5 flex flex-col gap-1.5">
