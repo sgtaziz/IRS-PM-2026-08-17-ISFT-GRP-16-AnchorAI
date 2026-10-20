@@ -1,12 +1,12 @@
 ,precision_classifier,recall_classifier,f1-score_classifier,f1-score_keyword,support_classifier
-member_risk,1.0,0.89,0.94,0.74,9.0
-member_actions,1.0,0.89,0.94,0.75,9.0
+member_risk,1.0,0.8,0.89,0.76,10.0
+member_actions,0.83,0.91,0.87,0.76,11.0
 compare_members,1.0,1.0,1.0,1.0,7.0
-graph_impact,0.88,0.88,0.88,0.82,8.0
-list_members,0.8,1.0,0.89,0.67,8.0
-plan_summary,1.0,0.67,0.8,0.8,6.0
-what_if_budget,0.86,1.0,0.92,0.92,6.0
-unknown,0.8,0.89,0.84,0.61,9.0
-accuracy,0.9,0.9,0.9,0.77,0.9
-macro avg,0.92,0.9,0.9,0.79,62.0
-weighted avg,0.92,0.9,0.9,0.78,62.0
+graph_impact,0.9,0.9,0.9,0.86,10.0
+list_members,0.67,1.0,0.8,0.62,8.0
+plan_summary,1.0,0.83,0.91,0.8,6.0
+what_if_budget,1.0,1.0,1.0,0.92,6.0
+unknown,0.82,0.69,0.75,0.62,13.0
+accuracy,0.87,0.87,0.87,0.77,0.87
+macro avg,0.9,0.89,0.89,0.79,71.0
+weighted avg,0.89,0.87,0.87,0.77,71.0

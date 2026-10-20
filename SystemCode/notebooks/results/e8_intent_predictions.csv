@@ -4,7 +4,7 @@ q02,ai,whats the chance that member 77 cancels their membership,member_risk,memb
 q03,ai,M0231 churn risk breakdown please,member_risk,member_risk,0.7526,member_risk,True,True
 q04,ai,What is behind the high score for M3105?,member_risk,member_risk,0.5899,member_risk,True,True
 q05,ai,why is this member flagged as risky?,member_risk,member_risk,0.5973,member_risk,True,True
-q06,ai,how worried should we be about 1288?,member_risk,unknown,0.2553,unknown,False,False
+q06,ai,how worried should we be about 1288?,member_risk,unknown,0.2663,unknown,False,False
 q07,ai,M0890 - segment and risk?,member_risk,member_risk,0.6944,member_risk,True,True
 q08,ai,Which signals suggest member 2999 is slipping away?,member_risk,member_risk,0.434,member_risk,True,True
 q09,ai,Tell me why M0014 is scored so high,member_risk,member_risk,0.5293,member_risk,True,True
@@ -41,23 +41,32 @@ q39,ai,Show me everyone in the medium risk band,list_members,list_members,0.5197
 q40,ai,Which members need a call first?,list_members,list_members,0.5436,unknown,True,False
 q41,ai,Rank members by how likely they are to leave,list_members,list_members,0.5904,list_members,True,True
 q42,ai,What does the plan for this week look like?,plan_summary,plan_summary,0.7673,plan_summary,True,True
-q43,ai,how much are we spending this week,plan_summary,what_if_budget,0.5334,what_if_budget,False,False
+q43,ai,how much are we spending this week,plan_summary,plan_summary,0.5085,what_if_budget,True,False
 q44,ai,Has this week's plan been signed off?,plan_summary,plan_summary,0.664,plan_summary,True,True
 q45,ai,Which members are we ringing this week?,plan_summary,list_members,0.5738,unknown,False,False
 q46,ai,give me a quick rundown of the current plan,plan_summary,plan_summary,0.7054,plan_summary,True,True
 q47,ai,How many staff minutes does the plan take up?,plan_summary,plan_summary,0.6925,plan_summary,True,True
-q48,ai,What if we only had $800 to spend?,what_if_budget,what_if_budget,0.7692,what_if_budget,True,True
-q49,ai,how many extra members would 2k more buy us,what_if_budget,what_if_budget,0.5237,what_if_budget,True,True
-q50,ai,Could we retain more with a 6000 budget?,what_if_budget,what_if_budget,0.7791,what_if_budget,True,True
-q51,ai,Simulate the plan at half the current spend,what_if_budget,what_if_budget,0.5155,what_if_budget,True,True
-q52,ai,if budget drops to 1000 what do we lose?,what_if_budget,what_if_budget,0.8292,what_if_budget,True,True
-q53,ai,"Is another $1,500 worth it?",what_if_budget,what_if_budget,0.4924,what_if_budget,True,True
+q48,ai,What if we only had $800 to spend?,what_if_budget,what_if_budget,0.7311,what_if_budget,True,True
+q49,ai,how many extra members would 2k more buy us,what_if_budget,what_if_budget,0.5551,what_if_budget,True,True
+q50,ai,Could we retain more with a 6000 budget?,what_if_budget,what_if_budget,0.7786,what_if_budget,True,True
+q51,ai,Simulate the plan at half the current spend,what_if_budget,what_if_budget,0.4828,what_if_budget,True,True
+q52,ai,if budget drops to 1000 what do we lose?,what_if_budget,what_if_budget,0.7525,what_if_budget,True,True
+q53,ai,"Is another $1,500 worth it?",what_if_budget,what_if_budget,0.4557,what_if_budget,True,True
 q54,ai,Tell me a joke about squats,unknown,unknown,0.0803,unknown,True,True
 q55,ai,What time does the pool close on Sundays?,unknown,unknown,0.2488,unknown,True,True
 q56,ai,What does churn mean?,unknown,unknown,0.3104,unknown,True,True
 q57,ai,Delete member M0012,unknown,unknown,0.0,member_risk,True,False
 q58,ai,"thanks, that helps",unknown,unknown,0.129,unknown,True,True
 q59,ai,How do I add a new instructor?,unknown,graph_impact,0.5191,graph_impact,False,False
-q60,ai,What is the capital of France?,unknown,unknown,0.0882,unknown,True,True
-q61,ai,Which machine should I use for legs?,unknown,unknown,0.0493,unknown,True,True
+q60,ai,What is the capital of France?,unknown,unknown,0.088,unknown,True,True
+q61,ai,Which machine should I use for legs?,unknown,unknown,0.0551,unknown,True,True
 q62,ai,hello,unknown,unknown,0.2297,unknown,True,True
+b01,asiri,is a member sleeping dog?,member_actions,member_actions,0.3907,member_actions,True,True
+b02,asiri,what is the type of this member?,member_risk,member_actions,0.5783,member_risk,False,True
+b03,asiri,does this member attend PT sessions?,unknown,member_actions,0.5255,member_actions,False,False
+b04,asiri,what is the best offer for this member?,member_actions,member_actions,0.7525,member_actions,True,True
+b05,asiri,what is the offer that most members like?,unknown,list_members,0.5078,list_members,False,False
+b06,asiri,"what is the offer that is best for the gym, low cost high value?",unknown,unknown,0.2462,unknown,True,True
+b07,asiri,which instructor has the highest impact if left?,graph_impact,graph_impact,0.652,graph_impact,True,True
+b08,asiri,which club has the highest impact if closed?,unknown,list_members,0.4328,unknown,False,True
+b09,asiri,which class has the highest impact if cancelled?,graph_impact,graph_impact,0.6339,graph_impact,True,True

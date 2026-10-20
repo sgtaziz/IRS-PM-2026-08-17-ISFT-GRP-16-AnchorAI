@@ -1,7 +1,10 @@
 id,question,intent,pred,score,baseline,notes,author
-q06,how worried should we be about 1288?,member_risk,unknown,0.2553,unknown,"bare number, vague wording",ai
+q06,how worried should we be about 1288?,member_risk,unknown,0.2663,unknown,"bare number, vague wording",ai
 q17,Show the playbook for 1999,member_actions,unknown,0.159,unknown,,ai
 q31,anyone hurt by the recent staff departure?,graph_impact,list_members,0.371,unknown,no entity named,ai
-q43,how much are we spending this week,plan_summary,what_if_budget,0.5334,what_if_budget,,ai
 q45,Which members are we ringing this week?,plan_summary,list_members,0.5738,unknown,boundary with list_members; plan call list,ai
 q59,How do I add a new instructor?,unknown,graph_impact,0.5191,graph_impact,"app how-to, no tool",ai
+b02,what is the type of this member?,member_risk,member_actions,0.5783,member_risk,ambiguous: 'type' read as segment,asiri
+b03,does this member attend PT sessions?,unknown,member_actions,0.5255,member_actions,no tool for a member's attendance history,asiri
+b05,what is the offer that most members like?,unknown,list_members,0.5078,list_members,offer popularity across members is not an intent,asiri
+b08,which club has the highest impact if closed?,unknown,list_members,0.4328,unknown,club closure is not a modelled event,asiri

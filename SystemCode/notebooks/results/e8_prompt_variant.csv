@@ -1,3 +1,3 @@
 prompt,answers,static_ok,uncited_sentences,numbers_not_in_evidence,dont_know,judged_sentences,supported_share,fully_supported_answers,median_words
-current,13,4,9,0,0,88,0.955,9,57.0
-candidate,13,11,4,0,0,88,0.955,10,61.0
+current,17,9,11,1,3,93,0.892,9,54.0
+candidate,17,17,0,0,4,74,0.973,15,38.0
