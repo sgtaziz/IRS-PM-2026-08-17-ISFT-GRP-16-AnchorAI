@@ -355,7 +355,7 @@ def plan_summary(session: Session, slots: Slots) -> ToolResult:
     lines.add(
         f"Plan for the week of {plan.week_start:%Y-%m-%d} is {plan.status}: {len(items)} contacts, "
         f"total cost {plan.total_cost:.0f}, {plan.total_staff_minutes} staff minutes, "
-        f"{plan.expected_members_retained:.1f} members expected to be retained",
+        f"{plan.expected_members_retained:.1f} extra members expected to stay",
         "plan",
         str(plan.id),
     )
