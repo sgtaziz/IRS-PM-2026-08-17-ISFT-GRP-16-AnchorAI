@@ -1,6 +1,6 @@
 blocked_by,proposals_removed,members,members_matching_guardrail
-G01_contact_fatigue,467,190,475
-G02_offer_cap,0,0,0
+G01_contact_fatigue,1029,372,657
+G02_offer_cap,0,0,45
 G03_discount_eligibility,0,0,1793
 G04_low_risk_no_paid_offers,7,7,2861
-G05_pt_eligibility,54,36,353
+G05_pt_eligibility,44,30,353

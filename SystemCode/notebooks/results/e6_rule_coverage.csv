@@ -7,8 +7,8 @@ D05_high_value_at_risk,derive,957,0.239,False
 D06_social_member,derive,1234,0.308,False
 D07_lost_instructor,derive,186,0.046,False
 D08_class_cancelled,derive,170,0.042,False
-G01_contact_fatigue,guardrail,475,0.119,False
-G02_offer_cap,guardrail,0,0.0,True
+G01_contact_fatigue,guardrail,657,0.164,False
+G02_offer_cap,guardrail,45,0.011,False
 G03_discount_eligibility,guardrail,1793,0.448,False
 G04_low_risk_no_paid_offers,guardrail,2861,0.715,False
 G05_pt_eligibility,guardrail,353,0.088,False
