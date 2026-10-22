@@ -3,12 +3,12 @@
 Final file: `IRS-PM-2026-08-17-ISFT-GRP-16-AnchorAI-Group-Report.pdf`, built from the LaTeX source in `latex/`:
 
 ```sh
-cd ProjectReport/latex && ./build.sh        # LuaLaTeX + biber; needs TeX Live (texlive-luatex, -latexextra, -fontsextra, -pictures, -mathscience, -bibtexextra) and biber
+cd ProjectReport/latex && ./build.sh        # full report (main.tex); ./build.sh main-short for the 14-page short version (main-short.pdf). LuaLaTeX + biber; needs TeX Live (texlive-luatex, -latexextra, -fontsextra, -pictures, -mathscience, -bibtexextra) and biber
 cd SystemCode/backend && uv run python ../../ProjectReport/latex/scripts/figures.py   # regenerate the member-level figures after `anchorai setup`
 python3 ProjectReport/latex/scripts/ai_use_table.py                                  # refresh the AI-use appendix from docs/AI_USE.md
 ```
 
-The LaTeX source is now the report. The Markdown sections below are the streams' drafts it was condensed from.
+`main-short.pdf` is a 14-page short version in the same style, without the appendices. The LaTeX source is now the report. The Markdown sections below are the streams' drafts it was condensed from.
 
 | Section | Owner | Source |
 |---|---|---|
