@@ -144,13 +144,15 @@ Everything about one member on one page. Open a member from the Members list, th
 
 **Classes attended.** Each group class with its instructor and the member's weekly visits. Members who don't attend classes see "Does not attend group classes".
 
-**Past retention contacts.** Earlier offers: the week, the offer, the channel, and whether the member stayed or left.
+**Past retention contacts.** Offers from the gym's history before AnchorAI (in the demo, the synthetic intervention history): the week, the offer, the channel, and whether the member stayed or left.
 
 **Segment.** The segment's name and description.
 
-**Similar past cases** and **Contact and outcome history** belong to Stream B and say "Coming soon" until their planning work lands.
+**Similar past cases.** One tab per active offer, showing the estimated effect of that offer on this member's chance of staying, in percentage points. Select a tab to see the 10 most similar past members: whether each got the offer or no offer, the week, and whether they stayed or left. The sentence above the list compares how many of each group stayed and says how many neighbours the estimate rests on. Select a member ID to open their Member 360.
 
-Stream C owns the two panels below.
+**Contact and outcome history.** The member's contacts in approved weekly plans: the offer and channel, the week, the staff member assigned, and each outcome logged with its date and note. A contact a manager removed from the plan is struck through, with the reason. A member never included in an approved plan shows "No contacts in an approved plan yet."
+
+If either panel cannot load, it shows the error and **Try again**; the rest of the page still works.
 
 **Rule trace panel.** It shows what the rule base concludes for this member.
 
@@ -306,7 +308,7 @@ To change the catalogue:
 
 **Staff roster.** Weekly hours and skills for each active staff user, used when calls are assigned. Change a row and select **Save** on that row. Deactivated users are not listed; add staff on the Users page.
 
-**Planning constraints.** Defaults for the weekly plan and its contact caps, for Stream B's plan builder to read. Select **Save constraints** after changing them.
+**Planning constraints.** Defaults for the weekly plan and its contact caps, for the plan builder to read. Select **Save constraints** after changing them.
 
 - **Default weekly budget**
 - **Default staff minutes per week**
