@@ -1,0 +1,137 @@
+\chapter{Data and the scenario layer}
+\label{ch:data}
+
+\begin{inbrief}
+\begin{itemize}
+  \item Segmentation and churn prediction use only the 4,000 real members of a public Kaggle dataset.
+  \item The snapshot has no clubs, classes, offers or contact history, so a documented synthetic \emph{scenario layer} supplies them, together with a ground truth of how each member responds to each offer.
+  \item Every table, model and score is rebuilt from the raw file by one deterministic command.
+\end{itemize}
+\end{inbrief}
+
+\section{Source data}
+
+AnchorAI is built on the public dataset \emph{Gym Customers Features and Churn}~\cite{vinueza-gym}, which is cited and not redistributed. It describes 4,000 members of a gym chain in 14 columns, with no missing values and no duplicate rows. The label \code{churn} marks the 1,061 members (26.5\%) who left. Because a model that predicts \enquote{stays} for everyone is already 73.5\% accurate while catching no churner, accuracy is never used; the experiments report F1 on the churn class, PR-AUC and the Brier score instead.
+
+\begin{table}[tb]
+  \caption{The Kaggle columns, over all 4,000 members.}
+  \label{tab:kaggle}
+  \begin{tabularx}{\linewidth}{@{}l P{0.33\linewidth} L@{}}
+    \toprule
+    \hd{Group} & \hd{Columns} & \hd{Values} \\
+    \midrule
+    Profile    & gender, age, near location, phone & age 18--41 (mean 29.2); 85\% live or work nearby; 90\% have a phone on file \\
+    Membership & contract period, months to end, lifetime, partner, promo friends & contracts of 1, 6 or 12 months (median 1); median lifetime 3 months; 49\% via a partner company; 31\% referred by a friend \\
+    Activity   & group visits, weekly visits (lifetime and this month) & 41\% attend group classes; mean 1.88 visits a week over the membership, 1.77 this month \\
+    Spend      & additional charges & café, goods and services; mean 147 \\
+    Target     & churn & 1 = left; 26.5\% \\
+    \bottomrule
+  \end{tabularx}
+  \source{\code{a_features_leakage.ipynb}, cell 2.}
+\end{table}
+
+The data is a single snapshot: one row per member, without dates, clubs, classes, instructors, offers or past retention contacts. This one fact shapes the rest of the design. What can be learned from real members (who is at risk, and why) is learned from them; what cannot (how a member responds to an offer, who attends which class) comes from the scenario layer in \cref{sec:scenario}, and every experiment states which of the two it uses.
+
+\section{Preparation and features}
+
+Each member gets a pseudonymous identifier (\code{M0001} to \code{M4000}). A split stratified on churn gives 3,200 training members and 800 test members, both with a 26.5\% churn rate. Nothing is ever fitted on the test labels: a regression test flips every one of them and checks that no score changes. Two synthetic columns complete the member record: a club (one of three, at random) and a monthly fee by contract length (\$72, \$54 or \$46 for 1, 6 or 12 months), an assumption used to value a retained member.
+
+The churn model reads the 13 Kaggle predictors and four features derived from them (\cref{tab:features}). The proposal planned seven feature families; the snapshot supports five of them, while recency and regularity would need visit dates it does not have.
+
+\begin{table}[tb]
+  \caption{Derived features.}
+  \label{tab:features}
+  \begin{tabularx}{\linewidth}{@{}l L L@{}}
+    \toprule
+    \hd{Feature} & \hd{Definition} & \hd{Intent} \\
+    \midrule
+    \code{trend_ratio}       & this month's weekly visits ÷ lifetime weekly visits, capped at 3 & attendance falls before a member cancels \\
+    \code{visit_change}      & this month's minus lifetime weekly visits & the same signal on an absolute scale \\
+    \code{contract_progress} & share of the contract already used & members near the end of a contract are free to leave \\
+    \code{charges_per_month} & extra spend ÷ (months as a member + 1) & spend intensity, not accumulated spend \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\begin{figure}[tb]
+  \centering
+  \includegraphics[width=\linewidth]{generated/trend_correlation.pdf}
+  \caption{Left: the visit trend of members who stayed clusters at 1, while members who left spread below it, with a spike at 0 for those who did not come this month (medians 1.00 and 0.69). Right: correlation of each feature with churn; the two strongest are leakage suspects. Real Kaggle data.}
+  \label{fig:trend}
+  \source{\code{scripts/figures.py} (\code{trend}), as in \code{a_features_leakage.ipynb}, cells 2--4.}
+\end{figure}
+
+\paragraph{Leakage.} The snapshot has no cancellation-process fields (freeze requests, removed payment methods), which the proposal warned against. Its risk is timing instead: this month's visits and the months left on the contract may be measured in the same month as the label. These two columns and the three features built from them form a \emph{suspect set} that includes the strongest single signals. The served model keeps them, because both values are known when a weekly plan is made, but E2 reports the model with and without them so that the honest lower bound is visible (\cref{sec:e2}).
+
+\section{The scenario layer}
+\label{sec:scenario}
+
+The knowledge graph, the case-based reasoner, the uplift models and the optimiser all need what the snapshot lacks. Rather than an agent-based simulator, as proposed, a thin synthetic gym is attached to the real members, and its parameters are listed in \cref{app:scenario}. Its purpose is to make decisions gradable: because every member's true response is known, a plan can be scored against a truth that no planner sees. Results built on it show that the system recovers known structure, not how real members behave.
+
+\begin{figure}[!t]
+  \centering
+  \pgfplotstableread{\results{a5_true_uplift_by_segment.csv}}\upseg
+  \begin{tikzpicture}
+    \begin{axis}[anchorhbar, scale only axis, width=0.33\linewidth, height=5.4cm, bar width=4.2pt,
+        ytick=data, yticklabels from table={\upseg}{segment}, y dir=reverse,
+        enlarge y limits=0.16, xlabel={True uplift (percentage points)}, xmin=-5, xmax=26,
+        legend style={at={(0.5,1.03)}, anchor=south, legend columns=2, /tikz/every even column/.append style={column sep=6pt}}, reverse legend,
+        title={Effect by segment and offer}, title style={yshift=13mm}]
+      \addplot[fill=cSky]    table[y expr=\coordindex, x expr=\thisrow{checkin_message}*100]{\upseg};
+      \addplot[fill=cTeal]   table[y expr=\coordindex, x expr=\thisrow{class_pass}*100]{\upseg};
+      \addplot[fill=cOrange] table[y expr=\coordindex, x expr=\thisrow{discount_1m}*100]{\upseg};
+      \addplot[fill=cBlue]   table[y expr=\coordindex, x expr=\thisrow{free_pt_session}*100]{\upseg};
+      \legend{Check-in message, Class pass, 20\% discount, Free PT session}
+    \end{axis}
+  \end{tikzpicture}\hfill
+  \begin{tikzpicture}
+    \begin{axis}[anchorhbar, scale only axis, width=0.24\linewidth, height=5.4cm, bar width=8pt, bar shift=0pt,
+        symbolic y coords={All treated,Free PT session,Class pass,20\% discount,Check-in message,No contact},
+        ytick={All treated,Free PT session,Class pass,20\% discount,Check-in message,No contact},
+        y dir=reverse, enlarge y limits=0.11,
+        xmin=60, xmax=80, xlabel={Members who stayed (\%)}, title={Intervention history},
+        title style={yshift=13mm}, clip=false,
+        nodes near coords={\axisnum{\pgfplotspointmeta}}, nodes near coords style={font=\sffamily\scriptsize, text=navy},
+        every node near coord/.append style={/pgf/number format/.cd, fixed, fixed zerofill, precision=1}]
+      \addplot[fill=cGrey] coordinates {(67.0,No contact)};
+      \addplot[fill=cBlue] coordinates {(67.8,Check-in message) (71.0,20\% discount) (71.2,Class pass) (77.6,Free PT session)};
+      \addplot[fill=navy]  coordinates {(71.9,All treated)};
+      \draw[cGrey, dashed, line width=0.6pt] (axis cs:67.0,No contact) -- (axis cs:67.0,All treated);
+    \end{axis}
+  \end{tikzpicture}
+  \caption{The scenario's ground truth. Left: mean true uplift by segment (\cref{sec:segments}) and offer; a discount backfires on annual members. Right: share of members who stayed in each arm of the 2,400-contact history, against the 984 controls (dashed line).}
+  \label{fig:scenario}
+  \source{\code{results/a5_true_uplift_by_segment.csv}; \code{a_scenario_uplift.ipynb}, cell 2.}
+\end{figure}
+
+\paragraph{Gym structure.} Three clubs, each with three instructors who teach two classes. The 1,611 members who attend group classes are spread over one to three classes at their club, and their class visits add up to their real Kaggle visit frequency, so the synthetic timetable never contradicts the real data.
+
+\paragraph{Offers.} Four retention offers with a cost, staff time, weekly stock, allowed channels and the skill they need (\cref{tab:offers}). The same catalogue seeds the application, where an administrator can edit it.
+
+\begin{table}[tb]
+  \caption{The retention offers.}
+  \label{tab:offers}
+  \begin{tabular*}{\linewidth}{@{\extracolsep{\fill}}l S[table-format=2.0, table-space-text-pre=\$] S[table-format=2.0] l l@{}}
+    \toprule
+    \hd{Offer} & {\hd{Cost}} & {\hd{Staff minutes}} & \hd{Weekly stock} & \hd{Channels} \\
+    \midrule
+    Personal check-in message      & {\$}0  & 5  & unlimited & SMS, email, call \\
+    Free personal training session & {\$}40 & 60 & 40        & call, in person \\
+    Bring-a-friend class pass      & {\$}15 & 10 & 100       & SMS, email, call \\
+    One month at 20\% off          & {\$}12 & 15 & unlimited & email, call \\
+    \bottomrule
+  \end{tabular*}
+\end{table}
+
+\paragraph{Ground truth.} Each member has a churn hazard for the next month without contact, computed from features only and never from the real label; as a plausibility check it correlates 0.715 with that label. Each offer has a documented, heterogeneous effect on the hazard: a training session helps new members most, a class pass helps class-goers, and a discount helps price-sensitive monthly members but backfires on annual ones. The resulting \emph{true uplift}, the gain in the probability of staying, exists for all 16,000 member–offer pairs and averages +5.8 points (\cref{fig:scenario}, left).
+
+\paragraph{Gym events.} In the week before the scoring date, the instructor with the most attendees leaves (Maya Chen, Zumba and Core, club C2) and the busiest class at another club is cancelled (HIIT, club C1). Each event raises the hazard of the members it touches in proportion to the share of their class visits it hits. The churn model cannot see these events; only the knowledge graph can, which is what E7 tests.
+
+\paragraph{Intervention history.} 2,400 past contacts in the twelve weeks before the scoring date: 1,416 members received a random offer through a random allowed channel and 984 were left alone as controls, with outcomes drawn from the ground truth. Assignment is random, as in a trial, so an uplift estimator faces small samples and heterogeneity rather than confounding. The effects are small against the noise of yes-or-no outcomes (\cref{fig:scenario}, right), which is the realistic difficulty the case-based reasoner and the T-learner must overcome.
+
+
+\section{Data contract and reproducibility}
+
+Twelve tables form the hand-over from data to the rest of the system: the members and their features, the synthetic gym, the history, the events, the two ground-truth tables, and the model outputs (\cref{app:scenario}). Their columns are fixed in code, and every build checks keys and value rules and fails rather than write a broken table. A small fixture with the same columns let the rules, planner and knowledge graph be built before the real tables existed.
+
+One command, \code{anchorai data build}, regenerates every table, model and score from the raw file in about 20 seconds. Every random step takes one seed (42 for every reported result), the events follow from the attendance rather than from chance, and two builds with the same seed are identical. The build code was frozen on 17 October 2026, so every experiment in \cref{ch:experiments} ran on the same tables.

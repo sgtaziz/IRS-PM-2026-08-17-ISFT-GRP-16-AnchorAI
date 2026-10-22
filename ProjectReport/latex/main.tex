@@ -1,0 +1,85 @@
+\documentclass[paper=a4, fontsize=11pt, DIV=12, open=any, parskip=half-,
+  headings=small, numbers=noenddot, captions=tableheading, toc=flat]{scrreprt}
+\usepackage{anchorai}
+\addbibresource{references.bib}
+\graphicspath{{figures/}}
+
+\newcommand{\chapterfile}[1]{\InputIfFileExists{#1}{}{\typeout{Skipping missing #1}}}
+
+\begin{document}
+
+\begin{titlepage}
+  \global\pagebandfalse
+  \begin{tikzpicture}[remember picture, overlay, every node/.style={inner sep=0pt, outer sep=0pt}]
+    \coordinate (L) at ([xshift=26mm]current page.north west);
+    \coordinate (R) at ([xshift=-26mm]current page.north east);
+    % Masthead
+    \node[anchor=north west] at ([yshift=-20mm]L) {\includegraphics[height=19mm]{diagrams/nus-logo.pdf}};
+    \node[anchor=north east, align=right, font=\sffamily\small, text=nusBlue] at ([yshift=-22mm]R)
+      {\textbf{Institute of Systems Science}\\[1.2mm]Intelligent Reasoning Systems\\[1.2mm]\color{muted}Practice module};
+    % Title panel
+    \fill[nusBlue] ([yshift=-62mm]current page.north west) rectangle ([yshift=-182mm]current page.north east);
+    \fill[nusOrange] ([yshift=-182mm]current page.north west) rectangle ([yshift=-184.5mm]current page.north east);
+    \node[anchor=north west, font=\sffamily\bfseries\footnotesize, text=nusOrange] at ([yshift=-80mm]L)
+      {\addfontfeature{LetterSpace=12}GROUP PROJECT REPORT};
+    \node[anchor=north west, font=\sffamily\bfseries, text=white] at ([yshift=-90mm]L)
+      {\fontsize{50}{52}\selectfont Anchor\textcolor{nusOrange}{AI}};
+    \node[anchor=north west, text width=150mm, font=\sffamily\fontsize{19}{24}\selectfont, text=white] at ([yshift=-113mm]L)
+      {Explainable, budget-aware retention planning for gyms};
+    \fill[nusOrange] ([yshift=-135mm]L) rectangle ([xshift=24mm, yshift=-136.4mm]L);
+    \node[anchor=north west, text width=158mm, font=\sffamily\small, text=white!82!nusBlue, align=left] at ([yshift=-143mm]L)
+      {Churn prediction\enskip·\enskip uplift estimation\enskip·\enskip rule-based reasoning\enskip·\enskip case-based reasoning\\[1mm]
+       genetic algorithm with an exact CP-SAT benchmark\enskip·\enskip knowledge graph\enskip·\enskip grounded staff assistant};
+    % Team
+    \node[anchor=north west, font=\sffamily\bfseries\footnotesize, text=nusOrange] at ([yshift=-200mm]L)
+      {\addfontfeature{LetterSpace=12}TEAM};
+    \node[anchor=north west, font=\sffamily, text=ink] at ([yshift=-208mm]L) {%
+      \renewcommand{\arraystretch}{1.55}%
+      \begin{tabular}{@{}p{78mm}l@{}}
+        Abdulaziz Ali S Hasanain   & \color{muted}A0350856X \\
+        Asiri Mohammed Yahya A     & \color{muted}A0351967N \\
+        Binmaneea Khalid Waleed M  & \color{muted}A0355712E \\
+      \end{tabular}};
+    \draw[rule, line width=0.6pt] ([yshift=-252mm]L) -- ([yshift=-252mm]R);
+    \node[anchor=north west, font=\sffamily\small, text=muted] at ([yshift=-256mm]L)
+      {National University of Singapore};
+    \node[anchor=north east, font=\sffamily\small, text=nusBlue] at ([yshift=-256mm]R)
+      {\textbf{Group 16}\enskip·\enskip 25 October 2026};
+    \fill[nusBlue] (current page.south west) rectangle ([yshift=5mm]current page.south east);
+    \fill[nusOrange] ([yshift=5mm]current page.south west) rectangle ([yshift=6.3mm]current page.south east);
+  \end{tikzpicture}
+\end{titlepage}
+\global\pagebandtrue
+
+\pagenumbering{roman}
+\chapterfile{chapters/00-abstract}
+
+\tableofcontents
+\cleardoublepage
+\pagenumbering{arabic}
+
+\chapterfile{chapters/01-introduction}
+\chapterfile{chapters/02-objectives}
+\chapterfile{chapters/03-architecture}
+\chapterfile{chapters/04-data}
+\chapterfile{chapters/05-member-intelligence}
+\chapterfile{chapters/06-decision-automation}
+\chapterfile{chapters/07-optimisation}
+\chapterfile{chapters/08-knowledge-assistant}
+\chapterfile{chapters/09-implementation}
+\chapterfile{chapters/10-experiments}
+\chapterfile{chapters/11-conclusions}
+\label{main-end}
+
+\printbibliography[heading=bibintoc, title=References]
+
+\appendix
+\chapterfile{appendices/a-proposal}
+\chapterfile{appendices/b-mapping}
+\chapterfile{appendices/c-scenario}
+\chapterfile{appendices/d-installation}
+\chapterfile{appendices/e-user-guide}
+\chapterfile{appendices/f-ai-use}
+\chapterfile{appendices/g-reflections}
+
+\end{document}

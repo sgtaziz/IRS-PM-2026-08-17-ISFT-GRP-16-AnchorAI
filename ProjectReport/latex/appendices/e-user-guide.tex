@@ -1,0 +1,79 @@
+\chapter{User guide}
+\label{app:userguide}
+
+AnchorAI has three roles, and the role decides which pages appear in the sidebar; the server checks the role again on every request (\cref{tab:pages}). Sign in at the web address with a username and password; a session lasts 12 hours. Every page has a member search at the top (Ctrl+K), a light, dark or system theme, and, except on the Assistant page itself, a round button that opens the assistant beside the current page.
+
+\section{Manager: the weekly cycle}
+
+\paragraph{Check the risk.} The \emph{Dashboard} (\cref{fig:dashboard}) shows members at high risk (a churn probability of 0.6 or more), the monthly revenue at risk (the sum of churn probability × monthly fee), the share of high-risk members covered by the latest approved plan, the latest week's contacted, reached and retained counts, the risk distribution, the segment mix and outcomes by week. \emph{Segments} shows one card per segment with its size, churn rate, members at high risk now, revenue and a profile against all members; \emph{View members} opens the member list filtered to it. \emph{Members} (\cref{fig:ug-members}) filters by ID, segment, risk band, club and tenure, sorts by any column, keeps its filters in the page address so a list can be bookmarked, and exports every matching member to CSV. A row opens \emph{Member 360} (\cref{fig:m360}).
+
+\begin{figure}[tb]
+  \centering
+  \begin{subfigure}[t]{0.495\linewidth}
+    \screenshot[\linewidth]{screens/members-content.png}
+    \caption{Members: every member with risk, segment, value, tenure, contract and visit trend; filters, sorting and CSV export.}
+    \label{fig:ug-members}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.495\linewidth}
+    \screenshot[\linewidth]{screens/segments-content.png}
+    \caption{Segments: each segment's size, churn rate, members at high risk, revenue and profile against all members.}
+  \end{subfigure}
+  \caption{Insight pages for managers.}
+\end{figure}
+
+\paragraph{Build the plan.} On \emph{Weekly plan} (\cref{fig:plan}), enter the weekly budget and staff hours (they start from the latest plan, or \$1,500 and 36 hours), choose a planner (the genetic algorithm by default, which considers members who train together; exact; or greedy, the quickest) and select \emph{Generate plan}. A progress bar shows each stage, and the plan finishes even if you leave the page. Four tiles sum it up: members to contact, spend, staff time and extra members expected to stay, each compared with last week.
+
+\paragraph{Review and change it.} \emph{Why} on a row opens the member's summary, churn drivers, the rules that fired, any gym events and the ten most similar past members with what happened to them. While the plan is a draft you can remove a member, add a contact or swap an offer; each change needs a reason and is checked against the rules at once (red: blocked, with the rule; amber: allowed but not proposed by a playbook; green: allowed and proposed). \emph{Re-optimise the rest} keeps your changes and re-plans what is left of the budget, staff time and stock.
+
+\paragraph{Approve and assign.} \emph{Approve plan} locks it; only one plan per week can be approved. Contacts are then shared out, most valuable first, to the staff member with the most free time who has the right skill (training sessions to trainers, calls to staff with the calls skill). Drag a contact to another staff member, re-run the assignment, and print or download each person's call sheet.
+
+\paragraph{Compare what-ifs.} \emph{Scenarios} (\cref{fig:ug-scen}) runs five planners (contact everyone, riskiest first, greedy, exact and the genetic algorithm) on the same week at a budget and staff hours you choose, compares contacts, spend, staff time, extra members, members per \$1,000 and per staff hour, and saves named comparisons. Nothing here changes the plan.
+
+\begin{figure}[tb]
+  \centering
+  \begin{subfigure}[t]{0.495\linewidth}
+    \screenshot[\linewidth]{screens/scenarios-content.png}
+    \caption{Scenarios: set a week's budget and staff hours and compare five planners side by side.}
+    \label{fig:ug-scen}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.495\linewidth}
+    \screenshot[\linewidth]{screens/roster-content.png}
+    \caption{Events \& roster: record departures, cancellations and reassignments; the graph is rebuilt after each change.}
+    \label{fig:ug-roster}
+  \end{subfigure}
+  \caption{Planning pages for managers.}
+\end{figure}
+
+\paragraph{Gym events and the graph.} On \emph{Events \& roster} (\cref{fig:ug-roster}), record what really happened: add instructors and classes, change who teaches a class, mark an instructor as left or a class as cancelled for a given week, or reinstate them. The graph is rebuilt after each change, and rules that read graph signals then fire for the affected members; churn scores do not change. On \emph{Knowledge graph} (\cref{fig:kgsim}), simulate an instructor leaving or a class closing to see who would be affected, how many are high risk and which rules would newly fire, without changing anything, and explore the neighbourhood of any member, class or instructor.
+
+\section{Staff: contacts, drafts and the assistant}
+
+\paragraph{Work the call list.} \emph{My contacts} (\cref{fig:m360}) lists the members assigned to you in this week's approved plan, highest priority first, each with the offer and channel, why the member is on the list, talking points from their risk drivers and the rule that proposed the offer. Log an outcome in two taps: \emph{Accepted}, \emph{Declined}, \emph{Reached} (no decision yet), \emph{Follow-up} or \emph{No answer}, optionally with a note. Accepted and declined outcomes become new past cases, and every logged contact counts towards the contact limits, so the member is not contacted again too soon.
+
+\paragraph{Draft a message.} \emph{Draft message}, next to an allowed offer in a member's rule trace, writes a short SMS, email, call script or in-person note that you edit and copy into your own tool; AnchorAI never sends anything. The tag says whether the language model or the template wrote it, and \emph{Facts used} shows its evidence. A draft never mentions churn, risk or scores.
+
+\paragraph{Ask the assistant.} Type a question and press Enter (\cref{fig:assistant}). It answers about member risk, what to offer, comparisons, ranked lists, who an event affects and, for managers, the plan and what-if budgets or staff hours, always from AnchorAI's own data. Numbers in an answer are chips that show the evidence behind each sentence and open the member, rule, offer or event. When nothing supports an answer it says \enquote{I don't know based on the data I have}. It cannot change anything, gives staff no plan details and does not remember a conversation after a refresh.
+
+\section{Administrator}
+
+\begin{figure}[tb]
+  \centering
+  \begin{subfigure}[t]{0.495\linewidth}
+    \screenshot[\linewidth]{screens/offers-content.png}
+    \caption{Offers \& constraints: catalogue, staff roster and planning constraints.}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.495\linewidth}
+    \screenshot[\linewidth]{screens/data-content.png}
+    \caption{Data \& models: source file, rebuilds and the model card.}
+    \label{fig:ug-data}
+  \end{subfigure}
+  \caption{Administration pages.}
+\end{figure}
+
+\paragraph{Rules.} The \emph{Rules} page (\cref{fig:rulestrace}) lists every rule with its kind, salience, conditions, action and source, under a validation banner. Toggle a rule on or off, add or edit one in a form that validates as you type, or edit the YAML directly; every save needs a note and creates a new version, and nothing is overwritten. \emph{Test on a member} runs the saved rules, or an unsaved draft, on any member and shows the same trace as Member~360. \emph{Versions} compares any two versions line by line and rolls back to an older one, even when the active version is broken. If another administrator saved first, your save is refused and the page reloads.
+
+\paragraph{Offers, staff and constraints.} Edit the offer catalogue (cost, staff time, stock, channels, required skill, eligibility, active), each staff member's weekly hours and skills, and the planning defaults: weekly budget, staff minutes and the contact caps the guardrails read.
+
+\paragraph{Data and models.} \emph{Data \& models} (\cref{fig:ug-data}) shows the source file, replaces it with a validated new Kaggle file, rebuilds data and models with any seed in the background (42 reproduces this report), reloads the graph, and shows the model card: headline metrics on the 800 test members, the model against its baselines and against the version without suspect columns, calibration, silhouette by $k$ and fairness by age and gender.
+
+\paragraph{Users, audit and health.} \emph{Users} creates accounts, changes roles and names, deactivates users (never deletes them) and resets passwords; you cannot change your own role, and the last active administrator cannot be demoted. \emph{Audit log} records every write with who, when, and the values before and after, filterable and exportable. \emph{Settings} is a read-only health check of the language model (with a connection test), the knowledge graph, the models and data, and the database and planner.

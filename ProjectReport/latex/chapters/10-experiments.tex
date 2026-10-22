@@ -1,0 +1,331 @@
+\chapter{Experiments and findings}
+\label{ch:experiments}
+
+Eight experiments test the objectives of \cref{ch:objectives}. E1 and E2 use only the 4,000 real members. E3--E7 are graded against the scenario layer's ground truth, which no estimator or planner ever reads, so they show that the system recovers effects of this kind, not how large real effects are. E8 evaluates the assistant on the system's own evidence. Every number below comes from a committed results file or notebook, all reproducible from seed 42.
+
+\section{E1: Are the segments meaningful?}
+\label{sec:e1}
+\databadge{real}\quad\textsf{\small Baseline: every $k$ from 2 to 10}
+
+K-means was fitted on the 3,200 training members for each $k$ and scored by silhouette, by stability across five other seeds (adjusted Rand index) and by how sharply the segments separate churn, which the clustering never sees.
+
+\begin{figure}[tb]
+  \centering
+  \pgfplotstableread{\results{e1_silhouette_by_k.csv}}\sil
+  \pgfplotstableread{\results{e1_segment_profiles.csv}}\seg
+  \begin{tikzpicture}
+    \begin{axis}[anchor, scale only axis, width=0.36\linewidth, height=4.1cm, xlabel={number of segments \textit{k}},
+        ylabel={silhouette}, ymin=0.15, ymax=0.182, xtick={2,...,10}, title={Silhouette on the training split},
+        yticklabel style={/pgf/number format/fixed, /pgf/number format/precision=3}]
+      \fill[nusOrange!12] (axis cs:3,0.1688) rectangle (axis cs:8,0.1776);
+      \addplot[cBlue, mark=*, mark size=1.6pt] table[x index=0, y=silhouette]{\sil};
+      \draw[nusOrange, dashed, line width=0.8pt] (axis cs:4,0.15) -- (axis cs:4,0.182);
+      \node[font=\sffamily\tiny, text=nusOrange, anchor=south west] at (axis cs:4.1,0.151) {chosen \textit{k} = 4};
+    \end{axis}
+  \end{tikzpicture}\hfill
+  \begin{tikzpicture}
+    \begin{axis}[anchorhbar, scale only axis, width=0.3\linewidth, height=4.1cm, bar width=9pt,
+        ytick=data, yticklabels from table={\seg}{name}, y dir=reverse, enlarge y limits=0.18,
+        xmin=0, xmax=100, xlabel={churn rate (\%)}, title={Churn by segment (size)},
+        nodes near coords={\axisnum[fixed, precision=1]{\pgfplotspointmeta}\,\%},
+        nodes near coords style={font=\sffamily\scriptsize, text=ink}, point meta=x]
+      \addplot[fill=cBlue] table[y expr=\coordindex, x expr=\thisrow{churn_rate}*100]{\seg};
+    \end{axis}
+  \end{tikzpicture}
+  \caption{E1. Left: silhouette is low and nearly flat; the shaded band is within 5\% of the best $k$ between 3 and 8, and the rule picks the most detailed $k$ inside it. Right: the four segments separate churn from 94.6\% to 1.4\% (sizes 728, 1,365, 961 and 946).}
+  \label{fig:e1}
+  \source{\code{results/e1_silhouette_by_k.csv}, \code{results/e1_segment_profiles.csv}; \code{a_segmentation.ipynb}.}
+\end{figure}
+
+\paragraph{Results.} The documented rule chooses $k = 4$ (silhouette 0.174 against the best of 0.178 at $k = 3$); $k = 4$ adds a distinct annual-contract segment. Stability is very high: the mean adjusted Rand index across seeds is 1.00 (minimum 0.998). Test members fall into the segments in proportions within 4.2 percentage points of the training split, and churn separates by a factor of almost 70 (\cref{fig:e1}).
+
+\paragraph{Verdict} \verdict{met}. The segments are not geometrically crisp, as expected for behavioural data, but they are chosen by rule, stable, carry over to unseen members and separate risk in terms staff can name.
+
+\section{E2: Does the churn model beat simple rules?}
+\label{sec:e2}
+\databadge{real}\quad\textsf{\small Baselines: a visit-threshold rule; a single logistic regression}
+
+All metrics are on the 800 untouched test members, with churn as the positive class. A model that beats the baselines should do so on all three of F1 (the yes-or-no flag), PR-AUC (the ranking, suited to an imbalanced label~\cite{saito2015prc}) and the Brier score~\cite{brier1950verification} (the probabilities the planner consumes).
+
+\begin{table}[tb]
+  \caption{E2. Test-set performance. The visit rule flags members with at most 1.63 visits a week this month, a threshold chosen on the training split.}
+  \label{tab:e2}
+  \begin{tabular*}{\linewidth}{@{\extracolsep{\fill}}l S[table-format=1.3] S[table-format=1.3] S[table-format=1.3] S[table-format=1.3] S[table-format=1.3] S[table-format=1.3]@{}}
+    \toprule
+    \hd{Model} & {\hd{F1}} & {\hd{Precision}} & {\hd{Recall}} & {\hd{PR-AUC}} & {\hd{ROC-AUC}} & {\hd{Brier}} \\
+    \midrule
+    AnchorAI ensemble, calibrated & \bfseries 0.908 & \bfseries 0.906 & \bfseries 0.910 & \bfseries 0.973 & \bfseries 0.988 & \bfseries 0.035 \\
+    Single logistic regression & 0.862 & 0.818 & 0.910 & 0.953 & 0.978 & 0.056 \\
+    Visit rule & 0.549 & 0.426 & 0.774 & 0.390 & 0.699 & 0.336 \\
+    \midrule
+    Ensemble without the five suspect features & 0.817 & & & 0.900 & & 0.069 \\
+    \bottomrule
+  \end{tabular*}
+  \source{\code{results/e2_model_vs_baselines.csv}, \code{results/a_leakage.csv}.}
+\end{table}
+
+\begin{figure}[tb]
+  \centering
+  \includegraphics[width=\linewidth]{generated/churn_evaluation.pdf}
+  \caption{E2 on the test set. Left: precision--recall of the ensemble against members ranked by this month's visits, with the operating point at the threshold 0.404. Centre: reliability before and after Platt calibration. Right: scores by actual outcome, with the band cut-offs at 0.3 and 0.6.}
+  \label{fig:e2}
+  \source{\code{scripts/figures.py} (\code{churn}), as in \code{a_churn.ipynb}, cells 3--4.}
+\end{figure}
+
+\paragraph{Results.} The ensemble beats both baselines on every metric (\cref{tab:e2}). At the threshold of 0.404 it flags 193 of the 212 test churners with 20 false alarms: about one flag in eleven is a member who stayed. Class weights and SMOTE-NC are equivalent in cross-validation (PR-AUC 0.972 against 0.970, Brier 0.039 for both). Calibration moves the curve onto the diagonal (\cref{fig:e2}), so each band churns at about its predicted rate: high-band members churn at 93.9\% against 95.1\% predicted, medium at 41.7\% against 44.1\%, low at 2.9\% against 1.6\%. Scores are extreme because a few columns nearly decide the outcome, not because of overfitting: training members, scored out of fold, err at 4.9\% at 0.5 against 4.6\% on the test set. Without the suspect same-month columns, F1 falls to 0.817, the honest lower bound if those columns were recorded after the churn month.
+
+\paragraph{Fairness.} Recall is 0.985, 0.943 and 0.522 for ages 18--25, 26--30 and 31+, and 0.861 and 0.955 by gender. The model misses about half of the rare churners aged 31 and over (23 in the test set); we report this rather than hide it, and suggest staff review medium-risk members of that group. The youngest group shows the opposite trade-off, with a false-positive rate of 14\%.
+
+\paragraph{Verdict} \verdict{met}. F1 0.908, PR-AUC 0.973 and Brier 0.035 against 0.862, 0.953 and 0.056 for logistic regression and 0.549, 0.390 and 0.336 for the visit rule, with calibrated probabilities the planner can use at face value.
+
+\section{E3: Can we find who is persuadable?}
+\label{sec:e3}
+\databadge{scenario}\quad\textsf{\small Baselines: T-learner; churn risk used as uplift; random}
+
+Estimates for all 16,000 member--offer pairs were compared with the true uplift by rank correlation and by the mean true uplift of each method's top 10\% of pairs; the same estimates then drove the greedy planner, graded by the evaluator.
+
+\begin{figure}[tb]
+  \centering
+  \pgfplotstableread{\results{e3_uplift_vs_truth.csv}}\upl
+  \begin{tikzpicture}
+    \begin{axis}[anchorbar, scale only axis, width=0.5\linewidth, height=4.2cm, bar width=5.5pt,
+        ymin=-0.05, ymax=1, ylabel={Spearman with true uplift},
+        xtick={0,...,4}, xticklabels={Check-in, Class pass, Discount, Free PT, All pairs},
+        unbounded coords=discard, title={Ranking quality by offer}, title style={yshift=11pt}, enlarge x limits=0.13, ytick={0,0.25,...,1},
+        legend style={at={(0.5,1.02)}, anchor=south, legend columns=4, /tikz/every even column/.append style={column sep=5pt}}]
+      \addplot[fill=cBlue]   table[x expr=\coordindex,    y=spearman, skip coords between index={5}{20}]{\upl};
+      \addplot[fill=cOrange] table[x expr=\coordindex-5,  y=spearman, skip coords between index={0}{5}, skip coords between index={10}{20}]{\upl};
+      \addplot[fill=cSky]    table[x expr=\coordindex-10, y=spearman, skip coords between index={0}{10}, skip coords between index={15}{20}]{\upl};
+      \addplot[fill=cGrey]   table[x expr=\coordindex-15, y=spearman, skip coords between index={0}{15}]{\upl};
+      \legend{CBR, T-learner, churn risk, random}
+    \end{axis}
+  \end{tikzpicture}\hfill
+  \includegraphics[width=0.4\linewidth]{generated/qini.pdf}
+  \caption{E3. Left: rank correlation between estimated and true uplift; CBR gives every member the offer's average for the check-in and the class pass, so it has no ranking there. Right: Qini curve of the T-learner against the oracle and random targeting.}
+  \label{fig:e3}
+  \source{\code{results/e3_uplift_vs_truth.csv}, \code{results/a6_tlearner_recovery.csv}; \code{b_cbr.ipynb}, \code{a_scenario_uplift.ipynb}.}
+\end{figure}
+
+\paragraph{Results.} CBR ties the T-learner overall (Spearman 0.39 each), is better for the two large-effect offers (free PT 0.64 against 0.61; discount 0.48 against 0.27) and picks the pairs with the highest true effect (top-decile mean 0.177 against 0.159). It cannot separate members for the check-in and the class pass, whose effects of a few points are smaller than the noise in about 350 randomised cases per offer, so shrinkage honestly returns the average. Churn risk ranks well \emph{within} an offer, because scenario effects grow with risk, but says nothing about \emph{which} offer helps, so its top picks are weaker (0.125). Plans built on the estimates (\cref{tab:e3plans}) favour the T-learner at the default 36 staff hours, where cheap check-ins dominate and CBR cannot rank them, and CBR with more staff time. A null test with shuffled offers confirms that CBR does not invent effects, and on the history alone every estimator, the T-learner included, ranks within the noise of random.
+
+\begin{table}[tb]
+  \caption{E3. Extra members kept by greedy plans built on each estimator, graded by the true uplift.}
+  \label{tab:e3plans}
+  \begin{tabular*}{\linewidth}{@{\extracolsep{\fill}}l S[table-format=2.1] S[table-format=2.1]@{}}
+    \toprule
+    \hd{Staff hours and budget} & {\hd{CBR}} & {\hd{T-learner}} \\
+    \midrule
+    36 h, \$1,500 (default week) & 21.0 & \bfseries 24.6 \\
+    72 h, \$1,500 & \bfseries 36.6 & 35.1 \\
+    120 h, \$4,000 & \bfseries 51.9 & 50.7 \\
+    \bottomrule
+  \end{tabular*}
+  \source{\code{results/e3_plan_quality.csv}.}
+\end{table}
+
+\paragraph{Verdict} \verdict{partly}. CBR matches the T-learner overall, is better where effects are large and explains each estimate with real precedents; it is weaker where effects are small and staff time is scarce, which costs 3.7 retained members a week at the default settings. The team kept CBR as the planner's estimator for its inspectable precedents, with the T-learner as its benchmark.
+
+\section{E4: Does AnchorAI retain more members per dollar?}
+\label{sec:e4}
+\databadge{scenario}\quad\textsf{\small Baselines: contact-all; risk-top-$k$; greedy-uplift}
+
+Every planner ran at 36, 72 and 120 staff hours and several budgets, the genetic algorithm with three seeds, and every plan was graded by the evaluator as extra members kept beyond the roughly 2,660 of 4,000 who would stay anyway. Variant (a) gives every planner the true effects, isolating search quality; variant (b) gives them the estimates, as in real use. None of the 198 plans broke a limit.
+
+\begin{figure}[tb]
+  \centering
+  \begin{tikzpicture}
+    \begin{axis}[anchorbar, width=\linewidth, height=4.6cm, bar width=6.5pt,
+        symbolic x coords={36 h \$1.5k, 72 h \$1.5k, 72 h \$4k, 120 h \$1.5k, 120 h \$4k}, xtick=data,
+        ymin=0, ymax=78, ylabel={extra members kept}, enlarge x limits=0.1,
+        legend style={at={(0.02,0.98)}, anchor=north west, legend columns=4, /tikz/every even column/.append style={column sep=6pt}},
+        nodes near coords={\axisnum{\pgfplotspointmeta}}, nodes near coords style={font=\sffamily\tiny, text=ink, rotate=90, anchor=west},
+        every node near coord/.append style={/pgf/number format/.cd, fixed, fixed zerofill, precision=1}]
+      \addplot[fill=cGrey]   coordinates {(36 h \$1.5k,10.4) (72 h \$1.5k,20.1) (72 h \$4k,20.2) (120 h \$1.5k,20.1) (120 h \$4k,20.2)};
+      \addplot[fill=cSky]    coordinates {(36 h \$1.5k,13.7) (72 h \$1.5k,21.0) (72 h \$4k,21.4) (120 h \$1.5k,21.0) (120 h \$4k,21.4)};
+      \addplot[fill=cOrange] coordinates {(36 h \$1.5k,28.8) (72 h \$1.5k,44.5) (72 h \$4k,50.1) (120 h \$1.5k,47.6) (120 h \$4k,64.1)};
+      \addplot[fill=cBlue]   coordinates {(36 h \$1.5k,32.5) (72 h \$1.5k,45.7) (72 h \$4k,54.0) (120 h \$1.5k,47.6) (120 h \$4k,70.8)};
+      \legend{contact-all, risk-top-\textit{k}, greedy-uplift, genetic algorithm}
+    \end{axis}
+  \end{tikzpicture}
+  \caption{E4 (a), perfect knowledge: extra members kept by each planner, by staff hours and weekly budget. Planning by effect keeps 1.9 to 3.5 times as many members as contacting by schedule or by risk.}
+  \label{fig:e4}
+  \source{\code{results/e4_optimiser.csv}, mean over seeds; \code{b_ga.ipynb}.}
+\end{figure}
+
+\begin{table}[tb]
+  \caption{E4 (b), estimated effects: extra members kept, as the system runs. Default configuration: the genetic algorithm on CBR estimates.}
+  \label{tab:e4}
+  \begin{tabular*}{\linewidth}{@{\extracolsep{\fill}}l S[table-format=2.1] S[table-format=2.1] S[table-format=2.1] S[table-format=2.1] S[table-format=2.1] S[table-format=2.1]@{}}
+    \toprule
+    & {\hd{Contact-}} & {\hd{Risk-}} & \multicolumn{2}{c}{\hd{CBR}} & \multicolumn{2}{c}{\hd{T-learner}} \\
+    \cmidrule(lr){4-5}\cmidrule(l){6-7}
+    \hd{Staff hours, budget} & {\hd{all}} & {\hd{top-$k$}} & {\hd{greedy}} & {\hd{GA}} & {\hd{greedy}} & {\hd{GA}} \\
+    \midrule
+    36 h, \$1,500 & 10.4 & 13.7 & 21.0 & 16.7 & 24.6 & \bfseries 24.9 \\
+    72 h, \$1,500 & 20.1 & 21.0 & \bfseries 36.6 & 35.5 & 35.1 & 35.1 \\
+    120 h, \$4,000 & 20.2 & 21.4 & \bfseries 51.9 & 48.1 & 50.7 & 50.7 \\
+    \bottomrule
+  \end{tabular*}
+  \source{\code{results/e4_estimates.csv}, mean over seeds.}
+\end{table}
+
+\paragraph{Results.} With perfect knowledge the genetic algorithm beats greedy wherever two limits bind together and ties where one dominates (\cref{fig:e4}). On estimates (\cref{tab:e4}), every effect-based plan beats contacting by schedule or risk, and per staff hour at the default week the default configuration keeps 0.46 members against 0.29 for contact-all and 0.38 for risk-top-$k$. But the genetic algorithm's advantage reverses on noisy estimates: against greedy, its true net value ranges from +2.2\% to +9.2\% with perfect knowledge, $-1.5\%$ to $+0.4\%$ on the T-learner and $-33.8\%$ to $-1.0\%$ on CBR. This is the optimiser's curse~\cite{smith2006curse}: the harder a planner optimises noisy estimates, the more it selects the options whose estimates happen to be too high.
+
+\paragraph{Verdict} \verdict{met}. Planning by estimated effect, as the system runs by default, keeps 22\% to 138\% more members than contacting by risk or schedule in every setting tested, without breaking a limit. The size of the gain depends on the estimates more than the optimiser: on today's CBR estimates, the simpler greedy planner, selectable on the same page, keeps more members than the default genetic algorithm.
+
+\section{E5: How good and how fast is the genetic algorithm?}
+\label{sec:e5}
+\databadge{scenario}\quad\textsf{\small Benchmark: CP-SAT's proven optimum on the planner's objective}
+
+The genetic algorithm was compared with CP-SAT on the planner's own objective: the linear objective on the full gym, and the full objective (with spillover and diminishing returns) on resampled instances small enough to prove optimality.
+
+\begin{figure}[tb]
+  \centering
+  \pgfplotstableread{\results{e5_speed.csv}}\spd
+  \begin{tikzpicture}
+    \begin{axis}[anchor, scale only axis, width=0.36\linewidth, height=4.1cm, ymode=log,
+        xlabel={members with options}, ylabel={seconds (log scale)}, title={Run time by size},
+        xtick={250,1000,2000,4000}, log basis y=10, ymin=0.08, ymax=150,
+        yticklabel={\pgfmathparse{10^\tick}\axisnum[fixed, precision=1]{\pgfmathresult}},
+        legend style={at={(0.98,0.03)}, anchor=south east}]
+      \addplot[cBlue, mark=*, mark size=1.6pt] table[x=members, y=ga_seconds]{\spd};
+      \addplot[cOrange, mark=square*, mark size=1.5pt] table[x=members, y=cp_sat_linear_seconds]{\spd};
+      \addplot[only marks, mark=-, mark size=5pt, line width=1.2pt, color=ink] coordinates {(2000,30) (4000,60)};
+      \legend{GA (300 generations), CP-SAT (linear), target}
+    \end{axis}
+  \end{tikzpicture}\hfill
+  \includegraphics[width=0.48\linewidth]{generated/ga_convergence.pdf}
+  \caption{E5. Left: run time grows about linearly; this run missed the 30\,s and 60\,s targets by about 10\%. Right: five seeds climb from the greedy start and plateau about 20\% above it (regenerated on the seeded database; the committed run's five seeds end within 0.2\% of each other).}
+  \label{fig:e5}
+  \source{\code{results/e5_speed.csv}; \code{scripts/figures.py} (\code{ga}), as in \code{b_exact.ipynb}.}
+\end{figure}
+
+\paragraph{Results.} On the linear objective, CP-SAT proves the optimum for the full gym in 1.2--1.4\,s; the genetic algorithm is within 0.8--2.3\% of it and greedy within 15--32\%. On the full objective, the genetic algorithm matches the proven optimum on 8 of 9 instances of 20--40 members and comes within 0.24\% at 50; at 200 members it beats CP-SAT's time-limited best by 1.0\%, though at 100 it is 2.5\% below. Greedy is 14--27\% below the optimum on average. Its advantage over greedy holds, at 16--26\%, for every combination of spillover $\beta \in \{0, 0.5, 1\}$ and diminishing returns $d \in \{0, 0.02, 0.05\}$; replacing repair by penalties ends 2.4\% lower and dropping the greedy seed 2.9\% lower. It takes 18\,s for 1,000 members and 33\,s for 2,000 (\cref{fig:e5}).
+
+\paragraph{Verdict} \verdict{partly}. On the linear problem CP-SAT is the better tool, exact and faster. The genetic algorithm earns its place on the full objective at real size, where it is near-optimal and robust to the assumed effect strengths; its speed is at the edge of the targets.
+
+\section{E6: Are the rules correct, and do guardrails matter?}
+\label{sec:e6}
+\databadge{scenario}\quad\textsf{\small Baseline: the same playbooks with guardrails switched off}
+
+The full rule base ran on all 4,000 members with facts built exactly as the API builds them: the validator, the 29 hand-built cases, coverage, and 60 plans with and without guardrails, scored by the true uplift.
+
+\begin{figure}[tb]
+  \centering
+  \begin{tikzpicture}
+    \begin{axis}[anchorhbar, scale only axis, width=0.42\linewidth, height=3.2cm, bar width=8pt,
+        symbolic y coords={G05 PT eligibility,G04 low risk,G03 discount,G02 offer cap,G01 contact cap},
+        ytick=data, xmin=0, xmax=1250, xlabel={proposals removed}, title={What the guardrails remove},
+        nodes near coords={\axisnum{\pgfplotspointmeta}}, nodes near coords style={font=\sffamily\scriptsize, text=ink}]
+      \addplot[fill=cBlue] coordinates {(1029,G01 contact cap) (0,G02 offer cap) (0,G03 discount) (7,G04 low risk) (44,G05 PT eligibility)};
+    \end{axis}
+  \end{tikzpicture}\hfill
+  \begin{tikzpicture}
+    \begin{axis}[anchorbar, scale only axis, width=0.34\linewidth, height=3.2cm, bar width=9pt,
+        symbolic x coords={36 h,120 h}, xtick=data, ymin=0, ymax=62, ylabel={extra members kept}, enlarge x limits=0.5,
+        title={Plan value, greedy, \$1,500}, legend style={at={(0.03,0.97)}, anchor=north west},
+        nodes near coords={\axisnum{\pgfplotspointmeta}}, nodes near coords style={font=\sffamily\scriptsize, text=ink},
+        every node near coord/.append style={/pgf/number format/.cd, fixed, fixed zerofill, precision=1}]
+      \addplot[fill=cBlue]   coordinates {(36 h,16.539) (120 h,40.447)};
+      \addplot[fill=cGrey]   coordinates {(36 h,17.638) (120 h,54.727)};
+      \legend{with guardrails, without}
+    \end{axis}
+  \end{tikzpicture}
+  \caption{E6. Left: of 3,448 proposals over 1,422 members, guardrails remove 1,080 (31.3\%), almost all of them contacts inside the 30-day cap. Right: their cost in plan value as the scenario measures it, which has no contact-fatigue effect and so cannot see what the cap protects against.}
+  \label{fig:e6}
+  \source{\code{results/e6_guardrail_bites.csv}, \code{results/e6_plan_value.csv}; \code{c_e6_rules.ipynb}.}
+\end{figure}
+
+\paragraph{Results.} The validator reports no issues, all 29 cases match, and every rule fires for at least one member. Guardrails remove 31.3\% of proposals (\cref{fig:e6}); every guardrail-free plan contacts members again within 30 days (75--148 times per plan at 36\,h), and no guarded plan contains a violation. The 386 members without a phone receive the email or in-person twin of each playbook, never an SMS or a call. At 36 staff hours, where staff time binds, removing the guardrails changes plan value by $-1.0$ to $+1.4$ members; at 120\,h the guardrail-free plans gain 6--14 members by re-contacting members inside the cap. Counting contacts logged in the application doubled the proposals removed (from 15.3\% to 31.3\%), so next week's plan cannot contact this week's members again.
+
+\paragraph{Verdict} \verdict{met}. The rule base is consistent and its guardrails do real work. Their cost is zero to small at the seeded staff level and up to about 14 members at 120\,h, but the scenario has no fatigue effect to price, so we claim safety and auditability, not a retention gain. Two guardrails (G02, G03) remove nothing on today's data and remain as safety nets.
+
+\section{E7: Do knowledge-graph signals add information?}
+\label{sec:e7}
+\databadge{scenario}\quad\textsf{\small Baseline: churn probability alone}
+
+The graph's event flags were tested against the scenario's true post-event hazard (the Kaggle label knows nothing of the synthetic events): their lift, whether adding them to the churn ranking surfaces higher-hazard members among the 800 test members (1,000 bootstrap resamples), and their effect on rules and plans.
+
+\begin{figure}[tb]
+  \centering
+  \pgfplotstableread{\results{e7_ranking.csv}}\rk
+  \begin{tikzpicture}
+    \begin{axis}[anchor, scale only axis, width=0.42\linewidth, height=3.2cm, xmin=-0.025, xmax=0.025,
+        ytick={1,...,4}, yticklabels={KG bonus +0.05, KG bonus +0.10, KG bonus +0.20, KG in-band}, y dir=reverse,
+        ymin=0.4, ymax=4.6, xlabel={change in Spearman vs churn probability (95\% CI)}, ymajorgrids=false, xmajorgrids,
+        title={Ranking: no reliable gain},
+        xticklabel style={/pgf/number format/fixed, /pgf/number format/precision=2}]
+      \draw[nusOrange, line width=0.7pt] (axis cs:0,0.4) -- (axis cs:0,4.6);
+      \addplot[only marks, mark=*, mark size=2pt, color=cBlue,
+        error bars/.cd, x dir=both, x explicit, error bar style={line width=1pt, cBlue}, error mark options={mark size=2pt, rotate=90, cBlue}]
+        table[y expr=\coordindex, x=spearman_diff, x error minus expr=\thisrow{spearman_diff}-\thisrow{spearman_lo},
+          x error plus expr=\thisrow{spearman_hi}-\thisrow{spearman_diff}, skip coords between index={0}{1}, skip coords between index={5}{6}]{\rk};
+    \end{axis}
+  \end{tikzpicture}\hfill
+  \begin{tikzpicture}
+    \begin{axis}[anchorbar, scale only axis, width=0.3\linewidth, height=3.2cm, bar width=9pt,
+        symbolic x coords={36 h,120 h}, xtick=data, ymin=0, ymax=62, ylabel={extra members kept}, enlarge x limits=0.5,
+        title={Plan value, greedy, \$1,500}, legend style={at={(0.03,0.97)}, anchor=north west},
+        nodes near coords={\axisnum{\pgfplotspointmeta}}, nodes near coords style={font=\sffamily\scriptsize, text=ink},
+        every node near coord/.append style={/pgf/number format/.cd, fixed, fixed zerofill, precision=1}]
+      \addplot[fill=cBlue] coordinates {(36 h,19.355) (120 h,50.063)};
+      \addplot[fill=cGrey] coordinates {(36 h,19.618) (120 h,43.094)};
+      \legend{with graph, without}
+    \end{axis}
+  \end{tikzpicture}
+  \caption{E7. Left: adding the graph's event flags to the churn ranking changes Spearman correlation with the true hazard by less than its uncertainty, whatever the bonus. Right: plan value of the greedy planner, the best in every setting, with and without the graph facts; the gain appears only when staff time is spare.}
+  \label{fig:e7}
+  \source{\code{results/e7_ranking.csv}, \code{results/e7_plan_value.csv}; \code{c_e7_kg.ipynb}.}
+\end{figure}
+
+\paragraph{Results.} The flags pick out the members the events hurt: their hazard rises 1.80 times after an anchor instructor leaves and 1.32 times after a class is cancelled, exactly the scenario's designed effects. They do not improve the ranking: every difference has an interval that includes zero (\cref{fig:e7}), because only about 8\% of test members are flagged and the churn model already explains most of the hazard. They do change who is contacted: 243 low-risk members whose routine was just disrupted, a group the churn score misses, gain an allowed free check-in. They hold 57\% of the event-driven excess hazard, and at 120 staff hours contacting them adds about 7 members (+17\%); at the seeded 36 hours the plan is already full and they add nothing.
+
+\paragraph{Verdict} \verdict{partly}. The graph carries information the model lacks when events of this kind happen, and turns it into contacts the churn score would miss. That becomes retention only when staff time allows, and the evidence is a recovery of a designed effect, not of real churn.
+
+\section{E8: Is the assistant accurate and grounded?}
+\label{sec:e8}
+\databadge{scenario}\quad\textsf{\small Baseline: a keyword router with the same slot extraction}
+
+Intent accuracy was measured on 86 labelled questions: 62 written by an AI model from the intent descriptions, and 24 held out, written by two team members who never saw the training examples. Twenty sampled questions ran through the full pipeline; each sentence of the 17 model-phrased answers was labelled supported, unsupported or contradicted by an LLM judge~\cite{zheng2023judge}, after calibrating it on known good and bad answers, and 15 answers were spot-checked by hand.
+
+\begin{figure}[tb]
+  \centering
+  \pgfplotstableread{\results{e8_threshold_sweep.csv}}\sw
+  \begin{tikzpicture}
+    \begin{axis}[anchor, scale only axis, width=0.4\linewidth, height=3.6cm, xlabel={similarity threshold for \enquote{unknown}},
+        ylabel={share}, ymin=0, ymax=1, title={Threshold trade-off (86 questions)},
+        legend style={at={(0.98,0.5)}, anchor=east}, xticklabel style={/pgf/number format/fixed, /pgf/number format/precision=2}]
+      \draw[muted, dashed, line width=0.6pt] (axis cs:0.35,0) -- (axis cs:0.35,1);
+      \addplot[cBlue] table[x=threshold, y=accuracy]{\sw};
+      \addplot[cOrange] table[x=threshold, y=off_topic_answered]{\sw};
+      \addplot[cSky] table[x=threshold, y=in_scope_refused]{\sw};
+      \legend{accuracy, off-topic answered, in-scope refused}
+    \end{axis}
+  \end{tikzpicture}\hfill
+  \begin{minipage}[b]{0.46\linewidth}
+    \small\sffamily
+    \begin{tabular*}{\linewidth}{@{\extracolsep{\fill}}l r S[table-format=2.1] S[table-format=2.1]@{}}
+      \toprule
+      \hd{Questions} & \hd{n} & {\hd{Classifier}} & {\hd{Keywords}} \\
+      \midrule
+      AI-written & 62 & \bfseries 91.9 & 77.4 \\
+      Held out, member 1 & 9 & 55.6 & \bfseries 77.8 \\
+      Held out, member 2 & 15 & \bfseries 46.7 & 40.0 \\
+      \midrule
+      All held out & 24 & 50.0 & \bfseries 54.2 \\
+      \bottomrule
+    \end{tabular*}
+    \par\vspace{3pt}{\scriptsize\color{muted}Intent accuracy (\%).}\par\vspace{8pt}
+  \end{minipage}
+  \caption{E8. Left: raising the threshold refuses more off-topic questions but also more in-scope ones; at the chosen 0.35, 32\% of off-topic questions are still answered. Right: on held-out questions neither router is reliable, and the classifier is no better than keywords.}
+  \label{fig:e8}
+  \source{\code{results/e8_threshold_sweep.csv}, \code{results/e8_intent_predictions.csv} (rerun of part 1 on 23 October with the second held-out set); \code{c_e8_assistant.ipynb}.}
+\end{figure}
+
+\paragraph{Results.} Grounding is strong. No answer contained a number or member identifier absent from its evidence; 96.2\% of the 80 judged sentences were supported and none contradicted; 15 of 17 answers were fully supported, and 13 of 15 were judged faithful by hand. The two failures are advice the question asked for and a ranking the tool does not compute. A stricter prompt, adopted after a controlled replay, removed uncited sentences entirely and raised judged support from 89\% to 97\% at the cost of shorter answers. A local \code{qwen2.5:7b} model was as well supported as the hosted model (95.1\% each) and far faster on a strong GPU (median 0.23\,s against 4.6\,s), but passed fewer format checks (71\% against 88\%) and gave less helpful lists. Intent routing is the weak point (\cref{fig:e8}): the classifier is near 92\% on AI-written questions but 50\% on held-out ones, against 54\% for keywords, mostly because it answers off-topic questions instead of refusing.
+
+\paragraph{Verdict} \verdict{partly}. Answers are faithful to the evidence they are given, but the router that chooses that evidence is no better than keywords on unseen questions, so we do not claim the classifier is an improvement. Samples are small, the judge varies by about two points between runs, and the spot check was assisted by an AI tool, so it is not an independent human rating.
+
+\section{Summary of findings}
+
+Real data supports a useful, calibrated churn model and stable, interpretable segments (E1, E2). Effect-based planning keeps substantially more members than risk-based or calendar contact (E4), but how much more depends on the quality of the uplift estimates rather than the optimiser: CBR matches the T-learner overall and explains itself (E3), yet noisy estimates turn the genetic algorithm's stronger search against it (E4), even though that search is near-optimal on its own objective (E5). The rules and graph do what they were designed to do (E6, E7), and their value shows when staff time allows. The assistant is faithful to its evidence but routes unseen questions no better than keywords (E8).

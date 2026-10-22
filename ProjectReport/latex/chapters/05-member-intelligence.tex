@@ -1,0 +1,93 @@
+\chapter{Member intelligence: segments, churn and uplift}
+\label{ch:member}
+
+\begin{inbrief}
+\begin{itemize}
+  \item Every member receives a plain-English \textbf{segment}, a calibrated \textbf{churn probability} with a risk band and its five drivers, and an \textbf{uplift estimate} for each offer.
+  \item Calibration is not cosmetic: the planner multiplies probability by uplift and value, so a distorted probability silently distorts the plan.
+  \item The results are measured in E1--E3 (\cref{ch:experiments}).
+\end{itemize}
+\end{inbrief}
+
+The three outputs are written by the data build and served by the API as one record per member, the contract between member intelligence and the rest of the system. Rules, planner, explanations, assistant and knowledge graph all read it.
+
+\section{Behavioural segmentation}
+\label{sec:segments}
+
+Staff think in groups, such as \enquote{new members who have stopped coming}. Segments give the dashboard, the member list and Member~360 that vocabulary. They describe behaviour only: they are not an input to the churn model, and no decision rule depends on them.
+
+K-means~\cite{arthur2007kmeanspp} is fitted on the training split over seven standardised behavioural features (months as a member, log-scaled because it is long-tailed; lifetime weekly visits; visit trend; contract length; extra spend; age; group-class attendance). The churn label is never used; each segment's churn rate is computed only after the clusters are fixed. Every $k$ from 2 to 10 is fitted with ten initialisations and scored by silhouette~\cite{rousseeuw1987silhouettes}; stability is the adjusted Rand index~\cite{hubert1985partitions} against refits with other seeds. Because the silhouette is low and almost flat on this data, a fixed rule chooses $k$: the most detailed $k$ between 3 and 8 whose silhouette is within 5\% of the best. Segments are then ordered by churn and named by fixed rules on their centres (\cref{tab:naming}), so their names survive a rebuild with another seed or a new data file. The proposal's Gaussian mixture was dropped to keep one method.
+
+\begin{table}[tb]
+  \caption{Segment naming rules, checked in order on each segment centre. With seed 42, four of the six names occur.}
+  \label{tab:naming}
+  \begin{tabularx}{\linewidth}{@{}L l@{}}
+    \toprule
+    \hd{Rule on the segment centre} & \hd{Name} \\
+    \midrule
+    under 2 months as a member, and visits this month below 0.8 × the usual rate & New and slipping \\
+    under 2 months, with steady or rising visits & New and settling in \\
+    average contract of 9 months or more & Annual-contract loyalists \\
+    under 1.3 visits a week & Established but infrequent \\
+    at least half attend group classes & Established class-goers \\
+    otherwise & Established solo trainers \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\section{Churn model}
+\label{sec:churn}
+
+\begin{figure}[tb]
+  \centering
+  \begin{tikzpicture}[font=\sffamily\scriptsize,
+      box/.style={draw=nusBlue, line width=0.6pt, rounded corners=2pt, fill=tint, align=center, minimum height=11mm, text width=23mm, text=ink},
+      key/.style={box, fill=nusBlue, text=white, font=\sffamily\bfseries\scriptsize},
+      outbox/.style={box, draw=nusOrange, fill=tintOrange},
+      arr/.style={-{Latex[length=1.8mm]}, draw=muted, line width=0.6pt}]
+    \node[box]    (f)    at (0,0)       {17 features\\13 Kaggle + 4 derived};
+    \node[box]    (lr)   at (31mm,7.5mm)  {logistic regression\\class-weighted};
+    \node[box]    (gb)   at (31mm,-7.5mm) {LightGBM\\300 trees, 15 leaves};
+    \node[key]    (m)    at (62mm,0)    {mean of the two\\probabilities};
+    \node[key]    (pl)   at (93mm,0)    {Platt calibration\\(640-member slice)};
+    \node[outbox] (band) at (124mm,7.5mm)  {risk band\\high · medium · low};
+    \node[outbox] (drv)  at (124mm,-7.5mm) {five drivers\\LR term + TreeSHAP};
+    \coordinate (fs) at ($(f.east)!0.5!(lr.west|-f.east)$);
+    \draw[arr] (f.east) -- (fs) |- (lr.west);
+    \draw[arr] (fs) |- (gb.west);
+    \coordinate (ms) at ($(lr.east|-m.west)!0.5!(m.west)$);
+    \draw[draw=muted, line width=0.6pt] (lr.east) -| (ms);
+    \draw[draw=muted, line width=0.6pt] (gb.east) -| (ms);
+    \draw[arr] (ms) -- (m.west);
+    \draw[arr] (m) -- (pl);
+    \coordinate (ps) at ($(pl.east)!0.5!(band.west|-pl.east)$);
+    \draw[draw=muted, line width=0.6pt] (pl.east) -- (ps);
+    \draw[arr] (ps) |- (band.west);
+    \draw[arr] (ps) |- (drv.west);
+  \end{tikzpicture}
+  \caption{The churn pipeline. Both members of the ensemble are fitted on 2,560 training members; the remaining 640 calibrate the probability and set the decision threshold. Training members are scored out of fold.}
+  \label{fig:churnpipe}
+\end{figure}
+
+The model is the mean of two classifiers over the 17 features (\cref{fig:churnpipe}): a class-weighted logistic regression, stable and easy to read, and LightGBM~\cite{ke2017lightgbm}, which captures the non-linear effects and interactions a linear model cannot. This is the ensemble the proposal named, with three choices that matter.
+
+\paragraph{Imbalance.} With 26.5\% churners, SMOTE-NC oversampling~\cite{chawla2002smote}, applied inside each training fold so no synthetic row reaches a validation fold, was compared with class weights in five-fold cross-validation. They scored almost the same, and class weights were kept on the pre-declared tie-break (PR-AUC, then Brier) and because they add no synthetic members.
+
+\paragraph{Calibration.} Both treatments distort probabilities: a model trained as if churners were common predicts churn too often. A Platt calibrator~\cite{platt1999probabilistic} is therefore fitted on a held-out 20\% of the training split, never on the test set. A two-parameter fit suits a slice this small, where isotonic regression tends to overfit~\cite{niculescu2005probabilities}. The decision threshold maximises F1 on the same slice, but staff see bands rather than a threshold: high from 0.6, medium from 0.3, low below. A band is always shown as text and colour, never colour alone, and a probability is never shown as 0\% or 100\%.
+
+\paragraph{Honest scores for every member.} Test members are scored by the final model. Each training member is scored \emph{out of fold}, by a model fitted without them, so no displayed score has seen its own label; a regression test checks that changing one member's label never changes that member's score.
+
+\paragraph{Drivers.} The five largest contributions to a member's log-odds become the \enquote{Why this risk score} chart on Member~360 and the drivers in every plan explanation. Each contribution averages the logistic regression's term (coefficient times standardised deviation) with LightGBM's exact TreeSHAP value~\cite{lundberg2017shap,lundberg2020trees}. \Cref{fig:shap} shows the global picture: falling visits and a short membership push hardest towards churn. The interface states that drivers explain the model's estimate and are not proof of cause.
+
+\begin{figure}[tb]
+  \centering
+  \includegraphics[width=0.66\linewidth]{generated/shap.pdf}
+  \caption{TreeSHAP values of the LightGBM member on the 800 test members, for the ten most influential features. Each dot is a member, coloured by its feature value; dots to the right push towards churn. Real Kaggle data.}
+  \label{fig:shap}
+  \source{\code{scripts/figures.py} (\code{churn}), as in \code{a_churn.ipynb}, cell 5.}
+\end{figure}
+
+\section{Uplift baseline}
+\label{sec:tlearner}
+
+A churn score says who is likely to leave, not whom a contact would keep, and on field data targeting by expected response reduces churn more than targeting by risk~\cite{ascarza2018futility}. The planner therefore spends on \emph{uplift}: the change in the probability of staying that an offer causes. Uplift modelling is not taught in the course; the T-learner~\cite{kunzel2019metalearners}, the simplest meta-learner, was self-researched as the benchmark for the case-based estimator (\cref{sec:cbr}). It fits one outcome model per arm on the randomised history, one per offer (341 to 368 treated members each) and one for the 984 controls, each the mean of a logistic regression and a small LightGBM; a member's uplift for an offer is the predicted probability of staying under that offer minus that under no contact. Its recovery of the true uplift, and its comparison with case-based reasoning, are reported in E3 (\cref{sec:e3}).

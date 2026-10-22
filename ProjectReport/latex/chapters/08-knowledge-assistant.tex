@@ -1,0 +1,86 @@
+\chapter{Knowledge graph and staff assistant}
+\label{ch:knowledge}
+
+\begin{inbrief}
+\begin{itemize}
+  \item A Neo4j knowledge graph links members to the classes, instructors and clubs they use, finds who a gym event hurts, and turns that into rule facts and optimiser cohorts.
+  \item A staff assistant answers questions in plain English through a fixed pipeline in which the language model only phrases evidence that deterministic tools have already computed.
+  \item Both keep working, degraded, when Neo4j or the language model is down.
+\end{itemize}
+\end{inbrief}
+
+\section{Knowledge graph}
+
+\begin{figure}[tb]
+  \centering
+  \begin{tikzpicture}[font=\sffamily\scriptsize,
+      ent/.style={draw=nusBlue, line width=0.7pt, rounded corners=7pt, fill=tint, minimum width=20mm, minimum height=8mm, align=center, text=ink, font=\sffamily\bfseries\scriptsize},
+      evt/.style={ent, draw=nusOrange, fill=tintOrange},
+      rel/.style={-{Latex[length=1.8mm]}, draw=muted, line width=0.6pt},
+      lab/.style={font=\sffamily\tiny, text=muted, fill=white, inner sep=1pt}]
+    \node[ent] (m) at (0,0)        {Member\\[-1pt]\mdseries\tiny churn, band, segment};
+    \node[ent] (k) at (46mm,0)     {Class};
+    \node[ent] (i) at (92mm,0)     {Instructor};
+    \node[ent] (c) at (46mm,-19mm) {Club};
+    \node[ent] (o) at (0,-19mm)    {Offer};
+    \node[evt] (e) at (92mm,-19mm) {Event\\[-1pt]\mdseries\tiny left · cancelled};
+    \draw[rel] (m) -- node[lab] {ATTENDS \{visits/week\}} (k);
+    \draw[rel] (k) -- node[lab] {TAUGHT\_BY} (i);
+    \draw[rel] (m.south east) -- node[lab, pos=0.45] {MEMBER\_OF} (c.north west);
+    \draw[rel] (k) -- node[lab] {AT} (c);
+    \draw[rel] (i.south west) -- node[lab, pos=0.55] {WORKS\_AT} (c.north east);
+    \draw[rel] (m) -- node[lab] {RECEIVED \{week, stayed\}} (o);
+    \draw[rel] (e) -- node[lab] {AFFECTS} (i);
+    \draw[rel] (e.north west) -- node[lab, pos=0.4] {AFFECTS} (k.south east);
+  \end{tikzpicture}
+  \caption{The knowledge-graph schema. On the demo data: 4,000 members, 3 clubs, 9 instructors, 18 classes, 2,890 attendance links, 4 offers, 1,416 received offers and 2 events.}
+  \label{fig:kgschema}
+\end{figure}
+
+The graph~\cite{hogan2021kg} is built from the data tables with idempotent, batched \code{MERGE} statements (\cref{fig:kgschema}). It reads the \emph{effective} roster, the generated instructors, classes and events with administrators' edits applied on top, so the graph reflects who teaches what today and a data rebuild never loses an edit. Every query is a fixed Cypher template that receives values only as parameters and runs in a read-only transaction, which Neo4j itself enforces.
+
+\paragraph{Signals as rule facts.} Three templates turn the graph into facts per member: the share of their class visits taught by instructors who have left (flagged as a lost anchor instructor at 0.5 or more), whether a class they attend was cancelled, and the mean churn probability of their class peers. The facts are cached in a file that the rule engine reads, so the rules fire the same when Neo4j is stopped. The peer-risk fact is kept but not shown to staff: on the real data it varies only between 0.15 and 0.21 and is uncorrelated with a member's own risk. Against the Kaggle label the event flags show no lift, as expected, since the label knows nothing of the synthetic events; E7 measures them against the scenario's event effect instead.
+
+\paragraph{Cohorts, simulation and freshness.} The graph gives the genetic algorithm one row per member and class, weighted by the member's share of visits and attributed to the instructor who teaches it now. A what-if simulation answers \enquote{what if this instructor left, or this class were cancelled?} without changing anything: it adds the exposure to the affected members' in-memory facts, reruns the rule engine and reports who is affected, how many are high risk and which rules newly fire (\cref{fig:kgsim}). A reload takes about a second; while it runs, reads fail fast rather than see a half-loaded graph, and the graph is marked stale, with the reason shown on dependent pages, whenever the cached facts are older than the last data build or a roster edit.
+
+\begin{figure}[tb]
+  \centering
+  \screenshot[\linewidth]{screens/graph-content.png}
+  \caption{Simulating the departure of instructor Maya Chen in the graph explorer: 312 members are affected, 54 of them at high risk. Right: her neighbourhood, with the 40 highest-risk of her 312 members drawn.}
+  \label{fig:kgsim}
+\end{figure}
+
+\section{Staff assistant}
+
+\begin{figure}[tb]
+  \centering
+  \begin{tikzpicture}[font=\sffamily\scriptsize,
+      st/.style={draw=nusBlue, line width=0.6pt, rounded corners=2pt, fill=tint, align=center, minimum height=11mm, text width=21mm, text=ink},
+      llm/.style={st, draw=nusOrange, fill=tintOrange},
+      arr/.style={-{Latex[length=1.8mm]}, draw=muted, line width=0.6pt}]
+    \node[st]  (q)  at (0,0)       {\textbf{question}\\+ member on page};
+    \node[st]  (i)  at (26.5mm,0)    {\textbf{intent}\\embedding centroid, threshold 0.35};
+    \node[st]  (s)  at (53mm,0)    {\textbf{slots}\\ids, amounts, names, filters};
+    \node[st]  (t)  at (79.5mm,0)    {\textbf{tool}\\one deterministic function per intent};
+    \node[st]  (e)  at (106mm,0)   {\textbf{evidence}\\numbered lines [E1], [E2]…};
+    \node[llm] (l)  at (132.5mm,0)   {\textbf{LLM}\\phrases and cites, or says it does not know};
+    \foreach \a/\b in {q/i, i/s, s/t, t/e, e/l} \draw[arr] (\a) -- (\b);
+  \end{tikzpicture}
+  \caption{The assistant pipeline. The language model never chooses a tool and never sees data a tool did not return; without it, the evidence lines are returned as a cited list.}
+  \label{fig:assistantpipe}
+\end{figure}
+
+The assistant is a pipeline with the language model at the end (\cref{fig:assistantpipe}), in the spirit of retrieval-augmented generation~\cite{lewis2020rag} but with deterministic retrieval. Seven intents cover what staff ask: why a member is at risk, what to offer them and why, why one member ranks above another, who an event affects, a ranked list of members, what is in the plan, and how the plan would change with another budget or staff hours.
+
+\paragraph{Intent and slots.} Each intent's example questions are embedded with a sentence-transformer~\cite{reimers2019sbert} and averaged into a centroid; a question goes to the nearest centroid, or to \enquote{unknown} below a similarity of 0.35. Two rules sit on top: an intent that needs member identifiers cannot win without them (the member open on the page fills in), and questions that ask to change data are refused. Slots are filled by patterns and roster look-ups in a fixed order, money before member identifiers, so \enquote{budget drops to 1000} never becomes member M1000. The design was chosen on AI-written questions, which are optimistic; E8 tests it on questions written by teammates who never saw the training examples.
+
+\paragraph{Tools and grounding.} Each intent has one tool that returns numbered evidence lines from the services the API already uses. The what-if tool runs the same exact planner as the saved plan, twice, and reports the difference without saving anything. The prompt allows the model to answer only from the latest evidence lines, to end every sentence with the identifiers it relies on, to invent no number, name, offer or reason, and otherwise to reply exactly \enquote{I don't know based on the data I have}. The provider is set by configuration alone, a hosted API or a local Ollama model. Plan details are reserved for managers, both in the tools and in the evidence given to staff, and the browser keeps the conversation, so the server stores none.
+
+\begin{figure}[tb]
+  \centering
+  \screenshot[\linewidth]{screens/assistant-content.png}
+  \caption{The assistant answering a manager about member M1460 with the local \code{qwen2.5:7b-instruct} model. The answer cites its sources, which open as evidence chips linking to the member, rule or case.}
+  \label{fig:assistant}
+\end{figure}
+
+\paragraph{Message drafts.} For an allowed offer and channel, the assistant drafts a message that staff edit and send from their own tool; nothing is sent automatically. The request passes the same rule check as the plan, a template built only from evidence always works, and a language-model rewrite is rejected in favour of the template if it mentions churn or risk, contains a placeholder or a number not in the evidence, or is too long for an SMS.

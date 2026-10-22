@@ -1,0 +1,43 @@
+\section{Objectives and success measures}
+\label{ch:objectives}
+
+The proposal set three goals: segment members interpretably, predict churn with a calibrated ensemble, and turn the predictions into a weekly action plan whose every recommendation carries a justification staff can challenge. Building the system showed that the third goal needs more than a churn score. A plan has to know which members a contact would actually keep, respect the week's budget and staff time, and leave the final decision with people. We therefore pursued six objectives (\cref{tab:objectives}) and attached to each a measure, a baseline or target, and an experiment (\cref{tab:scorecard}).
+
+\begin{table}[tb]
+  \caption{Objectives.}
+  \label{tab:objectives}
+  \begin{tabularx}{\linewidth}{@{}l P{0.43\linewidth} L@{}}
+    \toprule
+    & \hd{Objective} & \hd{Why it matters to a gym} \\
+    \midrule
+    O1 & \textbf{Know who is at risk, and why}: interpretable segments and a calibrated churn probability with its drivers. & Staff act on reasons, not on a bare score. \\
+    O2 & \textbf{Know whom a contact would keep}: the extra chance a member stays if offered each offer (its \emph{uplift}). & The members most likely to leave are not always the ones a call can save. \\
+    O3 & \textbf{Plan the week within its limits}: who to contact, with which offer and channel, within budget, staff hours, stock and contact limits. & This is the decision a manager actually makes, and the one current tools leave open. \\
+    O4 & \textbf{Keep people in control}: every recommendation explained and checked against the gym's rules; overrides with a reason; approval; a full audit trail. & Staff distrust black-box flags; a plan they can question is one they will use. \\
+    O5 & \textbf{Make it usable by gym staff}: one web application, and an assistant that answers in plain language from the system's own data. & Front-desk staff and trainers are not analysts. \\
+    O6 & \textbf{Make it dependable}: reproducible results, and planning that continues when the knowledge graph or language model is down. & A tool that fails with one service will not be trusted with a weekly routine. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\begin{table}[tb]
+  \caption{Success measures and verdicts. The verdicts are argued in \cref{ch:experiments}.}
+  \label{tab:scorecard}
+  \begin{tabularx}{\linewidth}{@{}l l L L l@{}}
+    \toprule
+    & \hd{Exp.} & \hd{Measure} & \hd{Baseline or target} & \hd{Verdict} \\
+    \midrule
+    O1 & \E{1} & segment stability across seeds; churn separation & other $k$ from 2 to 10 & \verdict{met} \\
+    O1 & \E{2} & churn F1, PR-AUC, Brier; calibration by band & visit-count rule; logistic regression & \verdict{met} \\
+    O2 & \E{3} & rank correlation of estimated with true uplift & T-learner; risk as uplift; random & \verdict{partly} \\
+    O3 & \E{4} & extra members kept per \$1,000 and per staff hour; feasibility & contact-all; risk-top-$k$ & \verdict{met} \\
+    O3 & \E{5} & optimality gap and run time of the GA & CP-SAT optimum; 2,000 members in 30 s & \verdict{partly} \\
+    O4 & \E{6} & rule-base consistency; plan value with and without guardrails & expected cases; no guardrails & \verdict{met} \\
+    O1 & \E{7} & information added by knowledge-graph signals & churn probability alone & \verdict{partly} \\
+    O5 & \E{8} & intent accuracy; faithfulness of answers & keyword router & \verdict{partly} \\
+    O4, O6 & tests & explanation and audit coverage; degraded operation & every item explained, every write audited & \verdict{met} \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\paragraph{Scope of the evaluation.} The business result is measured on a synthetic gym. The real data has no offers and no record of who was contacted, so no real outcome of a plan exists; the scenario layer (\cref{sec:scenario}) gives every member a known response to every offer, which lets plans be graded fairly, while the size of any gain depends on how that response was designed. Explainability and usability are assessed by design and through the assistant's evaluation, not by user testing: no gym staff used the system, and the manager interviews were simulated (\cref{sec:acquisition}).

@@ -1,0 +1,89 @@
+\chapter{Installation guide}
+\label{app:install}
+
+These steps take a fresh clone to a running, seeded AnchorAI with data, models and demo users. The data pipeline, API and web application run without Neo4j and without a language model; the graph panels and the assistant then show as unavailable.
+
+\begin{table}[H]
+  \caption{Prerequisites.}
+  \label{tab:prereq}
+  \begin{tabularx}{\linewidth}{@{}l l L@{}}
+    \toprule
+    \hd{Tool} & \hd{Version} & \hd{Used for} \\
+    \midrule
+    Git & recent & cloning \\
+    uv & 0.13 or newer & the backend's Python 3.12 environment; uv downloads Python 3.12 if it is missing \\
+    Node.js and npm & Node 20 or newer & the web application \\
+    Docker with Compose & recent & Neo4j; optionally the full stack \\
+    OpenAI-compatible LLM endpoint & Ollama, OpenAI or similar & assistant and message drafts (optional) \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\paragraph{1. Code and configuration.} Clone the repository and create the environment file.
+\begin{shell}
+git clone <repo-url> AnchorAI && cd AnchorAI
+cp .env.example .env
+\end{shell}
+In \code{.env}, set \code{ANCHORAI_JWT_SECRET} to a random value (\code{openssl rand -hex 32}); set \code{LLM_BASE_URL}, \code{LLM_API_KEY} and \code{LLM_MODEL} to your endpoint (the default is a local Ollama server with \code{qwen2.5:7b-instruct}, installed once with \code{ollama pull qwen2.5:7b-instruct}); and leave \code{ANCHORAI_SEED} at 42 to reproduce the reported results.
+
+\paragraph{2. Dataset.} Download \emph{Gym Customers Features and Churn} from Kaggle~\cite{vinueza-gym} and put \code{gym_churn_us.csv} in \code{SystemCode/data/raw/}. The dataset is licensed CC BY-NC-SA 4.0 and is not included in the repository.
+
+\paragraph{3. Neo4j.} Start the knowledge graph; its browser is at \code{http://localhost:7474} (user \code{neo4j}, password \code{NEO4J_PASSWORD}, \code{anchorai-dev} by default).
+\begin{shell}
+docker compose up -d neo4j
+\end{shell}
+
+\paragraph{4. Backend.} Install the environment and set everything up with one command.
+\begin{shell}
+cd SystemCode/backend
+uv sync
+uv run anchorai setup     # data build (~20 s), seeded app database, knowledge graph
+\end{shell}
+\code{anchorai setup} builds the data tables and models from the raw file; creates, migrates and seeds the application database with demo users, rules, offers, roster, constraints and one approved demo week; and loads the knowledge graph, caching its signals for the rule engine. If Neo4j is not running, the last step is skipped with a warning and can be run later with \code{uv run anchorai kg load}. Each step also runs on its own: \code{anchorai data build}, \code{db upgrade}, \code{db seed [--demo]}, \code{db reset} and \code{kg load}. The assistant downloads the \code{all-MiniLM-L6-v2} embedding model (about 90 MB) once, at the first start.
+
+\paragraph{5. Run.} Start the API and the web application in two terminals, then open \code{http://localhost:5173}.
+\begin{shell}
+cd SystemCode/backend  && uv run uvicorn anchorai.api.main:app --reload   # API on :8000
+cd SystemCode/frontend && npm install && npm run dev                      # web on :5173
+\end{shell}
+
+\begin{table}[H]
+  \caption{Demo users. The password of every demo user is \code{anchorai}, or the value of \code{ANCHORAI_DEMO_PASSWORD}.}
+  \label{tab:demousers}
+  \begin{tabularx}{\linewidth}{@{}l l L@{}}
+    \toprule
+    \hd{User} & \hd{Role} & \hd{Lands on, and can use} \\
+    \midrule
+    \code{admin} & Admin & Dashboard; everything, including Rules, Offers \& constraints, Data \& models, Users, Audit log, Settings \\
+    \code{manager} & Manager & Dashboard; Segments, Members, Weekly plan, Scenarios, Knowledge graph, Events \& roster \\
+    \code{staff1}, \code{staff2} & Staff & My contacts; Member 360, Assistant \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\paragraph{Docker for everything.} Build the data on the host first, because the demo seed needs the tables; the API container migrates and seeds the database on start. Then load the graph from the host, or with \emph{Reload knowledge graph} on the Events \& roster page.
+\begin{shell}
+cd SystemCode/backend && uv sync && uv run anchorai data build
+cd ../.. && docker compose up --build -d
+cd SystemCode/backend && uv run anchorai kg load
+\end{shell}
+
+\paragraph{Checking the install.} \code{uv run pytest -q} runs the backend tests offline in under a minute, and \code{npm run build} type-checks and builds the web application. In the application, the administrator's Settings page shows whether the language model, Neo4j, the models and the database are working, and tests the LLM connection.
+
+\begin{table}[H]
+  \caption{Troubleshooting.}
+  \label{tab:trouble}
+  \begin{tabularx}{\linewidth}{@{}P{0.42\linewidth} L@{}}
+    \toprule
+    \hd{Symptom} & \hd{Fix} \\
+    \midrule
+    \enquote{Expected exactly one Kaggle CSV} & put exactly one file, \code{gym_churn_us.csv}, in \code{SystemCode/data/raw/} \\
+    Pages say the data tables are not built (HTTP 503) & run \code{uv run anchorai data build} \\
+    Demo users cannot sign in & run \code{uv run anchorai db reset} \\
+    Graph panels or assistant show \enquote{unavailable} & start Neo4j or the LLM endpoint; the rest keeps working \\
+    \code{npm} fails with an engine or native-binding error & upgrade to Node 20 or newer, delete \code{node_modules} and reinstall \\
+    Docker reports a missing host--sandbox network interface & the kernel was updated without a reboot; reboot \\
+    Port 8000 or 5173 is in use & stop the other process, or change the port \\
+    \bottomrule
+  \end{tabularx}
+\end{table}

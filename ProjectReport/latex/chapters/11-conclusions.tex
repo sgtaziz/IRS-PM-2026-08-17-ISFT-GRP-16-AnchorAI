@@ -1,0 +1,39 @@
+\chapter{Conclusions and future work}
+\label{ch:conclusions}
+
+\section{What we built and what we found}
+
+AnchorAI turns a gym's weekly retention question into an approved, explained call list. It combines a calibrated churn ensemble, a forward-chaining rule base, a case-based uplift estimator, a genetic algorithm benchmarked against an exact solver, a knowledge graph and a grounded assistant, in one application that three roles use for the whole weekly cycle. Five findings stand out.
+
+\begin{enumerate}
+  \item \textbf{Real data supports a useful, calibrated churn model.} On unseen members the ensemble beats a single logistic regression and a visit rule on every metric, and each risk band churns at about its predicted rate, so the planner can use the probabilities at face value (E2).
+  \item \textbf{Most churn sits in one recognisable group.} The 728 \enquote{new and slipping} members, under a month in and visiting about half as much as usual, account for about two-thirds of the members who left (689 of 1,061), and the trend signal the proposal anticipated holds on real members (E1, \cref{fig:trend}).
+  \item \textbf{Planning by effect beats planning by risk, and estimate quality matters more than search.} Effect-based plans keep 22--138\% more members than risk-based or calendar contact, but on noisy estimates a stronger optimiser selects the options whose estimates are too high, so greedy beats the genetic algorithm in truth even though the latter is near-optimal on its own objective (E3--E5).
+  \item \textbf{Knowledge and rules add safety and reach rather than accuracy.} Guardrails remove a third of proposals, nearly all repeat contacts, at little cost where staff time binds; the graph reaches 243 low-risk members whose routine was just disrupted, which pays off only when staff time allows (E6, E7).
+  \item \textbf{Grounding works; routing is the weak link.} The assistant states only what its evidence supports, but on questions its authors never saw it chooses the right tool no more often than a keyword router (E8).
+\end{enumerate}
+
+\section{Limitations}
+
+\begin{itemize}
+  \item \textbf{Synthetic ground truth.} Uplift, events and the contact history come from a documented scenario layer whose effects grow with risk by design. E3--E7 therefore show that the system recovers effects of this kind, not their real size; no real plan outcome exists.
+  \item \textbf{One real snapshot.} The Kaggle data has no dates, so there is no out-of-time validation, recency or regularity feature, or survival model, and whether the strongest same-month columns leak cannot be settled from the data; both model versions are reported.
+  \item \textbf{No real users.} The interviews that shaped the rules were simulated, and usability was assessed by design and by the assistant's evaluation, not with gym staff.
+  \item \textbf{Small evaluation samples.} The assistant's held-out set has 24 questions and its faithfulness 17 judged answers; the medium risk band and the over-31 churners are small groups.
+  \item \textbf{Untestable assumptions.} The scenario has no contact fatigue and no spillover, so it cannot reward the guardrail that prevents the one or the planning term that models the other.
+\end{itemize}
+
+\section{Recommendations for an operator}
+
+Act on new members whose visits fall, since they are most of the churn and the driver chart shows why each is flagged. Review medium-risk members aged 31 and over by hand, where the model misses most. Keep visit dates and the outcome of every retention contact. Above all, hold back a small random control group each week, so that the real effect of each offer can be measured instead of assumed; until then, prefer the greedy planner, which the evidence favours on today's estimates.
+
+\section{Future work}
+
+\begin{enumerate}
+  \item \textbf{Real, time-stamped data}: validate on later months, add recency and regularity features, model time to churn with survival methods, and settle the leakage question with the operator's record timing.
+  \item \textbf{Uplift from randomised contacts}, replacing the scenario's assumed effects, and stronger meta-learners such as the X-learner~\cite{kunzel2019metalearners}.
+  \item \textbf{Uncertainty-aware planning} that discounts noisy estimates, so that a stronger optimiser stops amplifying their errors~\cite{smith2006curse}.
+  \item \textbf{Out-of-scope detection} for the assistant, trained on real staff questions, so that it refuses what it cannot answer.
+  \item \textbf{A field study} with gym staff, measuring adoption, override rates and retention against a control group.
+  \item \textbf{Monitoring after each rebuild}, alerting when calibration or fairness drift, and a group-specific review threshold for older members.
+\end{enumerate}

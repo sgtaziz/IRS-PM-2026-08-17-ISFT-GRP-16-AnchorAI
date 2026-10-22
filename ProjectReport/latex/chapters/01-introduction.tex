@@ -1,0 +1,41 @@
+\chapter{Introduction}
+\label{ch:intro}
+
+\section{The business problem}
+
+Gym members rarely cancel on impulse. They stop coming first, and cancel weeks or months later; that lag is the window in which a well-chosen contact can still keep them. The window is valuable. The Health \& Fitness Association puts the median member retention rate at 66.4\% in 2024, across 175 operators running more than 17,000 facilities~\cite{hfa2025benchmarking}: about one member in three leaves each year, taking dues and ancillary spend with them. New members are the most fragile. In a study of one fitness centre, 63\% stopped before their third month and fewer than 4\% stayed continuously active beyond twelve~\cite{sperandei2016adherence}, and the real members analysed in this report agree: the newest segment churns at 94.6\% (\cref{sec:e1}).
+
+The proposal identified three ways in which current practice fails (\cref{tab:practice}). The common thread is that each produces either a list or a score, but not a decision: none says whom to contact this week, with which offer, within a fixed budget and finite staff hours, and why.
+
+\begin{table}[tb]
+  \caption{Current retention practice and its failure modes, as identified in the proposal.}
+  \label{tab:practice}
+  \begin{tabularx}{\linewidth}{@{}l L@{}}
+    \toprule
+    \hd{Practice} & \hd{Why it fails} \\
+    \midrule
+    Calendar campaigns & Contact everyone on a schedule, so budget goes to members who would have stayed anyway. \\
+    Threshold rules    & Ignore trend: twelve visits a month falling to four is a stronger warning than a steady two, but a threshold treats them alike. \\
+    Vendor risk scores & Give a number, not a decision; staff cannot interrogate the flag, so they ignore it. \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\section{Market and positioning}
+
+Memberships grew 6\% and facilities nearly 4\% in 2024~\cite{hfa2025global}, so there are ever more members to keep. Club software divides into systems of record (membership, booking, payments, access control; for example ABC Fitness, Mindbody, Xplor, Perfect Gym, Virtuagym and Daxko) and an intelligence layer that bolts onto them, of which Keepme, with its predictive member score, is the clearest example; Glofox offers a built-in at-risk report. The proposal's desk research, based on vendor material and buyer guides that have a commercial interest, found four gaps:
+
+\begin{enumerate}
+  \item \textbf{Scores, not allocation.} No vendor publicly exposes constrained allocation: which flagged members to contact, with which offer, under a budget and staff hours.
+  \item \textbf{Risk, not response.} Vendors target the members most likely to leave, but on field data, targeting by the expected response to the intervention reduces churn more than targeting by risk \cite{ascarza2018futility}.
+  \item \textbf{Opaque scores.} Models trained on very large member pools are powerful but unauditable, and mid-market operators cite staff distrust of black-box flags.
+  \item \textbf{Priced for chains.} The intelligence layer is generally recommended from five locations upwards, which leaves the one-to-five-club operator underserved.
+\end{enumerate}
+
+AnchorAI is therefore positioned as an \emph{explainable, budget-aware retention planner for mid-market operators}. It does not try to out-predict incumbents with far larger training data; it differentiates on the decision and on its transparency. We have not tested any competitor product, so every comparison in this report is against baseline policies in our own experiments, not against a vendor.
+
+\section{Target user and approach}
+
+The target user is a gym business with one to five clubs, and the people who use AnchorAI are its club managers, front-desk staff and trainers. No real operator was involved: we had no operator's data, and the manager interviews used to shape the rule base were simulated and are treated as plausible expert opinion, not evidence (\cref{sec:acquisition}).\footnote{The proposal named the team's study sponsor; it is not a client or data provider of this project and has not reviewed the system.}
+
+AnchorAI answers the weekly question with one pipeline (\cref{ch:architecture}). It learns from real members who is at risk and why (\cref{ch:member}); checks the gym's playbooks and guardrails with a rule engine (\cref{ch:rules}); estimates what each offer would achieve for each member and chooses the best plan within the week's limits (\cref{ch:optimisation}); adds signals from a knowledge graph of who trains with whom; and lets staff question every recommendation in plain language (\cref{ch:knowledge}). Managers approve the plan, and every change is audited (\cref{ch:implementation}).

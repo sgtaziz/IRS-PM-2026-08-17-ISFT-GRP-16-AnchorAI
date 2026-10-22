@@ -1,0 +1,89 @@
+\chapter{Decision automation: rules and knowledge acquisition}
+\label{ch:rules}
+
+\begin{inbrief}
+\begin{itemize}
+  \item The churn model says who is at risk; the rule base says what staff may do about it. For every member it returns the allowed offers, a channel for each, and the reason.
+  \item 29 rules in readable YAML, each citing its source, run on a forward-chaining engine whose guardrails always win.
+  \item Rules are versioned, validated before saving and testable on any member from the application.
+\end{itemize}
+\end{inbrief}
+
+\section{The rule engine}
+
+The engine is a forward-chaining production system~\cite{russell2021aima} (\cref{fig:engine}). It matches rules against a working memory of facts, fires one, and repeats until nothing new matches. The agenda holds every enabled rule that has not fired and whose conditions all hold; a condition such as \code{trend_ratio <= 0.7} is parsed with a regular expression, never evaluated as code. Conflicts are resolved by salience, then specificity (more conditions first), then file order. A rule does exactly one thing: a \emph{derive} rule asserts a fact, a \emph{playbook} proposes an offer on a channel, and a \emph{guardrail} blocks named offers or all of them. Each rule fires at most once, so the loop always ends; blocks are applied after the loop, so guardrails win because they are applied last, not because they fire first.
+
+\begin{figure}[tb]
+  \centering
+  \begin{tikzpicture}[font=\sffamily\scriptsize,
+      st/.style={draw=nusBlue, line width=0.6pt, rounded corners=2pt, fill=tint, align=center, minimum height=10mm, text width=23mm, text=ink},
+      io/.style={st, draw=nusOrange, fill=tintOrange},
+      arr/.style={-{Latex[length=1.8mm]}, draw=muted, line width=0.6pt}]
+    \node[io] (facts) at (0,0) {working memory\\member, contact and graph facts};
+    \node[st] (match) at (32mm,0) {\textbf{match}\\rules whose conditions hold};
+    \node[st] (res)   at (64mm,0) {\textbf{resolve}\\salience › specificity › order};
+    \node[st] (fire)  at (96mm,0) {\textbf{fire} one rule\\derive · propose · block};
+    \node[io] (out)   at (128mm,0) {\textbf{apply guardrails}\\allowed offers + trace};
+    \draw[arr] (facts) -- (match);
+    \draw[arr] (match) -- (res);
+    \draw[arr] (res) -- (fire);
+    \draw[arr] (fire.south) -- ++(0,-5mm) -| node[pos=0.25, below, text=muted] {new fact asserted: match again} (match.south);
+    \draw[arr] (fire) -- node[above, text=muted, font=\sffamily\tiny] {agenda empty} (out);
+  \end{tikzpicture}
+  \caption{The recognise--act cycle. Each rule fires at most once (refraction); blocked offers are removed after the loop, so a guardrail always overrides a playbook.}
+  \label{fig:engine}
+\end{figure}
+
+Three details keep the engine correct. A missing fact never matches, so a member who was never contacted simply does not trigger a rule on days since last contact; a fact of the wrong type never matches either. The first assertion of a fact wins, so a fact never changes after other rules have read it. And the output (facts, firings, proposals, blocked offers with the guardrail that blocked each, and allowed offers) is the contract with the planner.
+
+\section{The rule base}
+
+\begin{table}[tb]
+  \caption{Playbooks and guardrails. Each playbook has a twin for members with no phone on file, which uses email or an in-person contact instead of SMS or a call.}
+  \label{tab:rulebase}
+  \begin{tabularx}{\linewidth}{@{}l L l l r@{}}
+    \toprule
+    \hd{Rule} & \hd{When} & \hd{Proposes or blocks} & \hd{Channel} & \hd{Salience} \\
+    \midrule
+    P03 & routine disrupted (anchor instructor left, class cancelled) & check-in message & SMS & 45 \\
+    P01 & new and slipping & free PT session & call & 40 \\
+    P02 & falling regular & check-in message & call & 40 \\
+    P06 & high-value member at risk & free PT session & call & 35 \\
+    P04 & joined via a friend, medium or high risk & class pass & SMS & 30 \\
+    P05 & month-to-month, high risk & 20\% discount & call & 25 \\
+    P07 & disengaged, medium or high risk & check-in message & SMS & 20 \\
+    P08 & medium risk & check-in message & SMS & 10 \\
+    \midrule
+    G01 & contacts in 30 days at the cap (default 1) & blocks all offers & & \\
+    G02 & offers in 90 days at the cap (default 2) & blocks all offers & & \\
+    G03 & contract longer than one month & blocks the discount & & \\
+    G04 & low risk band & blocks paid offers & & \\
+    G05 & free PT session in the last 90 days & blocks free PT & & \\
+    \bottomrule
+  \end{tabularx}
+  \source{\code{reasoning/rules/playbook.yaml}, \code{guardrails.yaml}.}
+\end{table}
+
+The 29 rules sit in three YAML files that an administrator can read and change. Eight \emph{derive} rules name a pattern once so that playbooks and traces read in plain words: falling regular, new member, disengaged (two routes), high value at risk, social member, and routine disrupted when an anchor instructor leaves or a class is cancelled. Sixteen \emph{playbooks} and five \emph{guardrails} follow in \cref{tab:rulebase}. Every rule must name its source: the simulated interviews, a team assumption or policy, offer-catalogue eligibility, or a review finding. The rules read a declared vocabulary of facts with types: the model's features and scores; contact facts that combine the synthetic history with every outcome staff log in the application, so next week's plan cannot re-contact this week's members; the two caps set on the Offers page, so an administrator tightens a guardrail without editing a rule; and knowledge-graph facts, which are simply absent when the graph is down, leaving the remaining rules to run.
+
+\paragraph{Validation.} Before a rule base is used, a validator rejects duplicate identifiers, unknown facts, offers or channels, literals of the wrong type, contradictory conditions on one fact, derive rules that overwrite a measured fact and channels an offer does not support; it warns about playbooks a guardrail always blocks, conditions no rule can make true and inactive offers. The shipped rule base has no issues, and 29 hand-built regression members state which rules must fire, which must stay silent and which offers must be allowed or blocked (E6).
+
+\section{Knowledge acquisition}
+\label{sec:acquisition}
+
+Rules were drafted from data first. A notebook runs each draft rule over all 4,000 members, showing churn by bin on the training split only, how often each rule fires, and whether each derived pattern separates churners from the base rate; thresholds were never tuned on the scenario's true uplift, on which E4 and E6 are scored.
+
+The planned practitioner interviews could not take place. Instead, three interviews were \textbf{simulated}: an AI model played an independent owner-manager, an area manager and a membership lead from written briefs, answering the interview script without seeing the rule base. We treat the answers as plausible expert opinion, not evidence; each transcript and each rule they influenced says so. They changed the rule base in six ways: the falling-regular threshold became a compromise between their view and the data (trend at most 0.7); \enquote{disengaged} now also requires a falling trend, so habitually infrequent members are not flagged; a new rule catches new members with almost no visits; a free session for a fading regular became a check-in message, which felt less like selling; discounts were restricted to month-to-month members and moved last; and SMS replaced email for low-touch contacts. The stricter team defaults for the contact caps were kept, a contract-ending rule was dropped for lack of signal, and consent is left to the gym's messaging tool, as no opt-out fact exists.
+
+\section{Administration and explainability}
+
+Administrators manage the rules in the application (\cref{fig:rulestrace}). Every save creates a numbered version with a mandatory note and author; nothing is overwritten. A draft is parsed and validated before it can be saved, can be tested on any member, and can be rolled back to any earlier version, with every write audited. Concurrent edits are detected: a save that names an outdated version is refused. When a manager adds or changes a contact in a plan, a live check reports whether the offer is allowed, which guardrail it breaks and whether a playbook proposed it, so an override is always an informed one.
+
+The firing trace is the rule part of every explanation. Each firing records the rule, its description, the facts it matched and its effect; the trace travels with every plan item and appears on Member~360, in the plan's \enquote{why} panel and in the assistant's answers, with derived facts, proposals and blocks colour-coded.
+
+\begin{figure}[tb]
+  \centering
+  \screenshot[\linewidth]{screens/rules-test-content.png}
+  \caption{Testing the rule base on member M1460 in the Rules page. A contact in the last 30 days triggers guardrail G01, which blocks all offers; the rules that fired follow in order, each with the facts it matched.}
+  \label{fig:rulestrace}
+\end{figure}

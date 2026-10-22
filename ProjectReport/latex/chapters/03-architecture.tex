@@ -1,0 +1,83 @@
+\chapter{System design and architecture}
+\label{ch:architecture}
+
+\begin{inbrief}
+\begin{itemize}
+  \item One web application and one API serve three roles; behind them, three reasoning components each use the techniques that suit their job.
+  \item The components meet at fixed contracts: shared data tables, an allowed-offer list from the rules, and one explanation record per plan item.
+  \item A weekly cycle runs from scores to an approved, assigned call list, and the logged outcomes feed the next week.
+\end{itemize}
+\end{inbrief}
+
+AnchorAI turns one weekly question, \emph{which members should we contact this week, with which offer, within our budget and staff hours?}, into an approved call list that every staff member can act on and every manager can question.
+
+\section{Components}
+
+The system has four layers (\cref{fig:architecture}). A single web application serves administrators, managers and staff. One FastAPI service checks every request's role, audits every change and runs long jobs in the background. Three reasoning components do the work (\cref{tab:components}), and four stores hold the state: versioned \emph{data tables} rebuilt from code, an \emph{application database} for everything users create (plans, assignments, outcomes, rule versions, offers, roster, audit log), the \emph{Neo4j} knowledge graph, and any OpenAI-compatible \emph{language model}, local or hosted.
+
+\begin{figure}[tb]
+  \centering
+  \includegraphics[width=0.86\linewidth]{diagrams/architecture.pdf}
+  \caption{Architecture. Arrows show the direction of data flow; double-headed arrows read and write; the dashed arrow is the learning loop through which logged outcomes return to the case base.}
+  \label{fig:architecture}
+\end{figure}
+
+\begin{table}[tb]
+  \caption{The three reasoning components.}
+  \label{tab:components}
+  \begin{tabularx}{\linewidth}{@{}P{0.2\linewidth} L P{0.37\linewidth}@{}}
+    \toprule
+    \hd{Component} & \hd{Job} & \hd{Techniques} \\
+    \midrule
+    Member intelligence (\cref{ch:data,ch:member}) & Prepare the real members, attach the synthetic gym, score every member & K-means, calibrated logistic regression and LightGBM ensemble, per-member drivers, T-learner baseline \\
+    Knowledge and interaction (\cref{ch:rules,ch:knowledge}) & Encode the gym's policies and relationships; answer staff questions & forward-chaining rules with guardrails and playbooks, Neo4j knowledge graph, intent-routed grounded assistant \\
+    Decision and optimisation (\cref{ch:optimisation}) & Estimate each offer's effect and choose the best plan within the week's limits & case-based reasoning, genetic algorithm, CP-SAT, greedy baseline, policy evaluator \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\section{How the parts connect}
+
+Three contracts keep the components independent. \emph{The data tables} are written once by the data build and read by everything else; their columns are fixed in code and checked on every build. \emph{The allowed-offer list} is the rule engine's output: for each member it reads scores, features, recent contacts and knowledge-graph signals, and returns the permitted offers and channels with the trace of rules that fired. Guardrails are therefore hard constraints, because the optimiser never sees an offer the rules block. \emph{The explanation record} travels with every plan item: churn probability and drivers, rule trace and graph signals, the ten most similar past cases and what happened to them, and a one-line summary. The plan's \enquote{why} panel and the assistant's answers read the same record, so both always give the same reason.
+
+\section{The weekly cycle}
+
+\begin{figure}[tb]
+  \centering
+  \includegraphics[width=\linewidth]{diagrams/weekly-flow.pdf}
+  \caption{The weekly cycle. Once the manager sets the week's budget and staff hours, steps 1--4 run automatically; the manager then reviews and approves (orange), and staff contact members and log outcomes (blue). Dashed arrows carry this week's outcomes into next week's plan.}
+  \label{fig:weekly}
+\end{figure}
+
+\Cref{fig:weekly} shows one week. Steps 1--4 score members, list their allowed offers, estimate each offer's uplift and build the plan in the background with the chosen planner: the genetic algorithm by default, exact CP-SAT, or greedy. In step~5 the manager opens \enquote{why} on any member, removes or adds contacts with a reason (the rules are re-checked at once) and can re-optimise the remaining budget; approval locks the plan, one per week. Approval shares the calls among staff by weekly hours and skills, sending training sessions to trainers (step~6), and staff work through their calls in priority order with talking points and an editable message draft, logging each outcome in two taps (step~7).
+
+Outcomes feed the next week twice. Recent contacts count towards the contact limits, so no member is contacted again too soon, and accepted or declined offers become new cases for the reasoner. These logged cases serve as evidence only: the average effect of each offer is still taken from the randomised history, because outcomes from the planner's own choices would bias it.
+
+\section{Technology and design principles}
+
+\begin{table}[tb]
+  \caption{Technology.}
+  \label{tab:technology}
+  \begin{tabularx}{\linewidth}{@{}l L@{}}
+    \toprule
+    \hd{Layer} & \hd{Technology} \\
+    \midrule
+    Web application & Vue 3, TypeScript, Vite, PrimeVue, ECharts, Cytoscape.js, Pinia \\
+    API and storage & Python 3.12, FastAPI, JWT sign-in with bcrypt; SQLite via SQLModel with Alembic migrations and deterministic seeds \\
+    Data and models & pandas, scikit-learn, imbalanced-learn, LightGBM, SHAP \\
+    Optimisation & DEAP genetic algorithm~\cite{fortin2012deap}, OR-Tools CP-SAT~\cite{ortools} \\
+    Knowledge and language & Neo4j 5 with parameterised Cypher; sentence-transformers for intents; OpenAI-compatible LLM client \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+Seven principles shaped the design (\cref{tab:technology} lists the stack).
+\begin{itemize}
+  \item \textbf{People decide.} Nothing reaches a member without a manager's approval and a staff member's call; message drafts are never sent automatically.
+  \item \textbf{Explainable by construction.} Every recommendation carries the rules that allowed it, the precedents behind it and the drivers of the member's risk.
+  \item \textbf{Role-based access, enforced twice.} The interface hides what a role cannot use, and the API checks the role again on every request.
+  \item \textbf{Every change audited.} Approvals, overrides, assignments, outcomes and rule or user edits record who, when, and the value before and after.
+  \item \textbf{Reproducible.} Every random process takes a seed; data, models and demo data are rebuilt from code; 195 offline tests run in under a minute.
+  \item \textbf{Graceful degradation.} Without Neo4j the rules use the graph facts cached at the last load; without the language model the assistant returns the same cited evidence in a template. The planner needs neither.
+  \item \textbf{One component, one job.} Each component sits behind its own routes and agreed formats, so it can be tested and replaced on its own.
+\end{itemize}

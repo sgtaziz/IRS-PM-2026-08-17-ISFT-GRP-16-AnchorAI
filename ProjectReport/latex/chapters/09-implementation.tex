@@ -1,0 +1,83 @@
+\chapter{Implementation and user experience}
+\label{ch:implementation}
+
+\begin{inbrief}
+\begin{itemize}
+  \item One command takes a fresh clone to a running, seeded system; a rebuild from the application takes effect without a restart.
+  \item Sixteen pages serve three roles, and Member~360 brings every component's reasoning about one member onto one screen.
+  \item 195 offline tests guard against the errors that would quietly invalidate a result; the system degrades rather than fails when a service is down.
+\end{itemize}
+\end{inbrief}
+
+\section{From raw file to served scores}
+
+\code{anchorai setup} builds the data tables and models from the raw Kaggle file in about 20 seconds, migrates and seeds the application database, including a demo week of approved plans and logged outcomes, and loads the knowledge graph. The API loads the build once and re-reads it whenever the model card changes, so a rebuild takes effect on the next request; before anything is built, every member endpoint returns a clear \enquote{not built yet} message that the pages display. An administrator can upload a new file and rebuild with any seed from the Data \& models page: the upload is validated (size, all 14 columns, at least 100 rows), the rebuild runs in the background while the old build keeps serving, a second rebuild is refused while one runs, and the knowledge graph is then reloaded or marked stale if Neo4j is down. Every write, here and elsewhere, is audited with the user, time, and values before and after.
+
+\section{The application}
+
+\begin{figure}[tb]
+  \centering
+  \screenshot[\linewidth]{screens/dashboard.png}
+  \caption{The manager's dashboard on the demo data: members at high risk, monthly revenue at risk (the sum of churn probability × monthly fee), plan coverage of high-risk members, contacts reached and retained in the latest week, the risk distribution and the segment mix. The sidebar groups pages by task: insights, planning and front desk.}
+  \label{fig:dashboard}
+\end{figure}
+
+\begin{table}[tb]
+  \caption{Pages by role. Every page has loading, empty and error states, and roles are enforced again by the API.}
+  \label{tab:pages}
+  \begin{tabularx}{\linewidth}{@{}l l L@{}}
+    \toprule
+    \hd{Page} & \hd{Roles} & \hd{Purpose} \\
+    \midrule
+    Dashboard, Segments, Members & manager, admin & risk at a glance; segment cards with profiles; a filterable, exportable member list \\
+    Member 360 & all (staff read-only) & everything the system knows and recommends about one member \\
+    Weekly plan, Scenarios & manager, admin & build, review, override and approve the plan; compare budgets and staff hours side by side \\
+    Knowledge graph, Events \& roster & manager, admin & explore neighbourhoods and simulate events; record departures, cancellations and reassignments \\
+    My contacts, Assistant & all & a call sheet with talking points, drafts and two-tap outcome logging; the staff assistant \\
+    Rules, Offers, Data \& models & admin & versioned rule editing and testing; offers, roster and planning constraints; model card and rebuilds \\
+    Users, Audit log, Settings & admin & accounts and roles; every change with before and after; service health \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\Cref{tab:pages} lists the pages. The manager starts on the dashboard (\cref{fig:dashboard}); the plan and the rules appear in \cref{fig:plan,fig:rulestrace}, the graph and assistant in \cref{fig:kgsim,fig:assistant}. \textbf{Member~360} brings the whole system together (\cref{fig:m360}): the member's risk and its drivers, the profile against the segment, classes attended and past contacts come from member intelligence; the rule trace, with a draft message for each allowed offer, and the graph neighbourhood from the knowledge components; and the similar past cases and the contact history from the planner. Each panel calls its own endpoint and has its own loading and error state, so if one service is down only that panel says so. Staff work from \textbf{My contacts}, their call sheet in priority order with the reason, the talking points from the explanation and two-tap outcome buttons.
+
+\begin{figure}[tb]
+  \centering
+  \begin{subfigure}[t]{0.495\linewidth}
+    \screenshot[\linewidth]{screens/member360-content.png}
+    \caption{Member 360 for M1460: high risk (69\%), the five drivers, the profile against the segment and the rule trace.}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.495\linewidth}
+    \screenshot[\linewidth]{screens/my-contacts-done-content.png}
+    \caption{A staff member's call sheet: each contact with its offer, channel, reason, precedents and logged outcome.}
+  \end{subfigure}
+  \caption{The two screens where a recommendation meets the people who act on it.}
+  \label{fig:m360}
+\end{figure}
+
+\paragraph{Usability and accessibility.} Risk is always shown as text and colour (\enquote{High risk · 69\%}), never colour alone, and a probability is never printed as 0\% or 100\%. Every error state offers \enquote{Try again}; a global member search opens from the keyboard; inputs are labelled and cards are focusable; tables export to CSV on the server, so an export includes every filtered row, not just the visible page. The application has light and dark themes, and staff pages work on a tablet.
+
+\section{Degraded operation}
+
+\begin{table}[tb]
+  \caption{Behaviour when a service is unavailable. Each row is covered by an automated test with the service mocked.}
+  \label{tab:degrade}
+  \begin{tabularx}{\linewidth}{@{}l L L@{}}
+    \toprule
+    \hd{Unavailable} & \hd{Still works} & \hd{Lost} \\
+    \midrule
+    Neo4j & scores, rules (from cached graph facts), plans, optimiser cohorts, six of seven assistant intents, drafts & graph explorer and simulation; graph-impact answers; edits wait for the next reload \\
+    Language model & intents, slots and tools; answers become the cited evidence lines; drafts use the template & natural phrasing; rephrased follow-ups \\
+    Embedding model & the rest of the API & the assistant reports that its intent model is unavailable \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+The planner needs neither Neo4j nor the language model (\cref{tab:degrade}). A fallback answer is built from the same evidence the model would have phrased, so it remains grounded and cited.
+
+\section{Testing and quality assurance}
+
+The suite has 195 tests, which run offline in under a minute with Neo4j and the language model mocked. They target errors that would quietly invalidate a result rather than crash: test labels reaching the churn model (flipping every test label must leave every score unchanged) or a training member's score depending on its own label; a build that is not deterministic for a seed; tables drifting from the contract; events changing outcomes before their week; plans that break a limit; rule firing order and guardrail precedence; Cypher receiving values other than as parameters; the assistant turning money into member identifiers or its what-if disagreeing with the saved plan; and API roles, audit entries and status codes. Regression tests added during review were mutation-tested: each fails when the guard it protects is removed.
+
+Three further checks complement them. The notebooks import from the package rather than copying its logic, and every number in this report was checked against their saved results. A fresh build from the downloaded raw file on 23 October reproduced the model card exactly, including the decision threshold of 0.404. And each part of the system was reviewed by a member who did not build it: one review of the authentication, database, rule engine, rule base and knowledge graph filed 32 findings (1 high, 8 medium, 23 low), each reproduced with a script or traced in the code, and all were fixed.

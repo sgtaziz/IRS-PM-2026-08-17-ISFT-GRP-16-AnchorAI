@@ -1,0 +1,88 @@
+\chapter{Decision and optimisation: CBR, GA and CP-SAT}
+\label{ch:optimisation}
+
+\begin{inbrief}
+\begin{itemize}
+  \item Case-based reasoning estimates what each allowed offer would achieve for each member, and shows the precedents behind every estimate.
+  \item A genetic algorithm chooses the most valuable plan within the week's limits, including effects between members who train together; CP-SAT gives an exact benchmark and an exact planner for the linear case.
+  \item A policy evaluator grades every plan against the scenario's true effects and is never used to choose one.
+\end{itemize}
+\end{inbrief}
+
+\section{The planning problem}
+
+Each allowed member--offer--channel triple from the rules is an \emph{option}; in the experiments 1,045 members had 2,025 options, at most four each, and not contacting a member is always possible. An option's value is the expected revenue it keeps, net of its cost,
+\begin{equation}
+  v_{mo} = \hat u_{mo}\, f_m\, H - c_o, \qquad H = 6 \text{ months},
+  \label{eq:value}
+\end{equation}
+where $\hat u_{mo}$ is the estimated uplift of offer $o$ for member $m$~\cite{radcliffe2007uplift}, $f_m$ the monthly fee and $c_o$ the offer's cost; the six-month horizon is deliberately cautious. A plan is feasible if it contacts each member at most once and stays within the budget, the staff minutes, the trainers' minutes for training sessions and every offer's stock. Contact caps and eligibility are already enforced by the rules.
+
+The \emph{linear} objective, the sum of chosen values, makes this a multiple-choice knapsack, which an exact solver handles quickly. The \emph{full} objective adds two effects between members using the class groups from the knowledge graph. \emph{Spillover}: members who train together influence each other, so a contacted member's value is multiplied by $(1 + \beta s_m)$, where $s_m$ is the share of their classmates also contacted and $\beta = 0.5$. \emph{Diminishing returns}: contacts aimed at one instructor's classes overlap, so the $n$-th most valuable of them counts with weight $1/(1 + d(n-1))$, $d = 0.02$. These effects make the problem non-linear and justify a search method. They are planning assumptions, absent from the scenario's ground truth, so E5 tests the genetic algorithm across a range of $\beta$ and $d$.
+
+\section{Case-based reasoning}
+\label{sec:cbr}
+
+A case is one past contact decision: a member, the offer received or none, and whether the member stayed. The case base starts with the 2,400 randomised cases of the scenario's history. AnchorAI follows the classical retrieve--reuse--revise--retain cycle~\cite{aamodt1994cbr} (\cref{fig:cbr}).
+
+\begin{figure}[tb]
+  \centering
+  \begin{tikzpicture}[font=\sffamily\scriptsize,
+      st/.style={draw=nusBlue, line width=0.6pt, rounded corners=2pt, fill=tint, align=left, text width=34mm, inner sep=5pt, text=ink},
+      core/.style={draw=nusOrange, line width=0.8pt, circle, fill=tintOrange, align=center, text width=20mm, font=\sffamily\bfseries\scriptsize, text=ink},
+      arr/.style={-{Latex[length=1.8mm]}, draw=nusOrange, line width=0.8pt}]
+    \node[core] (c) at (0,0) {case base\\[1pt]\mdseries 2,400 randomised cases + logged outcomes};
+    \node[st, anchor=south east] (ret) at (-14mm,6mm) {\textbf{\color{nusBlue}Retrieve}\\200 nearest cases on the 17 standardised features, one shared neighbourhood of treated and untreated members};
+    \node[st, anchor=south west] (reu) at (14mm,6mm) {\textbf{\color{nusBlue}Reuse}\\local A/B test: kernel-weighted stay rate with the offer minus without it};
+    \node[st, anchor=north west] (rev) at (14mm,-6mm) {\textbf{\color{nusBlue}Revise}\\empirical-Bayes shrinkage towards the offer's average effect~\cite{efron1975stein}};
+    \node[st, anchor=north east] (rtn) at (-14mm,-6mm) {\textbf{\color{nusBlue}Retain}\\logged outcomes become cases: evidence only, never the offer averages};
+    \draw[arr] (ret.east) -- (reu.west);
+    \draw[arr] (reu.south) -- (rev.north);
+    \draw[arr] (rev.west) -- (rtn.east);
+    \draw[arr] (rtn.north) -- (ret.south);
+  \end{tikzpicture}
+  \caption{The case-based reasoner. The same neighbours that produce an estimate are shown to staff as its precedents: the ten most similar members who received the offer or nothing, each with what happened to them.}
+  \label{fig:cbr}
+\end{figure}
+
+\emph{Retrieve} finds, for a member and an offer, the 200 nearest cases among those who received that offer or nothing, in one shared neighbourhood; a member never retrieves their own case. \emph{Reuse} treats the neighbourhood as a small A/B test: the local uplift is the stay rate of neighbours who received the offer minus that of neighbours who did not, closer cases weighted more. \emph{Revise} shrinks this noisy local estimate towards the offer's average effect, with a weight equal to the estimated real variation between members over that variation plus the noise; where members barely differ, the estimate falls back to the average. \emph{Retain} adds each logged outcome as a new case (accepted as stayed, declined as left), a stand-in until the real outcome is known weeks later.
+
+Three design decisions came from testing. A first version took treated and untreated neighbours separately and scored much better against the truth, but a \emph{null test} with shuffled offers, whose true effect is zero, showed it was measuring churn risk rather than the offer: the two groups were not equally similar. The shared neighbourhood passes the test. Second, on the history alone, every weighting, every $k$ and every variant scored within the noise of a random ranking by the Qini coefficient~\cite{radcliffe2007uplift}, so the settings (equal weights, $k = 200$, distance weighting) were fixed by rule before grading against the truth. Third, logged outcomes never change the offer averages: the planner chooses whom to contact, so its own outcomes are not a random sample and would bias them. Learning reliable averages from live use would need a small random control group each week.
+
+\section{Genetic algorithm}
+
+\begin{table}[tb]
+  \caption{Design of the genetic algorithm (DEAP~\cite{fortin2012deap}, fixed seed).}
+  \label{tab:ga}
+  \begin{tabularx}{\linewidth}{@{}l L@{}}
+    \toprule
+    \hd{Element} & \hd{Choice} \\
+    \midrule
+    Chromosome & one gene per member with an option; its value picks the option, 0 means no contact \\
+    Fitness & the full objective, with spillover and diminishing returns \\
+    Population & 100 plans: the greedy plan, 49 mutated copies of it and 50 sparse random plans \\
+    Operators & tournament selection of 3; uniform crossover, probability 0.7; about two genes mutated per child; 2 elite plans \\
+    Constraints & a \textbf{repair operator} drops the options with least value per share of budget and staff time until every limit holds \\
+    Stopping & 300 generations, or 60 without improvement \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+\Cref{tab:ga} lists the design. Repair was preferred to penalties, which let infeasible plans breed and waste generations on them, and seeding with the greedy plan gives the search a strong start; E5 confirms both choices. The algorithm is the default planner and takes about 25 seconds for the gym's 1,045 candidate members, run as a background job with a progress bar.
+
+\section{CP-SAT exact planner and benchmark}
+
+CP-SAT~\cite{ortools} takes a declarative model and returns either a proven optimum or its best plan with an upper bound. The \emph{linear} model (one binary variable per option, at most one per member, and the budget, staff, trainer and stock constraints) proves the optimum for the whole gym in about a second; managers can select it as the exact planner, and the assistant uses it to answer what-if questions about the budget. The \emph{full} model adds spillover as products of binary variables and diminishing returns as rank slots per instructor group, and is exact rather than approximate. It proves optimality for instances of up to about 50 members and measures how close the genetic algorithm comes (E5).
+
+\section{Baselines, evaluator and the path to action}
+
+Three simple policies show what the planner adds. All fill the plan by taking options in order while they fit every limit, and differ only in the order: \emph{contact-all} takes each member's top playbook offer in random order, as a calendar campaign would; \emph{risk-top-$k$} takes it by churn risk, as a vendor score would; \emph{greedy-uplift} takes any option worth more than it costs, by value per share of budget and staff time. The \emph{policy evaluator} grades any plan against the scenario's true effects; it is used only to grade, so no planner can learn the answer.
+
+\begin{figure}[tb]
+  \centering
+  \screenshot[0.86\linewidth]{screens/plan-content.png}
+  \caption{The weekly plan for the seeded demo week: budget, staff hours and planner, then the approved plan's 182 contacts, each with its offer, channel, reason, expected value and a \enquote{why} link to the full explanation.}
+  \label{fig:plan}
+\end{figure}
+
+A plan becomes a working list through the manager's review (\cref{fig:plan}): each item carries its explanation; overrides need a reason and pass an immediate rule check; the rest of the week can be re-optimised around them; and approval locks the plan, one per week. Assignment and outcome logging follow as described in \cref{fig:weekly}.
