@@ -1,10 +1,10 @@
 variant,seed,objective,violations,generations,seconds
-full GA,0,5057.612,0,300,24.752
-full GA,1,5068.263,0,300,25.195
-full GA,2,5058.308,0,300,25.363
-no repair (penalties),0,4888.245,0,300,19.499
-no repair (penalties),1,4921.116,0,300,19.907
-no repair (penalties),2,4856.851,0,300,20.227
-no greedy seeding,0,4970.368,0,300,19.423
-no greedy seeding,1,4977.982,0,300,19.99
-no greedy seeding,2,4958.574,0,300,20.081
+full GA,0,4197.447,0,300,24.489
+full GA,1,4198.321,0,300,25.143
+full GA,2,4191.314,0,300,24.378
+no repair (penalties),0,4085.21,0,300,19.268
+no repair (penalties),1,4108.706,0,300,19.068
+no repair (penalties),2,4091.711,0,300,19.06
+no greedy seeding,0,4093.547,0,300,18.39
+no greedy seeding,1,4073.822,0,300,19.144
+no greedy seeding,2,4059.207,0,300,18.636
