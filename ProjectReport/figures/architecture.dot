@@ -1,0 +1,58 @@
+// AnchorAI system architecture. Render: dot -Tsvg architecture.dot -o architecture.svg && dot -Tpng -Gdpi=200 architecture.dot -o architecture.png
+digraph anchorai {
+  graph [rankdir=TB, fontname="Helvetica", fontsize=13, nodesep=0.4, ranksep=0.45, newrank=true, compound=true, pad=0.15]
+  node  [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=12, color="#555555", fillcolor="#ffffff", margin="0.15,0.07"]
+  edge  [fontname="Helvetica", fontsize=10, color="#555555", fontcolor="#333333", arrowsize=0.7]
+
+  users [shape=plaintext, style="", label="Admin · Manager · Staff"]
+  web   [fillcolor="#eef1f5", label=<<b>Web app</b><br/><font point-size="10">Vue 3</font>>]
+  api   [fillcolor="#eef1f5", label=<<b>API</b><br/><font point-size="10">FastAPI · roles · audit</font>>]
+
+  subgraph cluster_a {
+    label=<<b>Member intelligence</b>>; style="rounded,filled"; color="#1f6f8b"; fillcolor="#e8f3f7"; fontcolor="#1f6f8b"
+    a_data   [label=<<b>Data and scenario</b><br/><font point-size="10">Kaggle + synthetic layer</font>>]
+    a_models [label=<<b>Discovery</b><br/><font point-size="10">segments · churn · uplift</font>>]
+    a_data -> a_models
+  }
+
+  subgraph cluster_c {
+    label=<<b>Knowledge and interaction</b>>; style="rounded,filled"; color="#5a3e8a"; fillcolor="#f1ecf8"; fontcolor="#5a3e8a"
+    c_kg    [label=<<b>Knowledge graph</b><br/><font point-size="10">cohort signals</font>>]
+    c_rules [label=<<b>Rule engine</b><br/><font point-size="10">forward chaining</font>>]
+    c_asst  [label=<<b>Assistant</b><br/><font point-size="10">intents · grounded LLM</font>>]
+    c_kg -> c_rules
+  }
+
+  subgraph cluster_b {
+    label=<<b>Decision and optimisation</b>>; style="rounded,filled"; color="#b5651d"; fillcolor="#fbf0e6"; fontcolor="#b5651d"
+    b_cbr  [label=<<b>CBR</b><br/><font point-size="10">uplift per offer</font>>]
+    b_opt  [label=<<b>Optimiser</b><br/><font point-size="10">GA · CP-SAT</font>>]
+    b_plan [label=<<b>Plan workflow</b><br/><font point-size="10">approve · assign · log</font>>]
+    b_cbr -> b_opt -> b_plan
+  }
+
+  tables [shape=cylinder, fillcolor="#fafafa", label="Data tables"]
+  neo4j  [shape=cylinder, fillcolor="#fafafa", label="Neo4j"]
+  llm    [shape=component, fillcolor="#fafafa", label="LLM"]
+  sqlite [shape=cylinder, fillcolor="#fafafa", label="App database"]
+
+  users -> web -> api
+  api -> a_data [lhead=cluster_a]
+  api -> c_kg   [lhead=cluster_c]
+  api -> b_cbr  [lhead=cluster_b]
+
+  a_models -> tables
+  c_kg -> tables [dir=back]
+  c_kg -> neo4j [dir=both]
+  b_cbr -> tables [dir=back]
+  c_rules -> b_opt [label=" allowed offers", color="#5a3e8a", fontcolor="#5a3e8a", penwidth=1.5]
+  c_asst -> llm
+  b_plan -> sqlite [dir=both]
+  b_cbr -> sqlite [dir=back, style=dashed, label=" retain"]
+
+  { rank=same; a_data; c_kg; b_cbr }
+  { rank=same; a_models; c_rules; b_opt }
+  { rank=same; c_asst; b_plan }
+  { rank=same; tables; neo4j; llm; sqlite }
+  tables -> neo4j -> llm -> sqlite [style=invis]
+}

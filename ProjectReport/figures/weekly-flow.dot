@@ -1,0 +1,27 @@
+// AnchorAI weekly cycle. Render: dot -Tsvg weekly-flow.dot -o weekly-flow.svg && dot -Tpng -Gdpi=200 weekly-flow.dot -o weekly-flow.png
+digraph weekly {
+  graph [rankdir=TB, fontname="Helvetica", fontsize=12, nodesep=0.45, ranksep=0.6, newrank=true, pad=0.15]
+  node  [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=12, color="#555555", fillcolor="#ffffff", margin="0.15,0.07", width=1.7]
+  edge  [fontname="Helvetica", fontsize=10, color="#555555", fontcolor="#333333", arrowsize=0.7]
+
+  limits [shape=plaintext, style="", fontsize=10, width=0, label="budget · staff hours"]
+
+  scores  [label=<<b>1 · Score</b><br/><font point-size="10">churn risk · segment</font>>]
+  rules   [label=<<b>2 · Rules</b><br/><font point-size="10">allowed offers</font>>]
+  cbr     [label=<<b>3 · CBR</b><br/><font point-size="10">uplift per offer</font>>]
+  opt     [label=<<b>4 · Optimise</b><br/><font point-size="10">plan within limits</font>>]
+
+  contact [fillcolor="#e8f3f7", label=<<b>7 · Contact</b><br/><font point-size="10">staff log the outcome</font>>]
+  assign  [label=<<b>6 · Assign</b><br/><font point-size="10">calls to staff</font>>]
+  review  [fillcolor="#fbf0e6", label=<<b>5 · Review</b><br/><font point-size="10">manager approves</font>>]
+
+  scores -> rules -> cbr -> opt
+  limits -> opt [style=dotted]
+  opt -> review
+  contact -> assign -> review [dir=back]
+  contact -> cbr   [style=dashed, label=" new cases"]
+  contact -> rules [style=dashed, label=" recent\n contacts"]
+
+  { rank=same; scores; rules; cbr; opt }
+  { rank=same; contact; assign; review }
+}
