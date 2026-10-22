@@ -57,8 +57,6 @@ On every page except the Assistant page, a round button at the bottom right open
 
 ## 2. Pages written by Stream A and Stream B
 
-These pages are in the application. Stream B's sections are still to be written.
-
 **How risk is shown everywhere.** Each member has a churn probability for next month, from a calibrated model (0.3 means about 3 in 10 such members leave). It is grouped into three risk bands, shown as text and colour, never colour alone:
 
 - **High risk:** 0.6 or more
@@ -165,17 +163,125 @@ Stream C owns the two panels below.
 
 **Knowledge-graph neighbourhood panel.** It draws the member's club, classes, instructors and events as a graph. See "Neighbourhood" in section 3. If Neo4j is down, the panel shows "Knowledge graph unavailable" and the rest of the page works.
 
-### Weekly plan: plan builder and review (W14, W15)
+### Weekly plan: build, review, approve and assign (W14, W15, W16)
 
-To be written by Stream B.
+**Who:** managers and admins. **Where:** sidebar, Planning, **Weekly plan**.
+
+The weekly plan is the list of members to contact this week, each with an offer, a channel and a reason. AnchorAI builds it within the budget and staff hours you set; you review it, change what you disagree with, and approve it.
+
+**Generate a plan.**
+
+1. Enter the **Weekly budget** and **Staff hours this week**. They start at the values of the latest plan, or $1,500 and 36 hours if there is none.
+2. Choose a **Planner**:
+   - **Genetic algorithm** (default): considers members who train together; takes up to a minute.
+   - **Exact (linear)**: the proven best plan without the class effects; a few seconds.
+   - **Greedy**: the quickest; takes the best value for money first.
+3. Select **Generate plan**. A progress bar shows each stage (reading members and rules, searching for the best plan, writing the reasons). If you leave the page, the plan still finishes; open the page again later to see it.
+
+If another plan is being built, the page says so; wait for it to finish.
+
+**Read the plan.** Four tiles sum it up: **Members to contact**, **Spend** (of the budget), **Staff time** (of the hours available) and **Extra members expected to stay**, by the planner's own estimates. Under each, "+N vs last week" compares with last week's approved plan.
+
+The table lists one row per member: **Offer**, **Channel**, a one-line **Reason** and the **Expected value** of the contact in dollars. Search, sort and **Export CSV** work as in other tables. Select a member ID to open their Member 360.
+
+<!-- screenshot: weekly plan with the four tiles and the plan table -->
+
+**See why a member is on the plan.** Select **Why** on a row. A side panel shows:
+
+- a short summary
+- the member's churn risk and the main factors raising or lowering it
+- **Rules that fired**: every rule that matched this member, in order, including the one that proposed this offer
+- **Gym context**: events such as an instructor leaving, if any
+- **Similar past members**: how many similar members stayed with this offer and with no offer, and the ten most similar ones, each marked stayed or left
+
+<!-- screenshot: the "Why" panel -->
+
+**Change the plan** (draft plans only). Every change needs a reason of at least three characters and is recorded in the audit log.
+
+- **Remove** a member: select the bin icon on their row, enter the reason, and select **Remove**.
+- **Add contact**: choose a member, an offer and a channel. As soon as all three are chosen, the rules are checked:
+  - red: not allowed, with the rule that blocks it (for example, a recent contact, or no phone on file for an SMS or call)
+  - amber: allowed, but no playbook rule proposes this offer for this member
+  - green: allowed and proposed
+
+  Enter the reason and select **Save change**. A blocked contact cannot be saved.
+- **Swap offer**: select the arrows icon on a row. This opens the same form for that member.
+- **Re-optimise the rest**: keeps every change you made by hand and re-plans the budget, staff time and stock that are left.
+
+**Approve.** Select **Approve plan** and confirm. Approval locks the plan; it cannot be changed afterwards. Only one plan per week can be approved, and approving also shares the contacts out to staff.
+
+**Assign to staff.** After approval, the **Assign to staff** panel shows one card per staff member with their contacts, skills and hours used.
+
+- Contacts are given out most valuable first, each to the staff member with the most free time who has the right skill: free PT sessions go to trainers, and phone calls to staff with the calls skill.
+- To move a contact, drag it onto another card, or use **Move to** on its row.
+- If some contacts could not be assigned, an amber note lists them: no one with the right skill has time left. Give them to someone with **Assign to**.
+- **Re-run auto-assign** shares the contacts out again from scratch.
+- **Print** opens a call sheet for that staff member; **CSV** downloads it.
+
+<!-- screenshot: assign to staff panel with two staff cards -->
 
 ### Scenarios (W17)
 
-To be written by Stream B.
+**Who:** managers and admins. **Where:** sidebar, Planning, **Scenarios**.
+
+Use this page to ask "what if we had more budget or more staff hours?" before building the real plan. It runs five planners on the same week and compares them. Nothing here changes the weekly plan or reaches staff.
+
+1. Set the **Weekly budget** and **Staff hours** with the boxes or the sliders.
+2. Select **Run comparison**. All five planners run in the background; the genetic algorithm takes up to a minute.
+
+**Planners compared.**
+
+| Planner | What it does |
+|---|---|
+| Contact everyone | Each member's first-choice offer, in no particular order, until the limits run out |
+| Riskiest first | The same offers, highest churn risk first |
+| Greedy (uplift) | The contacts with the best value for money first |
+| Exact (CP-SAT) | The proven best plan, without the class effects |
+| Genetic algorithm | The planner's default; also counts the effect of contacting members who train together |
+
+For each planner the table shows **Contacts**, **Spend**, **Staff time**, **Extra members** expected to stay, **Per $1,000**, **Per staff hour** and the plan's dollar **Value**. The best planner is marked **best value**, or **tied best** when several reach the same value.
+
+All results use the planner's own estimates of each offer's effect, not outcomes that were observed.
+
+**Charts.** **Extra members expected to stay** compares the planners. **How the genetic algorithm improved** shows the value of its best plan in each generation, starting from the greedy plan (dashed line).
+
+**Save a comparison.** Under **Save this comparison**, enter a name (for example "Two extra staff hours on weekends") and select **Save**. **Saved scenarios** lists each one with its limits and best planner. Select **Open** to show it again, or **Delete** to remove it.
+
+<!-- screenshot: scenarios page with the comparison table and charts -->
 
 ### My contacts (W20, W21)
 
-To be written by Stream B.
+**Who:** staff (it is their home page); managers and admins can open it too. **Where:** sidebar, Front desk, **My contacts**. Designed for a tablet.
+
+My contacts lists the members assigned to you in this week's approved plan, highest priority first. If the list is empty, this week's plan has not been approved yet, or no contacts were assigned to you. Managers and admins have no contacts of their own; sign in as a staff user (for example `staff1`) to see a list.
+
+**Each card shows:**
+
+- the priority number and the member ID (select it to open Member 360)
+- the offer and channel, for example "Free personal training session · Call"
+- a short summary of why the member is on the list
+- talking points: the main factors behind the member's risk
+- the rule that proposed the offer, and any gym event that affects the member
+
+**Log an outcome in two taps.** Select one of:
+
+| Outcome | Use when |
+|---|---|
+| **Accepted** | The member took the offer |
+| **Declined** | The member refused it |
+| **Reached** | You spoke to them but there was no decision about the offer |
+| **Follow-up** | They asked to be contacted again |
+| **No answer** | You could not reach them |
+
+The card fades and shows the outcome. To change it, select another outcome. To add a note, select **Add note**, type it, then tap the outcome; the note is saved with it.
+
+The bar at the top counts how many contacts you have logged. Switch between **To do**, **Done** and **All** to filter the cards.
+
+**Draft message** opens a suggested SMS or email for this member and offer, which you can edit and copy (section 5). Nothing is sent automatically.
+
+**What happens next.** Accepted and declined outcomes become new past cases, so they appear as similar cases in later plans. Every logged contact counts toward the contact limits, so the member is not contacted again too soon. Outcomes also appear in the dashboard's weekly counts and the audit log. You can log outcomes only for your own contacts.
+
+<!-- screenshot: my contacts on a tablet, with one card logged -->
 
 ### Offers & constraints (W41)
 
@@ -246,7 +352,16 @@ A rebuild regenerates the scenario tables, retrains the segments and the churn m
 
 ### Settings (W45)
 
-To be written by Stream B.
+**Who:** admins. **Where:** sidebar, Administration, **Settings**.
+
+A read-only health check of the system. Settings themselves are changed in the `.env` file and by the setup commands (see the installation guide).
+
+- **Language model.** The endpoint and model the assistant and message drafts use, whether an API key is set (only its last four characters are shown) and whether native tool calling is on. Select **Test connection** to send the model a one-word request; the page shows the reply and how long it took, or the error. If the model is unreachable, the assistant still answers from the same evidence in a fixed template.
+- **Knowledge graph.** Whether Neo4j is reachable, whether the graph facts are **Current** or **Stale** (and why), when it was last reloaded and how many nodes of each kind it holds.
+- **Models and data.** When the data and models were built and with which seed, the number of members, the churn model and its test scores (F1, PR-AUC, Brier), and the uplift baseline. If nothing is built yet, the page says to run `uv run anchorai setup`.
+- **Database and planner.** Whether the database is fully migrated, with its revision; the latest plan, its status and date; the source of the uplift estimates (case-based reasoning); and the size of the case base: the randomised past interventions plus the outcomes staff have logged.
+
+<!-- screenshot: settings page -->
 
 ## 3. Knowledge graph explorer (W18)
 
