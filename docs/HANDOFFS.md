@@ -17,7 +17,6 @@ What each stream needs from the others: blockers, reviews, decisions and promise
 
 | # | Requested by | Kind | Item | Why it matters | Status | Added |
 |---|---|---|---|---|---|---|
-| 14 | C | deliver | Write ~10 questions a gym manager or staff member might ask the assistant, in your own words, each tagged with an intent (`member_risk`, `member_actions`, `compare_members`, `graph_impact`, `plan_summary`, `what_if_budget`) or `unknown` | E8 needs a test set the assistant's author never saw; the current one (`notebooks/c_intent_classifier.ipynb`) is optimistic | open | 2026-10-16 |
 | 28 | C | review | Notes from C's contract sign-off (#25): `docs/PLAN.md` §6 omits `true_churn`, `interventions.week_start`, and `features` / `member_scores` / `kg_facts`, which C reads. `MemberScore` (`schemas.py`) doesn't match `member_scores.parquet` (no `risk_band`, `club_id`, `segment_id`; `top_drivers` is a JSON string; no `as_of`/`features`); either align it or name the parquet as the contract. Document `visit_change` (negative = fewer visits) and `phone` (1 = phone on file) in the contract | C's rules and assistant read these; rule authors need a documented meaning to cite | open | 2026-10-17 |
 
 ## Stream B: Decision & Optimisation
@@ -30,11 +29,13 @@ What each stream needs from the others: blockers, reviews, decisions and promise
 | # | Requested by | Kind | Item | Why it matters | Status | Added |
 |---|---|---|---|---|---|---|
 | 37 | B | deliver | Report text: drop "Stream A/B/C" labels and name parts by function instead (member intelligence, knowledge and interaction, decision and optimisation). Yours: `sections/c-*.md` (27 mentions) and `user-guide.md` (11; B will rewrite its own four "to be written by Stream B" sections). B's sections and figures follow the same rule | Graders read the report as one team and one system; stream labels are internal organisation and confuse them. Keep them in repo docs (PLAN, HANDOFFS, `ProjectReport/README.md`) | open | 2026-10-22 |
+| 38 | A | deliver | Rerun E8 part 1 (intent accuracy, no LLM calls) with A's 15 held-out questions (`notebooks/data/e8_questions.yaml`, `stream_a_questions`, author `mokdy`; 6 are off-topic). Update `c-experiments-e6-e8.md`, which says A's questions were not delivered, and the held-out row of the findings table | Doubles the held-out set (9 → 24), the number the report calls trustworthy | open | 2026-10-23 |
 
 ## Done
 
 | # | Requested by → Owner | Item | Closed |
 |---|---|---|---|
+| 14 | C → A | 15 questions written by A independently of the assistant, tagged with intents, in `notebooks/data/e8_questions.yaml` (`stream_a_questions`); E8 rerun is #38 | 2026-10-23 |
 | 36 | B → A | Stream labels dropped from `sections/a-*.md` and `installation-guide.md`; parts are named by function (member intelligence, decision and optimisation, knowledge and interaction). A also fixed its own lines in `user-guide.md`; the rest is #37 | 2026-10-23 |
 | 35 | B → A | Member 360 renders `SimilarCases` and `ContactHistory` in W13, each with its own loading and error state, instead of the raw JSON | 2026-10-23 |
 | 33 | B → A, B, C | Team decision: CBR stays the planner's uplift estimator (PLAN drift item 8, option 1), because each estimate is backed by precedents staff can inspect; A's T-learner stays the E3/E4 benchmark. The report states the trade-off (tie overall; 19.4 vs 27.9 extra members at 36 h) | 2026-10-22 |
