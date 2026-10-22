@@ -91,7 +91,7 @@ const TONE = { good: 'bg-success-soft text-success-ink', bad: 'bg-danger-soft te
           </dl>
         </SectionCard>
 
-        <SectionCard title="Models and data" :icon="Sigma" subtitle="Built by anchorai setup or data build (Stream A).">
+        <SectionCard title="Models and data" :icon="Sigma" subtitle="Built by anchorai setup or anchorai data build.">
           <dl v-if="health.data.value.models.built" class="settings-list">
             <dt>Built</dt>
             <dd>{{ dateTime(health.data.value.models.built_at) }} · seed {{ health.data.value.models.seed }}</dd>
