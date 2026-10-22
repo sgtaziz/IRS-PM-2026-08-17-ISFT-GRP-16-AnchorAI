@@ -1,20 +1,21 @@
 <script setup lang="ts">
 import type { EChartsOption } from 'echarts'
-import { Activity, ArrowLeft, CalendarDays, ChartBar, Dumbbell, History, Hourglass, Layers, Network, ScrollText, Sparkles, TrendingDown, UserRound, Wallet } from 'lucide-vue-next'
+import { Activity, ArrowLeft, CalendarDays, ChartBar, ClipboardList, Dumbbell, History, Layers, Network, ScrollText, Sparkles, TrendingDown, UserRound, Wallet } from 'lucide-vue-next'
 import Button from 'primevue/button'
 import { computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { api } from '../api/client'
-import type { EgoGraph as EgoGraphData, MemberDetail, RuleOutcome } from '../api/types'
+import type { ContactRow, EgoGraph as EgoGraphData, MemberDetail, OfferEvidence, RuleOutcome } from '../api/types'
 import { riskColors } from '../charts'
 import ChartCard from '../components/ChartCard.vue'
+import ContactHistory from '../components/ContactHistory.vue'
 import EgoGraph from '../components/EgoGraph.vue'
-import EmptyState from '../components/EmptyState.vue'
 import KpiTile from '../components/KpiTile.vue'
 import PageState from '../components/PageState.vue'
 import RiskBadge from '../components/RiskBadge.vue'
 import RuleTrace from '../components/RuleTrace.vue'
 import SectionCard from '../components/SectionCard.vue'
+import SimilarCases from '../components/SimilarCases.vue'
 import { useAsync } from '../composables/useAsync'
 import { date, money, num, pct, probability } from '../format'
 import { channelLabel } from '../labels'
@@ -30,22 +31,18 @@ const memberId = computed(() => String(route.params.id))
 
 const detail = useAsync((id: string) => api<MemberDetail>(`/members/${id}`))
 
-// Stream B's panels; until their endpoints exist the panel says so instead of failing.
 const ruleTrace = useAsync((id: string) => api<RuleOutcome>(`/rules/trace/${encodeURIComponent(id)}`))
-const similarCases = useAsync((id: string) => api<unknown[]>(`/plan/similar-cases/${id}`))
+const similarCases = useAsync((id: string) => api<OfferEvidence[]>(`/plan/similar-cases/${encodeURIComponent(id)}`))
 const egoGraph = useAsync((id: string) => api<EgoGraphData>(`/graph/ego/${encodeURIComponent(id)}`))
-const contacts = useAsync((id: string) => api<unknown[]>(`/outcomes?member_id=${encodeURIComponent(id)}`))
-const panels = [
-  { title: 'Similar past cases', owner: 'Stream B', icon: Layers, state: similarCases },
-  { title: 'Contact and outcome history', owner: 'Stream B', icon: History, state: contacts },
-]
+const contacts = useAsync((id: string) => api<ContactRow[]>(`/outcomes?member_id=${encodeURIComponent(id)}`))
 
 function load() {
   const id = memberId.value
   detail.run(id)
   ruleTrace.run(id)
   egoGraph.run(id)
-  for (const p of panels) p.state.run(id)
+  similarCases.run(id)
+  contacts.run(id)
 }
 watch(memberId, load, { immediate: true })
 
@@ -228,13 +225,21 @@ function ask() {
               </PageState>
             </SectionCard>
 
+            <SectionCard title="Similar past cases" subtitle="How the most similar past members responded to each offer" :icon="Layers">
+              <PageState
+                :loading="similarCases.loading.value"
+                :error="similarCases.error.value"
+                :empty="!similarCases.data.value?.length"
+                empty-text="No active offers to compare."
+                @retry="similarCases.run(memberId)"
+              >
+                <SimilarCases v-if="similarCases.data.value" :evidence="similarCases.data.value" />
+              </PageState>
+            </SectionCard>
 
-            <SectionCard v-for="p in panels" :key="p.title" :title="p.title" :icon="p.icon">
-              <PageState :loading="p.state.loading.value" :empty="!!p.state.error.value || !p.state.data.value">
-                <template #empty>
-                  <EmptyState :icon="Hourglass" compact title="Coming soon" :text="`This panel arrives with ${p.owner}'s planning work.`" />
-                </template>
-                <pre class="raw">{{ JSON.stringify(p.state.data.value, null, 2) }}</pre>
+            <SectionCard title="Contact and outcome history" subtitle="Contacts in approved weekly plans and the outcomes staff logged" :icon="ClipboardList">
+              <PageState :loading="contacts.loading.value" :error="contacts.error.value" @retry="contacts.run(memberId)">
+                <ContactHistory v-if="contacts.data.value" :contacts="contacts.data.value" />
               </PageState>
             </SectionCard>
           </div>
@@ -243,15 +248,3 @@ function ask() {
     </PageState>
   </div>
 </template>
-
-<style scoped>
-.raw {
-  max-height: 240px;
-  overflow: auto;
-  margin: 0;
-  padding: 0.75rem;
-  font-size: 0.8rem;
-  background: var(--color-ink-50);
-  border-radius: 0.5rem;
-}
-</style>
