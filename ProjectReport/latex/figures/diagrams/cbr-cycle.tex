@@ -1,0 +1,27 @@
+% The case-based reasoner as a retrieve-reuse-revise-retain cycle; shared by both reports.
+\begin{tikzpicture}[font=\sffamily\scriptsize,
+    stage/.style={rectangle split, rectangle split parts=2, rectangle split part fill={nusBlue, white},
+      draw=nusBlue, line width=0.6pt, text width=41mm, align=left, inner xsep=5pt, inner ysep=3.2pt,
+      execute at begin node={\lefthyphenmin=64 \righthyphenmin=64 }},
+    cyc/.style={-{Stealth[length=2.6mm, width=2.2mm]}, draw=nusOrange, line width=1.3pt},
+    io/.style={-{Stealth[length=2.2mm, width=1.8mm]}, draw=muted, line width=0.7pt},
+    iolab/.style={font=\sffamily\scriptsize, text=muted, align=center},
+    link/.style={-{Stealth[length=1.8mm, width=1.5mm]}, draw=nusOrange!75, line width=0.7pt, dash pattern=on 2.2pt off 1.6pt},
+    linklab/.style={font=\sffamily\tiny, text=nusOrange!85!black, fill=white, inner sep=1pt}]
+  \newcommand{\stephead}[2]{\textcolor{white}{\bfseries\small #1\enskip #2}}
+  \node[stage] (ret) at (-34mm, 19mm) {\stephead{1}{Retrieve}\nodepart{two}\color{ink}the 200 nearest past cases on 17 features, in one shared neighbourhood of treated and untreated members};
+  \node[stage] (reu) at ( 34mm, 19mm) {\stephead{2}{Reuse}\nodepart{two}\color{ink}a local A/B test: the kernel-weighted stay rate with the offer minus the rate without it};
+  \node[stage] (rev) at ( 34mm,-19mm) {\stephead{3}{Revise}\nodepart{two}\color{ink}empirical-Bayes shrinkage of the noisy local estimate towards the offer's average effect};
+  \node[stage] (rtn) at (-34mm,-19mm) {\stephead{4}{Retain}\nodepart{two}\color{ink}each logged outcome becomes a new case, used as evidence but never in the offer averages};
+  \node[circle, draw=nusOrange, line width=1pt, fill=tintOrange, minimum size=19mm, inner sep=0pt, align=center, text=ink] (cb) at (0,0)
+    {\bfseries\small Case base\\[2pt]\mdseries\tiny 2,400 randomised\\[-1pt]\tiny cases + outcomes};
+  \draw[cyc] (ret.east) -- (reu.west);
+  \draw[cyc] (reu.south) -- (rev.north);
+  \draw[cyc] (rev.west) -- (rtn.east);
+  \draw[cyc] (rtn.north) -- (ret.south);
+  \draw[link] (cb.135) -- node[linklab, sloped] {read} (ret.south east);
+  \draw[link] (rtn.north east) -- node[linklab, sloped] {write} (cb.225);
+  \draw[io] ([xshift=-16mm]ret.west) -- node[iolab, above=1pt] {member\\and offer} (ret.west);
+  \draw[io] ([xshift=-16mm]rtn.west) -- node[iolab, above=1pt] {outcome\\logged} (rtn.west);
+  \draw[io] (rev.east) -- node[iolab, above=1pt] {estimate +\\precedents} ([xshift=16mm]rev.east);
+\end{tikzpicture}

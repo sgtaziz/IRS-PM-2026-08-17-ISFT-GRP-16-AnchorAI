@@ -146,7 +146,7 @@
 \newcommand{\axisnum}[2][]{\pgfmathprintnumberto[assume math mode=true,#1]{#2}{\axisnum@tmp}\expandafter\axisnum@fix\axisnum@tmp\relax}
 \def\axisnum@fix#1#2\relax{\ifx-#1\textminus#2\else#1#2\fi}
 \usepgfplotslibrary{groupplots,fillbetween}
-\usetikzlibrary{positioning,arrows.meta,calc,patterns,shapes.geometric,backgrounds,fit}
+\usetikzlibrary{positioning,arrows.meta,calc,patterns,shapes.geometric,shapes.multipart,backgrounds,fit}
 \pgfplotsset{
   anchor/.style={
     width=\linewidth, height=5cm,

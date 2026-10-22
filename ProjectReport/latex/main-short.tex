@@ -218,20 +218,7 @@ Each allowed member--offer--channel option is valued as $v_{mo} = \hat u_{mo} f_
 
 \begin{figure}[!htb]
   \centering
-  \begin{tikzpicture}[font=\sffamily\scriptsize,
-      st/.style={draw=nusBlue, line width=0.6pt, rounded corners=2pt, fill=tint, align=left, text width=34mm, inner sep=5pt, text=ink},
-      core/.style={draw=nusOrange, line width=0.8pt, circle, fill=tintOrange, align=center, text width=20mm, font=\sffamily\bfseries\scriptsize, text=ink},
-      arr/.style={-{Latex[length=1.8mm]}, draw=nusOrange, line width=0.8pt}]
-    \node[core] (c) at (0,0) {case base\\[1pt]\mdseries 2,400 randomised cases + logged outcomes};
-    \node[st, anchor=south east] (ret) at (-14mm,6mm) {\textbf{\color{nusBlue}Retrieve}\\200 nearest cases, one shared neighbourhood of treated and untreated members};
-    \node[st, anchor=south west] (reu) at (14mm,6mm) {\textbf{\color{nusBlue}Reuse}\\local A/B test: stay rate with the offer minus without it};
-    \node[st, anchor=north west] (rev) at (14mm,-6mm) {\textbf{\color{nusBlue}Revise}\\shrink towards the offer's average effect};
-    \node[st, anchor=north east] (rtn) at (-14mm,-6mm) {\textbf{\color{nusBlue}Retain}\\logged outcomes become cases: evidence only};
-    \draw[arr] (ret.east) -- (reu.west);
-    \draw[arr] (reu.south) -- (rev.north);
-    \draw[arr] (rev.west) -- (rtn.east);
-    \draw[arr] (rtn.north) -- (ret.south);
-  \end{tikzpicture}
+  \input{figures/diagrams/cbr-cycle}
   \caption{The case-based reasoner. The neighbours that produce an estimate are shown to staff as its precedents.}
   \label{fig:cbr}
 \end{figure}
