@@ -292,7 +292,88 @@ questions:
   question: hello
   intent: unknown
   author: ai
-stream_a_questions: []
+stream_a_questions:
+- id: a01
+  question: 'just got 3 cancellations in a row this morning, are we seeing a pattern or am i just unlucky lol'
+  intent: unknown
+  author: mokdy
+  notes: 'hard: cancellation trends are not an intent'
+- id: a02
+  question: 'this member used to come every day before work and now only shows up once a week. is that bad enough to reach out yet?'
+  intent: member_risk
+  author: mokdy
+  context_member_id: M0008
+  notes: 'asks how serious the drop is; borderline member_actions'
+- id: a03
+  question: 'got 15 people to call and only time for 5 before my shift ends. who can i safely leave for tomorrow?'
+  intent: plan_summary
+  author: mokdy
+  notes: 'priority within the call list; could be misread as a ranked risk list'
+- id: a04
+  question: 'member says she''s switching to a gym closer to her new job. is there even a point trying to keep her?'
+  intent: member_actions
+  author: mokdy
+  context_member_id: M0008
+  notes: 'hard: the reason she gives is not in the data; the assistant should say so'
+- id: a05
+  question: 'why is this guy marked high risk when he literally checked in yesterday??'
+  intent: member_risk
+  author: mokdy
+  context_member_id: M0008
+- id: a06
+  question: 'we ran that win-back offer last month and barely anyone took it. should we try something different or just give up on these members'
+  intent: unknown
+  author: mokdy
+  notes: 'hard: offer performance across members is not an intent'
+- id: a07
+  question: 'a member''s membership expires in 10 days and she''s barely been coming in lately. should i contact her now or wait until she gets closer to the end date?'
+  intent: member_actions
+  author: mokdy
+  context_member_id: M0008
+  notes: 'hard: contact timing is not modelled beyond this week''s plan'
+- id: a08
+  question: 'i called this guy twice already and he never picks up. am i supposed to keep trying or is there a limit'
+  intent: member_actions
+  author: mokdy
+  context_member_id: M0008
+  notes: 'answered by the contact-cap guardrail in the rule trace'
+- id: a09
+  question: 'we have a bunch of members who only come for the pool and it''s been closed for repairs all week. can u tell me who''s most likely to cancel because of this?'
+  intent: unknown
+  author: mokdy
+  notes: 'hard: a facility closure is not a modelled event; could be misread as graph_impact or list_members'
+- id: a10
+  question: 'one of our highest paying members is barely coming in anymore but their risk score is low. should i trust the score or reach out anyway?'
+  intent: member_risk
+  author: mokdy
+  context_member_id: M0008
+  notes: 'why the score is low; borderline member_actions'
+- id: a11
+  question: 'half the people on today''s list have already been contacted by someone else. how do i avoid wasting time or annoying members with duplicate calls?'
+  intent: unknown
+  author: mokdy
+  notes: 'process question; the app assigns each contact to one staff member; could be misread as plan_summary'
+- id: a12
+  question: 'this member said everything is fine when i called but hasn''t been back since. does the system take what they actually tell us into account or just check-ins?'
+  intent: unknown
+  author: mokdy
+  context_member_id: M0008
+  notes: 'hard: asks how the system works, not about the member'
+- id: a13
+  question: 'we have a big january signup rush coming. can we figure out which new members are most likely to quit after the first month?'
+  intent: list_members
+  author: mokdy
+  notes: 'hard: asks about future sign-ups; the closest answer is today''s new members ranked by risk'
+- id: a14
+  question: 'my manager wants proof that calling people actually makes a difference. how do we know they wouldn''t have stayed anyway?'
+  intent: unknown
+  author: mokdy
+  notes: 'hard: asks for realised retention against a control; not an intent'
+- id: a15
+  question: 'member 58321 says he can''t afford the membership anymore. what options should i offer him before he cancels?'
+  intent: member_actions
+  author: mokdy
+  notes: 'hard: the id does not exist (ids run M0001 to M4000); the assistant should say it cannot find him'
 stream_b_questions:
 - id: b01
   question: is a member sleeping dog?
