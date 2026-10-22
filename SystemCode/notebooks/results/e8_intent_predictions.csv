@@ -61,6 +61,21 @@ q59,ai,How do I add a new instructor?,unknown,graph_impact,0.5191,graph_impact,F
 q60,ai,What is the capital of France?,unknown,unknown,0.088,unknown,True,True
 q61,ai,Which machine should I use for legs?,unknown,unknown,0.0551,unknown,True,True
 q62,ai,hello,unknown,unknown,0.2297,unknown,True,True
+a01,mokdy,"just got 3 cancellations in a row this morning, are we seeing a pattern or am i just unlucky lol",unknown,unknown,0.2395,graph_impact,True,False
+a02,mokdy,this member used to come every day before work and now only shows up once a week. is that bad enough to reach out yet?,member_risk,member_actions,0.4649,member_risk,False,True
+a03,mokdy,got 15 people to call and only time for 5 before my shift ends. who can i safely leave for tomorrow?,plan_summary,list_members,0.4046,unknown,False,False
+a04,mokdy,member says she's switching to a gym closer to her new job. is there even a point trying to keep her?,member_actions,member_risk,0.4079,member_risk,False,False
+a05,mokdy,why is this guy marked high risk when he literally checked in yesterday??,member_risk,unknown,0.3388,member_risk,False,True
+a06,mokdy,we ran that win-back offer last month and barely anyone took it. should we try something different or just give up on these members,unknown,list_members,0.3725,unknown,False,True
+a07,mokdy,a member's membership expires in 10 days and she's barely been coming in lately. should i contact her now or wait until she gets closer to the end date?,member_actions,member_actions,0.4407,member_actions,True,True
+a08,mokdy,i called this guy twice already and he never picks up. am i supposed to keep trying or is there a limit,member_actions,unknown,0.1822,member_risk,False,False
+a09,mokdy,we have a bunch of members who only come for the pool and it's been closed for repairs all week. can u tell me who's most likely to cancel because of this?,unknown,list_members,0.3539,graph_impact,False,False
+a10,mokdy,one of our highest paying members is barely coming in anymore but their risk score is low. should i trust the score or reach out anyway?,member_risk,member_risk,0.5031,member_actions,True,False
+a11,mokdy,half the people on today's list have already been contacted by someone else. how do i avoid wasting time or annoying members with duplicate calls?,unknown,unknown,0.294,list_members,True,False
+a12,mokdy,this member said everything is fine when i called but hasn't been back since. does the system take what they actually tell us into account or just check-ins?,unknown,unknown,0.3357,member_actions,True,False
+a13,mokdy,we have a big january signup rush coming. can we figure out which new members are most likely to quit after the first month?,list_members,list_members,0.5487,list_members,True,True
+a14,mokdy,my manager wants proof that calling people actually makes a difference. how do we know they wouldn't have stayed anyway?,unknown,unknown,0.2378,unknown,True,True
+a15,mokdy,member 58321 says he can't afford the membership anymore. what options should i offer him before he cancels?,member_actions,unknown,0.2906,graph_impact,False,False
 b01,asiri,is a member sleeping dog?,member_actions,member_actions,0.3907,member_actions,True,True
 b02,asiri,what is the type of this member?,member_risk,member_actions,0.5783,member_risk,False,True
 b03,asiri,does this member attend PT sessions?,unknown,member_actions,0.5255,member_actions,False,False

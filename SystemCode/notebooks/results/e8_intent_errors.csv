@@ -4,6 +4,14 @@ q17,Show the playbook for 1999,member_actions,unknown,0.159,unknown,,ai
 q31,anyone hurt by the recent staff departure?,graph_impact,list_members,0.371,unknown,no entity named,ai
 q45,Which members are we ringing this week?,plan_summary,list_members,0.5738,unknown,boundary with list_members; plan call list,ai
 q59,How do I add a new instructor?,unknown,graph_impact,0.5191,graph_impact,"app how-to, no tool",ai
+a02,this member used to come every day before work and now only shows up once a week. is that bad enough to reach out yet?,member_risk,member_actions,0.4649,member_risk,asks how serious the drop is; borderline member_actions,mokdy
+a03,got 15 people to call and only time for 5 before my shift ends. who can i safely leave for tomorrow?,plan_summary,list_members,0.4046,unknown,priority within the call list; could be misread as a ranked risk list,mokdy
+a04,member says she's switching to a gym closer to her new job. is there even a point trying to keep her?,member_actions,member_risk,0.4079,member_risk,hard: the reason she gives is not in the data; the assistant should say so,mokdy
+a05,why is this guy marked high risk when he literally checked in yesterday??,member_risk,unknown,0.3388,member_risk,,mokdy
+a06,we ran that win-back offer last month and barely anyone took it. should we try something different or just give up on these members,unknown,list_members,0.3725,unknown,hard: offer performance across members is not an intent,mokdy
+a08,i called this guy twice already and he never picks up. am i supposed to keep trying or is there a limit,member_actions,unknown,0.1822,member_risk,answered by the contact-cap guardrail in the rule trace,mokdy
+a09,we have a bunch of members who only come for the pool and it's been closed for repairs all week. can u tell me who's most likely to cancel because of this?,unknown,list_members,0.3539,graph_impact,hard: a facility closure is not a modelled event; could be misread as graph_impact or list_members,mokdy
+a15,member 58321 says he can't afford the membership anymore. what options should i offer him before he cancels?,member_actions,unknown,0.2906,graph_impact,hard: the id does not exist (ids run M0001 to M4000); the assistant should say it cannot find him,mokdy
 b02,what is the type of this member?,member_risk,member_actions,0.5783,member_risk,ambiguous: 'type' read as segment,asiri
 b03,does this member attend PT sessions?,unknown,member_actions,0.5255,member_actions,no tool for a member's attendance history,asiri
 b05,what is the offer that most members like?,unknown,list_members,0.5078,list_members,offer popularity across members is not an intent,asiri
