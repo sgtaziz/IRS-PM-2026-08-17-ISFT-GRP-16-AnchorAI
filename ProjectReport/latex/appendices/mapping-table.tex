@@ -1,0 +1,32 @@
+% MR / RS / CGS mapping table, shared by both reports
+{\small\sffamily
+\begin{xltabular}{\linewidth}{@{}P{0.2\linewidth} L l P{0.2\linewidth}@{}}
+  \caption{Techniques as built, by course and evidence.}\label{tab:mapping}\\
+  \toprule
+  \hd{Component} & \hd{Technique as built} & \hd{Course} & \hd{Evidence} \\
+  \midrule
+  \endfirsthead
+  \toprule
+  \hd{Component} & \hd{Technique as built} & \hd{Course} & \hd{Evidence} \\
+  \midrule
+  \endhead
+  Data preparation & stratified split; SMOTE-NC inside folds compared with class weights; CRISP-DM & RS D2 & E2 \\
+  Features & trend and ratio features, scaling, leakage check & MR D4, RS D2 & E2, leakage check \\
+  Segmentation & K-means, silhouette, stability (adjusted Rand index), profiles & MR D4 & E1 \\
+  Churn model & class-weighted logistic regression and LightGBM ensemble, Platt calibration; F1, PR-AUC, Brier & MR D2, D4 & E2 \\
+  Driver explanations & averaged logistic-regression terms and TreeSHAP contributions per member & MR D3, D4 & E2 drivers \\
+  Scenario layer & synthetic gym and randomised history with known effects & MR D3 & scenario layer \\
+  Uplift baseline & T-learner (self-researched) & MR D4 & E3 \\
+  Offer reasoner & case-based reasoning: retrieve, reuse, revise (shrinkage), retain & MR D2 & E3 \\
+  Plan optimiser & genetic algorithm with repair, elitism, spillover and diminishing returns & RS D4 & E4, E5 \\
+  Exact benchmark & CP-SAT constraint optimisation & MR D1, RS D1 & E5 \\
+  Policy evaluation & simulation-based comparison against three baselines & RS D1 & E4 \\
+  Rule engine & forward chaining over derive, playbook and guardrail rules; salience; traces; versions & MR D2, RS D1 & E6 \\
+  Knowledge graph & Neo4j and Cypher; multi-hop cohort signals; read-only parameterised queries & MR D3, RS D5 & E7 \\
+  Intent detection & sentence-embedding centroids with an unknown threshold; slot filling & CGS D1 & E8 \\
+  Grounded generation & deterministic tool, then an LLM phrases cited evidence only & CGS D1, D3 & E8 \\
+  Assistant evaluation & keyword baseline; static checks; calibrated LLM-as-judge; local and hosted models & CGS D2, D3 & E8 \\
+  Message drafts & LLM drafts with a rule check and a template fallback & CGS D1 & drafts in the application \\
+  Overall & hybrid machine learning, rules, optimisation, knowledge graph and language interface with human review & RS D1, CGS D1 & E4, E6, E7 \\
+  \bottomrule
+\end{xltabular}}
