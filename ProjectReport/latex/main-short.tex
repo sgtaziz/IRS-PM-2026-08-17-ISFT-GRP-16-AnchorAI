@@ -530,4 +530,18 @@ AnchorAI shows that a gym's weekly retention decision can be automated and expla
 
 \printbibliography[heading=bibintoc, title=References]
 
+\clearpage
+\markboth{Individual reflections}{Individual reflections}
+\section*{Individual reflections}
+\addcontentsline{toc}{section}{Individual reflections}
+Each member reflects on their own contribution and learning; the full report gives each a page. The peer review is submitted separately.
+
+% Each slot reads appendices/reflection-<name>-short.tex if it exists (about 150 words, so all three fit on this page), else the full-report file
+\newcommand{\reflection}[2]{%
+  \subsection*{#1}
+  \InputIfFileExists{appendices/reflection-#2-short}{}{\InputIfFileExists{appendices/reflection-#2}{}{\emph{To be written by #1.}}}\par}
+\reflection{Abdulaziz Ali S Hasanain}{abdulaziz}
+\reflection{Asiri Mohammed Yahya A}{asiri}
+\reflection{Binmaneea Khalid Waleed M}{khalid}
+
 \end{document}
