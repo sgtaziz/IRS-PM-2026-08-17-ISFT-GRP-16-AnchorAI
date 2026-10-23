@@ -25,6 +25,7 @@ SystemCode/data/generated/*
 # Video files are large: upload to YouTube, link in README
 Video/*.mp4
 Video/*.mov
+Video/editing/
 
 # OS / editors
 .DS_Store
