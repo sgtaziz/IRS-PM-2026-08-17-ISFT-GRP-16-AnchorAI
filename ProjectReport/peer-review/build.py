@@ -53,7 +53,7 @@ def document(form: dict) -> str:
     return rf"""\documentclass[paper=a4, fontsize=11pt, parskip=half-, headings=small]{{scrreprt}}
 \usepackage{{anchorai}}
 \graphicspath{{{{{LATEX.as_posix()}/figures/}}}}
-\ifoot{{\color{{muted}}Anchor\textcolor{{nusOrange}}{{AI}}\enskip·\enskip Confidential peer review}}
+\ifoot{{\color{{muted}}Anchor\textcolor{{brandBlue}}{{AI}}\enskip·\enskip Confidential peer review}}
 \ohead{{Peer review}}
 \begin{{document}}
 \section*{{Confidential peer review}}
