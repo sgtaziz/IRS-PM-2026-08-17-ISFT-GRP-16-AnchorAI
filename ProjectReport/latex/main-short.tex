@@ -247,15 +247,17 @@ A Neo4j knowledge graph~\cite{hogan2021kg} links members, classes, instructors, 
 
 \begin{figure}[!htb]
   \centering
-  \screenshot[0.93\linewidth]{screens/graph-content.png}
-  \caption{Simulating the departure of instructor Maya Chen in the graph explorer: 312 members are affected, 54 of them at high risk. Right: her neighbourhood, with the 40 highest-risk of her 312 members drawn.}
-  \label{fig:kgsim}
-\end{figure}
-\begin{figure}[!htb]
-  \centering
-  \screenshot[\linewidth]{screens/assistant-content.png}
-  \caption{The assistant answering a manager about member M1460 with the local \code{qwen2.5:7b-instruct} model. The answer cites its sources, which open as evidence chips linking to the member, rule or case.}
-  \label{fig:assistant}
+  \begin{subfigure}[t]{0.495\linewidth}
+    \screenshot[\linewidth]{screens/graph-content.png}
+    \caption{Simulating instructor Maya Chen leaving: 312 members affected, 54 at high risk, with her neighbourhood.}
+    \label{fig:kgsim}
+  \end{subfigure}\hfill
+  \begin{subfigure}[t]{0.495\linewidth}
+    \screenshot[\linewidth]{screens/assistant-content.png}
+    \caption{The assistant answering about member M1460 with the local \code{qwen2.5:7b-instruct} model, citing its sources.}
+    \label{fig:assistant}
+  \end{subfigure}
+  \caption{The knowledge graph and the staff assistant in the application.}
 \end{figure}
 \section{System development and implementation}
 \label{sec:impl}
