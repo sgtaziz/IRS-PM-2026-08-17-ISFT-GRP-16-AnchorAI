@@ -31,7 +31,7 @@
 @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
 .net .ah { fill: none; stroke: var(--t, var(--fg-3)); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; opacity: 0; }
 .is-active .net .ah { animation: fadein .3s both; animation-delay: calc(var(--w, 0) * 1s + .8s); }
-.pk { position: absolute; left: 0; top: 0; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; background: var(--t, var(--c-mint)); box-shadow: 0 0 0 5px color-mix(in srgb, var(--t, var(--c-mint)) 25%, transparent), 0 0 24px 4px color-mix(in srgb, var(--t, var(--c-mint)) 55%, transparent); offset-rotate: 0deg; opacity: 0; pointer-events: none; }
+.pk { position: absolute; left: 0; top: 0; width: 14px; height: 14px; border-radius: 50%; background: var(--t, var(--c-mint)); box-shadow: 0 0 0 5px color-mix(in srgb, var(--t, var(--c-mint)) 25%, transparent), 0 0 24px 4px color-mix(in srgb, var(--t, var(--c-mint)) 55%, transparent); offset-rotate: 0deg; opacity: 0; pointer-events: none; }
 .is-active .pk { animation: trav var(--dur, 2.6s) linear infinite; animation-delay: calc(var(--w, 0) * 1s + 1s + var(--o, 0) * 1s); }
 @keyframes trav { 0% { offset-distance: 0%; opacity: 0; } 8% { opacity: 1; } 92% { opacity: 1; } 100% { offset-distance: 100%; opacity: 0; } }
 .elab { position: absolute; transform: translate(-50%, -50%); padding: 4px 14px; border-radius: 12px; font-size: 22px; font-weight: 600; white-space: nowrap; background: var(--card-solid); border: 1px solid var(--line-2); color: var(--t, var(--fg-2)); }
