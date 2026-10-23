@@ -24,7 +24,7 @@ Due **Sun 25 Oct 2026, 23:59**. Requirements are from the practice module brief 
 - [x] `member-github.txt` with group name, official names, student IDs and repo link
 - [ ] Make the GitHub repo public, or give the graders access (it is private now)
 - [x] README section 3, who did what
-- [ ] README section 3, member emails
+- [x] README section 3, member emails
 - [ ] README section 4, the two video links
 - [ ] Replace `<repo-url>` with the real URL in the README quick start and `ProjectReport/installation-guide.md`
 
