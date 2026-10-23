@@ -60,13 +60,13 @@ def document(form: dict) -> str:
 {{\sffamily Group 16, AnchorAI\par
 Reviewer: \textbf{{{tex(form["reviewer"])}}}\enskip·\enskip {tex(form["student_id"])}\par}}
 \medskip
-Contribution of each member, the reviewer included; contributions add up to 100\%. Ratings are 1 (poor) to 5 (excellent).
+Contribution of each member, the reviewer included. Contributions add up to 100\%. Ratings are 1 (poor) to 5 (excellent).
 \medskip
 
 {{\small\sffamily\renewcommand{{\arraystretch}}{{1.6}}%
-\begin{{tabularx}}{{\linewidth}}{{@{{}}P{{44mm}} c c L@{{}}}}
+\begin{{tabularx}}{{\linewidth}}{{@{{}}P{{40mm}} c c L@{{}}}}
     \toprule
-    \hd{{Member}} & \hd{{Contribution (\%)}} & \hd{{Rating (1--5)}} & \hd{{Comments}} \\
+    \hd{{Member}} & \hd{{Share (\%)}} & \hd{{Rating}} & \hd{{Comments}} \\
     \midrule
 {rows}
     \bottomrule
