@@ -1,0 +1,21 @@
+% Pricing and business value, shared by both reports; each report writes its own heading before \input.
+AnchorAI is sold as an annual subscription that bolts onto the operator's existing membership system: US\$199 a month for the first club and US\$149 for each further club up to five, so a three-club operator, the size of our scenario, pays US\$497 a month. It runs on the operator's own machine, language model included: in E8 a local seven-billion-parameter model was as faithful to its evidence as the hosted one (95.1\% of judged sentences supported for each), so there is no fee per question. A hosted and maintained option would cost more, to cover hosting and support; we have not costed it.
+
+The price sits where the gap in the market is (\cref{tab:pricing}). The dedicated retention layer is priced for chains: in 2020 Keepme's founder quoted US\$9,000 a year for a single site, with a lower price for each further site~\cite{fittech2020keepme}, about US\$750 a month, nearly four times AnchorAI's first club. Small operators already pay at AnchorAI's level for their membership system and its add-ons~\cite{pushpress-pricing,gymdesk-pricing}.
+
+\begin{table}[!htb]
+  \caption{AnchorAI's price against published prices of club software, in US dollars a month.}
+  \label{tab:pricing}
+  \begin{tabularx}{\linewidth}{@{}l L r@{}}
+    \toprule
+    \hd{Product} & \hd{What it is} & \hd{Price a month} \\
+    \midrule
+    AnchorAI  & retention planner: first club; each further club, up to five & 199; 149 \\
+    Keepme    & retention intelligence layer, single site (2020 figure)~\cite{fittech2020keepme} & about 750 \\
+    PushPress & membership system; marketing add-on~\cite{pushpress-pricing} & 159--229; 329 \\
+    Gymdesk   & membership system by member count; each extra location~\cite{gymdesk-pricing} & 75--240; 50--100 \\
+    \bottomrule
+  \end{tabularx}
+\end{table}
+
+The value comes from members kept. The planner values a kept member at six months of fees, a deliberately cautious horizon; at the scenario's middle fee of US\$54, for a six-month contract, that is US\$324, an assumption of the scenario layer rather than a market figure. One club therefore breaks even when AnchorAI keeps 0.6 members a month who would otherwise have left, and three clubs need 1.8. In the scenario, one week's plan at the default 36 staff hours and US\$1,500 keeps 21.0 members against 13.7 for contacting by risk, and spends US\$432 instead of US\$1,280 (E4): 7.3 more members from a single week, four times the monthly break-even for three clubs. The scenario's effects are synthetic, so this shows that the margin is wide, not how wide it would be in a real gym. The direction agrees with field evidence that targeting by expected response reduces churn more than targeting by risk~\cite{ascarza2018futility}, and the stake is large, since about a third of members leave each year~\cite{hfa2025benchmarking}.
