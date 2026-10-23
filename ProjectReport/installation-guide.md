@@ -17,7 +17,7 @@ The data pipeline, API and web app run without Neo4j and without an LLM. The gra
 ## 1. Get the code and configure it
 
 ```sh
-git clone <repo-url> AnchorAI && cd AnchorAI
+git clone https://github.com/sgtaziz/IRS-PM-2026-08-17-ISFT-GRP-16-AnchorAI.git AnchorAI && cd AnchorAI
 cp .env.example .env
 ```
 

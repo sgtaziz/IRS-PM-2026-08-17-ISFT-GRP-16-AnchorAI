@@ -716,7 +716,8 @@ All four technique groups the module requires are covered: decision automation, 
 
 \paragraph{Install.} Prerequisites: Git, uv 0.13+, Node.js 20+, Docker with Compose, and optionally an OpenAI-compatible LLM endpoint (the default is a local Ollama \code{qwen2.5:7b-instruct}). Download \emph{Gym Customers Features and Churn} from Kaggle~\cite{vinueza-gym} into \code{SystemCode/data/raw/}; the data is CC BY-NC-SA 4.0 and not redistributed.
 \begin{shell}
-git clone <repo-url> AnchorAI && cd AnchorAI
+git clone https://github.com/sgtaziz/IRS-PM-2026-08-17-ISFT-GRP-16-AnchorAI.git AnchorAI
+cd AnchorAI
 cp .env.example .env                  # set ANCHORAI_JWT_SECRET and LLM_*
 docker compose up -d neo4j            # knowledge graph
 cd SystemCode/backend && uv sync

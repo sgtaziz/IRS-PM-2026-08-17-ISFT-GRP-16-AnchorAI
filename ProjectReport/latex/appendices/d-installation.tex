@@ -21,7 +21,8 @@ These steps take a fresh clone to a running, seeded AnchorAI with data, models a
 
 \paragraph{1. Code and configuration.} Clone the repository and create the environment file.
 \begin{shell}
-git clone <repo-url> AnchorAI && cd AnchorAI
+git clone https://github.com/sgtaziz/IRS-PM-2026-08-17-ISFT-GRP-16-AnchorAI.git AnchorAI
+cd AnchorAI
 cp .env.example .env
 \end{shell}
 In \code{.env}, set \code{ANCHORAI_JWT_SECRET} to a random value (\code{openssl rand -hex 32}); set \code{LLM_BASE_URL}, \code{LLM_API_KEY} and \code{LLM_MODEL} to your endpoint (the default is a local Ollama server with \code{qwen2.5:7b-instruct}, installed once with \code{ollama pull qwen2.5:7b-instruct}); and leave \code{ANCHORAI_SEED} at 42 to reproduce the reported results.
