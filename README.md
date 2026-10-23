@@ -23,8 +23,9 @@ Techniques: K-means segmentation, a calibrated churn ensemble, a forward-chainin
 
 ## SECTION 4 : VIDEO OF SYSTEM MODELLING & USE CASE DEMO
 
-- Promotion video: https://youtu.be/opfahkYKg6U
-- System design video: https://youtu.be/t8pL02oRPBU
+| Promotion | System design |
+|---|---|
+| [![Promotion video](https://img.youtube.com/vi/opfahkYKg6U/maxresdefault.jpg)](https://youtu.be/opfahkYKg6U) | [![System design video](https://img.youtube.com/vi/t8pL02oRPBU/maxresdefault.jpg)](https://youtu.be/t8pL02oRPBU) |
 
 ---
 

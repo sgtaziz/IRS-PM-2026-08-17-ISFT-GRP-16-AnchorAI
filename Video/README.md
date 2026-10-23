@@ -2,8 +2,9 @@
 
 Two five minute videos for the module brief. Video files are not committed. Only the scripts, the slide decks and this note are.
 
-- Promotion: https://youtu.be/opfahkYKg6U
-- System design: https://youtu.be/t8pL02oRPBU
+| Promotion | System design |
+|---|---|
+| [![Promotion video](https://img.youtube.com/vi/opfahkYKg6U/maxresdefault.jpg)](https://youtu.be/opfahkYKg6U) | [![System design video](https://img.youtube.com/vi/t8pL02oRPBU/maxresdefault.jpg)](https://youtu.be/t8pL02oRPBU) |
 
 | Video | Script | Brief | Final file name |
 |---|---|---|---|
