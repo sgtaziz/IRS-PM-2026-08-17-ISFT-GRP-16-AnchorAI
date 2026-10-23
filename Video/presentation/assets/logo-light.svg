@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 168 32" fill="none">
+  <defs>
+    <linearGradient id="anchorai-lockup-bg-l" x1="4" y1="2" x2="28" y2="30" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#4c93ff"/>
+      <stop offset="1" stop-color="#1a3fac"/>
+    </linearGradient>
+  </defs>
+  <rect width="32" height="32" rx="9" fill="url(#anchorai-lockup-bg-l)"/>
+  <g stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="16" cy="8.4" r="2.5"/>
+    <path d="M16 10.9v14.6"/>
+    <path d="M11.6 14.6h8.8"/>
+    <path d="M7.6 18.4c.3 4.3 3.9 7.1 8.4 7.1s8.1-2.8 8.4-7.1"/>
+    <path d="M5.9 20.3l1.7-1.9 2.1 1.4"/>
+    <path d="M26.1 20.3l-1.7-1.9-2.1 1.4"/>
+  </g>
+  <circle cx="24.6" cy="7.6" r="1.7" fill="#7fe3c4"/>
+  <text x="42" y="22.5" font-family="Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif" font-size="19" font-weight="700" letter-spacing="-0.4" fill="#ffffff">Anchor<tspan fill="#8ec3ff">AI</tspan></text>
+</svg>

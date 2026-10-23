@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AnchorAI Presenter</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root { --bg: #070d1c; --panel: #0e1730; --line: rgba(255,255,255,.1); --fg: #f4f7ff; --dim: rgba(190,205,235,.6); --mint: #7fe3c4; --brand: #59a1fb; --warn: #ffc266; --bad: #ff6b86; --fs: 3.1vw; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--fg); font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  body { display: grid; grid-template-columns: 1fr 24rem; grid-template-rows: auto 1fr auto; height: 100vh; gap: 0; }
+  header { grid-column: 1 / 3; display: flex; align-items: center; gap: 1rem; padding: .9rem 1.5rem; border-bottom: 1px solid var(--line); font-size: .95rem; color: var(--dim); }
+  header b { color: var(--fg); font-size: 1.05rem; letter-spacing: -.01em; }
+  .chip { padding: .25rem .7rem; border-radius: 1rem; background: rgba(255,255,255,.07); border: 1px solid var(--line); font-variant-numeric: tabular-nums; color: var(--fg); font-weight: 600; font-size: .85rem; }
+  .chip.beat { color: var(--mint); border-color: rgba(127,227,196,.4); background: rgba(127,227,196,.1); }
+  .dot { width: .6rem; height: .6rem; border-radius: 50%; background: var(--bad); margin-left: auto; }
+  .dot.on { background: var(--mint); box-shadow: 0 0 10px var(--mint); }
+  main { padding: 1.5rem 2rem; overflow: auto; display: flex; flex-direction: column; gap: 1.5rem; }
+  .lbl { font-size: .8rem; letter-spacing: .16em; text-transform: uppercase; color: var(--mint); font-weight: 700; margin-bottom: .6rem; display: flex; gap: .8rem; align-items: center; }
+  .now { font-size: var(--fs); line-height: 1.3; font-weight: 600; letter-spacing: -.02em; }
+  .now.empty { color: var(--dim); font-weight: 450; }
+  .nxt { font-size: calc(var(--fs) * .6); line-height: 1.35; color: var(--dim); font-weight: 500; padding-top: 1.2rem; border-top: 1px solid var(--line); }
+  .nxt .lbl { color: var(--brand); }
+  aside { border-left: 1px solid var(--line); padding: 1.2rem 1.2rem; display: flex; flex-direction: column; gap: 1.2rem; overflow: auto; background: rgba(255,255,255,.015); }
+  .tm { padding: 1rem 1.1rem; border-radius: 1rem; background: var(--panel); border: 1px solid var(--line); }
+  .tm .n { font-size: .75rem; letter-spacing: .14em; text-transform: uppercase; color: var(--dim); font-weight: 700; display: flex; justify-content: space-between; }
+  .tm .t { font-size: 2.6rem; font-weight: 800; letter-spacing: -.04em; font-variant-numeric: tabular-nums; line-height: 1.1; margin-top: .3rem; }
+  .tm .t small { font-size: 1rem; color: var(--dim); font-weight: 500; letter-spacing: 0; margin-left: .4rem; }
+  .tm .bar { height: .4rem; border-radius: .2rem; background: rgba(255,255,255,.1); margin-top: .6rem; overflow: hidden; }
+  .tm .bar i { display: block; height: 100%; width: 0; background: var(--brand); transition: width .3s linear; }
+  .tm.warn .t { color: var(--warn); } .tm.warn .bar i { background: var(--warn); }
+  .tm.over .t { color: var(--bad); } .tm.over .bar i { background: var(--bad); }
+  .btns { display: flex; gap: .5rem; }
+  button { font: inherit; font-weight: 650; font-size: .9rem; color: var(--fg); background: rgba(255,255,255,.07); border: 1px solid var(--line); border-radius: .7rem; padding: .6rem 1rem; cursor: pointer; }
+  button:hover { background: rgba(255,255,255,.12); }
+  button.go { background: linear-gradient(135deg, #347ef6, #1a3fac); border-color: transparent; flex: 1; font-size: 1.05rem; }
+  .outline { display: flex; flex-direction: column; gap: .15rem; font-size: .85rem; }
+  .outline .sec { font-size: .7rem; letter-spacing: .14em; text-transform: uppercase; color: var(--mint); margin: .8rem 0 .2rem; font-weight: 700; }
+  .outline a { display: flex; gap: .6rem; padding: .35rem .5rem; border-radius: .5rem; color: var(--dim); text-decoration: none; cursor: pointer; }
+  .outline a:hover { background: rgba(255,255,255,.06); }
+  .outline a.cur { background: rgba(89,161,251,.16); color: var(--fg); font-weight: 600; }
+  .outline a i { font-style: normal; font-variant-numeric: tabular-nums; width: 1.6rem; color: var(--dim); }
+  footer { grid-column: 1 / 2; display: flex; gap: .6rem; padding: 1rem 2rem; border-top: 1px solid var(--line); align-items: center; font-size: .8rem; color: var(--dim); }
+  footer .btns { flex: 1; }
+</style>
+</head>
+<body>
+<header><b id="title">AnchorAI</b><span class="chip" id="pos">Slide 1</span><span class="chip beat" id="beat">-</span><span id="spk"></span><span class="dot" id="dot" title="connection"></span></header>
+<main>
+  <div><div class="lbl">Now <span id="nowtag" style="color:var(--dim);letter-spacing:0;text-transform:none;font-weight:500"></span></div><div class="now empty" id="now">Waiting for the deck. Open this window from the deck with P.</div></div>
+  <div class="nxt"><div class="lbl">Next <span id="nxttag" style="color:var(--dim);letter-spacing:0;text-transform:none;font-weight:500"></span></div><div id="nxt">-</div></div>
+</main>
+<aside>
+  <div class="tm" id="tsec"><div class="n"><span id="tsecn">Section</span><span id="tsect"></span></div><div class="t" id="tsecv">0:00</div><div class="bar"><i></i></div></div>
+  <div class="tm" id="ttot"><div class="n"><span>Total</span><span id="ttott"></span></div><div class="t" id="ttotv">0:00</div><div class="bar"><i></i></div></div>
+  <div class="btns"><button id="tgl">Start / pause</button><button id="rst">Reset</button></div>
+  <div class="outline" id="outline"></div>
+</aside>
+<footer><div class="btns"><button id="prev">&larr; Back</button><button class="go" id="next">Next &rarr;</button></div><span>Space / arrows drive the deck. + / - text size.</span></footer>
+<script src="engine/deck.js" data-presenter-only></script>
+<script>
+(function () {
+  var id = decodeURIComponent((location.hash || '').slice(1)) || 'deck';
+  var $ = function (s) { return document.querySelector(s); };
+  var state = null, lastRx = 0, fs = 3.1;
+  var seen = {};
+  function fmt(ms) { var s = Math.max(0, Math.round(ms / 1000)); return Math.floor(s / 60) + ':' + (s % 60 < 10 ? '0' : '') + (s % 60); }
+  function esc(s) { return String(s).replace(/[&<>]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]; }); }
+
+  var link = new window.AnchorLink(id, function (m) {
+    if (m.t !== 'state') return;
+    state = m; lastRx = Date.now(); render();
+  });
+  if (window.opener) link.wins.push(window.opener);
+  function send(cmd, extra) { var m = Object.assign({ t: 'cmd', cmd: cmd }, extra || {}); link.send(m); }
+  function hello() { link.send({ t: 'hello' }); }
+  hello(); setInterval(function () { if (!state || Date.now() - lastRx > 2500) hello(); $('#dot').classList.toggle('on', Date.now() - lastRx < 3000 && !!state); }, 1000);
+
+  function noteAt(slide, step) {
+    var ns = state.outline[slide].notes, best = null;
+    ns.forEach(function (n) { if (n.step <= step && (!best || n.step >= best.step)) best = n; });
+    return best;
+  }
+  function nextPos() {
+    var o = state.outline, s = state.cur, st = state.step;
+    if (st < o[s].steps) return [s, st + 1];
+    return s + 1 < o.length ? [s + 1, 0] : null;
+  }
+  function render() {
+    var o = state.outline, s = state.cur, st = state.step, sl = o[s];
+    $('#title').textContent = state.title || 'AnchorAI';
+    $('#pos').textContent = 'Slide ' + (s + 1) + '/' + o.length + (sl.steps ? ' . step ' + st + '/' + sl.steps : '');
+    $('#spk').textContent = state.speaker ? state.speaker + (state.role ? ' . ' + state.role : '') : '';
+    var n = noteAt(s, st), now = $('#now');
+    $('#beat').textContent = n && n.beat ? n.beat : '-';
+    $('#nowtag').textContent = sl.title;
+    now.textContent = n ? n.text : 'No narration for this beat.';
+    now.classList.toggle('empty', !n);
+    var np = nextPos(), nn = np ? noteAt(np[0], np[1]) : null;
+    $('#nxt').textContent = np ? (nn ? nn.text : 'No narration for the next beat.') : 'End of deck.';
+    $('#nxttag').textContent = np ? (nn && nn.beat ? nn.beat : '') + (np[0] !== s ? ' . ' + o[np[0]].title : '') : '';
+    var T = state.timers, sec = state.sections, si = sl.section, sg = sec[si];
+    $('#tsecn').textContent = sg.name;
+    $('#tsect').textContent = sg.target ? 'target ' + fmt(sg.target * 1000) : '';
+    set('#tsec', '#tsecv', T.el[si], sg.target * 1000);
+    $('#ttott').textContent = state.totalTarget ? 'target ' + fmt(state.totalTarget * 1000) : '';
+    set('#ttot', '#ttotv', T.total, state.totalTarget * 1000);
+    $('#tgl').textContent = T.running ? 'Pause' : 'Start';
+    var h = '', last = -1;
+    o.forEach(function (x, i) {
+      if (x.section !== last) { last = x.section; h += '<div class="sec">' + esc(sec[x.section].name) + '</div>'; }
+      h += '<a data-i="' + i + '" class="' + (i === s ? 'cur' : '') + '"><i>' + (i + 1) + '</i>' + esc(x.title) + '</a>';
+    });
+    $('#outline').innerHTML = h;
+  }
+  function set(box, val, ms, target) {
+    $(val).innerHTML = fmt(ms) + (target ? '<small>/ ' + fmt(target) + '</small>' : '');
+    var r = target ? ms / target : 0, b = $(box);
+    b.classList.toggle('over', target && r > 1); b.classList.toggle('warn', target && r > .85 && r <= 1);
+    b.querySelector('.bar i').style.width = Math.min(100, r * 100) + '%';
+  }
+  $('#next').onclick = function () { send('next'); };
+  $('#prev').onclick = function () { send('prev'); };
+  $('#tgl').onclick = function () { send('timer-toggle'); };
+  $('#rst').onclick = function () { send('timer-reset'); };
+  $('#outline').onclick = function (e) { var a = e.target.closest('a'); if (a) send('goto', { slide: +a.dataset.i, step: 0 }); };
+  document.addEventListener('keydown', function (e) {
+    var k = e.key;
+    if (k === 'ArrowRight' || k === ' ' || k === 'PageDown') send('next');
+    else if (k === 'ArrowLeft' || k === 'PageUp') send('prev');
+    else if (k === '+' || k === '=') { fs = Math.min(6, fs + .3); document.documentElement.style.setProperty('--fs', fs + 'vw'); }
+    else if (k === '-') { fs = Math.max(1.5, fs - .3); document.documentElement.style.setProperty('--fs', fs + 'vw'); }
+    else return;
+    e.preventDefault();
+  });
+})();
+</script>
+</body>
+</html>

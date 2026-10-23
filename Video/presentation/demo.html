@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AnchorAI Engine Demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="engine/deck.css">
+</head>
+<body>
+<div class="deck" data-id="demo" data-title="AnchorAI engine demo" data-speaker="Presenter Name" data-speaker-role="Stream A" data-total-target="6:00" data-transition="fade">
+
+  <!-- 1. Hero / title -->
+  <section class="slide dark hero" data-chrome="off" data-section="Opening" data-section-target="0:45" data-title="Hero">
+    <div class="orb" data-morph="orb" style="left:1280px;top:150px;width:440px;height:440px"></div>
+    <div class="logo-reveal" data-size="88"></div>
+    <h1 class="display grad rise" style="--d:5">Retention,<br>explained.</h1>
+    <p class="lead" data-step="1">An explainable, budget-aware planner that tells staff who to call, with what offer, and why.</p>
+    <div class="row gap-16 mt-48" data-step="2"><span class="pill mint">Explainable</span><span class="pill brand">Budget-aware</span><span class="pill">Human in the loop</span></div>
+    <aside class="notes" data-beat="P1.1">Open with the problem: gyms lose members quietly.</aside>
+    <aside class="notes" data-beat="P1.2">AnchorAI turns churn scores into a weekly call plan.</aside>
+    <aside class="notes" data-beat="P1.3">Every recommendation can be explained to the member and to the manager.</aside>
+  </section>
+
+  <!-- 2. Section opener with lower third (morph from slide 1) -->
+  <section class="slide brand section-open" data-transition="morph" data-section="Discovery" data-section-target="1:15" data-title="Section opener">
+    <div class="num-ghost">01</div>
+    <div class="orb" data-morph="orb" style="left:1360px;top:620px;width:200px;height:200px"></div>
+    <p class="eyebrow rise" style="--d:0">Part one</p>
+    <h2 class="h1 rise" style="--d:1">Who is about to leave?</h2>
+    <p class="lead rise" style="--d:2">Segments, a churn model and an uplift baseline.</p>
+    <div class="lower-third" data-name="Presenter Name" data-role="Stream A, Data and discovery" data-hold="5000"></div>
+    <aside class="notes" data-beat="P2.1">Introduce yourself while the lower third is on screen.</aside>
+    <aside class="notes" data-beat="P2.2">Frame the first part in one sentence.</aside>
+    <aside class="notes" data-step="1" data-beat="P2.3">Hand over to the numbers.</aside>
+  </section>
+
+  <!-- 3. Kinetic big number -->
+  <section class="slide dark middle" data-transition="zoom" data-title="Big number">
+    <p class="eyebrow rise" style="--d:0">Kinetic number</p>
+    <div class="bignum mt-32">
+      <div class="num" data-count="38" data-suffix="%" data-duration="2200"></div>
+      <div class="cap" data-step="1">of members are at risk in their first 90 days</div>
+      <div class="cap-sub" data-step="2">Placeholder figure for the engine demo</div>
+    </div>
+    <aside class="notes" data-beat="P3.1">Let the number land before speaking.</aside>
+    <aside class="notes" data-beat="P3.2">Explain what the number means.</aside>
+    <aside class="notes" data-beat="P3.3">Caveat the source.</aside>
+  </section>
+
+  <!-- 4. Stat grid (light) -->
+  <section class="slide light" data-transition="slide" data-title="Stat grid">
+    <p class="eyebrow rise" style="--d:0">Stat grid</p>
+    <h2 class="h2 mt-24 rise" style="--d:1">The data at a glance</h2>
+    <div class="stat-grid mt-64">
+      <div class="stat" data-tone="brand" data-step="1"><div class="num" data-count="4000"></div><div class="lbl">members in the scenario</div></div>
+      <div class="stat" data-tone="mint" data-step="2"><div class="num" data-count="5"></div><div class="lbl">behavioural segments</div></div>
+      <div class="stat" data-tone="violet" data-step="3"><div class="num" data-count="0.87" data-decimals="2"></div><div class="lbl">churn model ROC AUC</div></div>
+      <div class="stat" data-tone="warn" data-step="4"><div class="num" data-count="23" data-prefix="+" data-suffix="%"></div><div class="lbl">retained vs baseline</div><div class="delta">up 6 pts</div></div>
+    </div>
+    <aside class="notes" data-beat="P4.1">Set the scene.</aside>
+    <aside class="notes" data-beat="P4.2">Members.</aside>
+    <aside class="notes" data-beat="P4.3">Segments.</aside>
+    <aside class="notes" data-beat="P4.4">Model quality.</aside>
+    <aside class="notes" data-beat="P4.5">The headline result.</aside>
+  </section>
+
+  <!-- 5. Comparison bars -->
+  <section class="slide dark" data-transition="wipe" data-section="Optimisation" data-section-target="1:15" data-title="Comparison bars">
+    <p class="eyebrow rise" style="--d:0">Comparison bars</p>
+    <h2 class="h2 mt-24 rise" style="--d:1">Members retained per week</h2>
+    <p class="lead mt-16 rise" style="--d:2">Same budget, three planners.</p>
+    <div class="bars mt-64">
+      <div class="bar" data-step="1" data-label="Random" data-sub="Pick anyone" data-value="31" data-suffix="%" data-tone="muted"></div>
+      <div class="bar" data-step="2" data-label="Greedy" data-sub="Best value first" data-value="52" data-suffix="%" data-tone="brand"></div>
+      <div class="bar win" data-step="3" data-label="Genetic algorithm" data-sub="Budget and staff hours" data-value="74" data-suffix="%" data-tone="mint"></div>
+    </div>
+    <aside class="notes" data-beat="P5.1">The question.</aside>
+    <aside class="notes" data-beat="P5.2">Random baseline.</aside>
+    <aside class="notes" data-beat="P5.3">Greedy.</aside>
+    <aside class="notes" data-beat="P5.4">The optimiser wins.</aside>
+  </section>
+
+  <!-- 6. Line chart -->
+  <section class="slide deep" data-transition="up" data-title="Line chart">
+    <p class="eyebrow rise" style="--d:0">Animated chart</p>
+    <h2 class="h2 mt-24 rise" style="--d:1">Retention over eight weeks</h2>
+    <div class="row mt-48 gap-64">
+      <div class="chart react" data-w="1240" data-h="500" data-labels="W1,W2,W3,W4,W5,W6,W7,W8" data-unit="%" data-ymin="40" data-ymax="80"
+        data-series='[{"name":"Baseline","tone":"muted","data":[52,53,52,54,53,55,54,55]},{"name":"AnchorAI","tone":"mint","data":[52,55,59,62,66,69,72,75]}]'></div>
+      <div class="col gap-24" style="width:360px;padding-top:56px">
+        <div class="pill mint" data-step="1">Lift appears in week 3</div>
+        <p class="body" data-step="2">Plans improve as offers are learned from outcomes.</p>
+      </div>
+    </div>
+    <aside class="notes" data-beat="P6.1">Lines draw themselves.</aside>
+    <aside class="notes" data-beat="P6.2">Point out the lift.</aside>
+    <aside class="notes" data-beat="P6.3">Why it improves.</aside>
+  </section>
+
+  <!-- 7. Flow diagram -->
+  <section class="slide dark" data-transition="fade" data-section="Architecture" data-section-target="1:15" data-title="Flow diagram">
+    <p class="eyebrow rise" style="--d:0">Architecture flow</p>
+    <h2 class="h2 mt-24 rise" style="--d:1">From data to a weekly plan</h2>
+    <div class="flow mt-48" style="width:1680px;height:480px;--gbg:#0b1630">
+      <div class="node" data-id="data" data-tone="brand" data-step="1" style="left:0;top:180px;width:260px;height:120px"><div class="node-title">Member data</div><div class="node-sub">Visits, plans, events</div></div>
+      <div class="node" data-id="disc" data-tone="violet" data-step="2" style="left:340px;top:20px;width:280px;height:120px"><div class="node-title">Discovery</div><div class="node-sub">Segments, churn</div></div>
+      <div class="node" data-id="cbr" data-tone="violet" data-step="2" style="left:340px;top:340px;width:280px;height:120px"><div class="node-title">Case reasoner</div><div class="node-sub">Past offers, uplift</div></div>
+      <div class="node hl" data-id="opt" data-tone="mint" data-step="3" style="left:700px;top:180px;width:300px;height:120px"><div class="node-title">Optimiser</div><div class="node-sub">GA under budget</div></div>
+      <div class="node" data-id="rules" data-tone="warn" data-step="4" style="left:1100px;top:20px;width:320px;height:120px"><div class="node-title">Rule engine</div><div class="node-sub">Policies, why</div></div>
+      <div class="node" data-id="kg" data-tone="brand" data-step="4" style="left:1100px;top:340px;width:320px;height:120px"><div class="node-title">Knowledge graph</div><div class="node-sub">Facts, evidence</div></div>
+      <div class="node" data-id="plan" data-tone="mint" data-step="5" style="left:1460px;top:180px;width:220px;height:120px"><div class="node-title">Weekly plan</div><div class="node-sub">Staff assistant</div></div>
+      <i class="edge-cfg" data-from="data" data-to="disc" data-step="2" data-tone="brand" data-packets="2"></i>
+      <i class="edge-cfg" data-from="data" data-to="cbr" data-step="2" data-tone="brand" data-packets="2"></i>
+      <i class="edge-cfg" data-from="disc" data-to="opt" data-step="3" data-tone="violet" data-packets="2"></i>
+      <i class="edge-cfg" data-from="cbr" data-to="opt" data-step="3" data-tone="violet" data-packets="2"></i>
+      <i class="edge-cfg" data-from="opt" data-to="rules" data-step="4" data-tone="mint" data-label="candidate plan" data-packets="2"></i>
+      <i class="edge-cfg" data-from="kg" data-to="rules" data-step="4" data-tone="brand" data-dash></i>
+      <i class="edge-cfg" data-from="rules" data-to="plan" data-step="5" data-tone="warn" data-packets="2"></i>
+    </div>
+    <aside class="notes" data-beat="P7.1">Start with the data.</aside>
+    <aside class="notes" data-beat="P7.2">Two reasoning branches.</aside>
+    <aside class="notes" data-beat="P7.3">The optimiser combines them.</aside>
+    <aside class="notes" data-beat="P7.4">Rules and graph add the why.</aside>
+    <aside class="notes" data-beat="P7.5">Out comes the plan.</aside>
+    <aside class="notes" data-beat="P7.6">Close the loop.</aside>
+  </section>
+
+  <!-- 8. Browser frame with Ken Burns focus -->
+  <section class="slide dark" data-transition="zoom" data-section="Demo" data-section-target="1:00" data-title="Browser frame">
+    <div class="row gap-64">
+      <div class="frame browser float" style="width:1160px;margin-top:8px" data-src="../../ProjectReport/latex/figures/screens/dashboard.png" data-url="anchorai.app/dashboard">
+        <i class="focus" data-step="1" data-focus="0.205,0.2,0.775,0.25" data-label="Risk and revenue at a glance"></i>
+        <i class="focus" data-step="2" data-focus="0.205,0.48,0.38,0.44" data-label="Calibrated churn risk"></i>
+        <i class="focus" data-step="3" data-focus="0.6,0.48,0.38,0.44" data-label="Segment mix"></i>
+        <i class="focus" data-step="4" data-focus="0,0,1,1"></i>
+      </div>
+      <div class="col" style="width:420px;padding-top:40px">
+        <p class="eyebrow">Browser frame</p>
+        <h2 class="h3 mt-24">The manager dashboard</h2>
+        <p class="body mt-24 small">Steps zoom to a focus rectangle and ring it.</p>
+      </div>
+    </div>
+    <aside class="notes" data-beat="P8.1">Show the whole screen.</aside>
+    <aside class="notes" data-beat="P8.2">KPIs.</aside>
+    <aside class="notes" data-beat="P8.3">Risk distribution.</aside>
+    <aside class="notes" data-beat="P8.4">Segments.</aside>
+    <aside class="notes" data-beat="P8.5">Zoom back out.</aside>
+  </section>
+
+  <!-- 9. Device frame (light) -->
+  <section class="slide light" data-transition="slide" data-title="Device frame">
+    <div class="row gap-96">
+      <div class="col" style="width:640px;padding-top:56px">
+        <p class="eyebrow rise" style="--d:0">Device frame</p>
+        <h2 class="h2 mt-24 rise" style="--d:1">Plans in one click</h2>
+        <p class="lead mt-32" data-step="1">Set a budget and staff hours, choose a planner, review the list.</p>
+      </div>
+      <div class="frame device" style="width:840px" data-src="../../ProjectReport/latex/figures/screens/plan-content.png" data-ar="1.39">
+        <i class="focus" data-step="1" data-focus="0.088,0.2,0.89,0.28" data-label="Budget and hours"></i>
+        <i class="focus" data-step="2" data-focus="0.088,0.505,0.89,0.14" data-label="Outcome estimate"></i>
+      </div>
+    </div>
+    <aside class="notes" data-beat="P9.1">The plan page.</aside>
+    <aside class="notes" data-beat="P9.2">Inputs.</aside>
+    <aside class="notes" data-beat="P9.3">Results.</aside>
+  </section>
+
+  <!-- 10. Quote -->
+  <section class="slide brand middle" data-transition="wipe" data-title="Quote">
+    <div class="quote">
+      <div class="qmark">&ldquo;</div>
+      <p class="qtext" data-split data-step="0">The plan is only useful if the front desk <em>trusts</em> it, so every call comes with a reason.</p>
+      <div class="cite" data-step="1"><b>MM</b><div><div class="who">Morgan Manager</div><div class="what">Gym operations</div></div></div>
+    </div>
+    <aside class="notes" data-beat="P10.1">Read the quote.</aside>
+    <aside class="notes" data-beat="P10.2">Attribute it.</aside>
+  </section>
+
+  <!-- 11. Checklist -->
+  <section class="slide dark" data-transition="fade" data-section="Close" data-section-target="0:45" data-title="Checklist">
+    <p class="eyebrow rise" style="--d:0">Checklist</p>
+    <h2 class="h2 mt-24 rise" style="--d:1">What the plan guarantees</h2>
+    <ul class="checklist mt-48" style="width:1280px">
+      <li class="check-item" data-step="1">Stays within the weekly budget</li>
+      <li class="check-item" data-step="2">Respects staff hours</li>
+      <li class="check-item" data-step="3">Never contacts the same member twice</li>
+      <li class="check-item" data-step="4">No black box: every row has a reason</li>
+    </ul>
+    <aside class="notes" data-beat="P11.1">Intro.</aside>
+    <aside class="notes" data-beat="P11.2">Budget.</aside>
+    <aside class="notes" data-beat="P11.3">Hours.</aside>
+    <aside class="notes" data-beat="P11.4">No duplicates.</aside>
+    <aside class="notes" data-beat="P11.5">Reasons.</aside>
+  </section>
+
+  <!-- 12. Timeline (light) -->
+  <section class="slide light" data-transition="up" data-title="Timeline">
+    <p class="eyebrow rise" style="--d:0">Timeline</p>
+    <h2 class="h2 mt-24 rise" style="--d:1">From idea to submission</h2>
+    <div class="timeline mt-96">
+      <div class="tl-item" data-step="1"><div class="dot">1</div><div class="when">August</div><div class="what">Scope and data</div><div class="desc">Dataset, scenario layer, plan.</div></div>
+      <div class="tl-item" data-step="2"><div class="dot">2</div><div class="when">September</div><div class="what">Models and rules</div><div class="desc">Churn, CBR, GA, rule engine.</div></div>
+      <div class="tl-item" data-step="3"><div class="dot">3</div><div class="when">October</div><div class="what">App and report</div><div class="desc">Web app, experiments, videos.</div></div>
+      <div class="tl-item" data-step="4"><div class="dot">4</div><div class="when">25 Oct</div><div class="what">Submit</div><div class="desc">Final hand in.</div></div>
+    </div>
+    <aside class="notes" data-beat="P12.1">Timeline.</aside>
+    <aside class="notes" data-beat="P12.2">Phase one.</aside>
+    <aside class="notes" data-beat="P12.3">Phase two.</aside>
+    <aside class="notes" data-beat="P12.4">Phase three.</aside>
+    <aside class="notes" data-beat="P12.5">Submit.</aside>
+  </section>
+
+  <!-- 13. Pricing cards -->
+  <section class="slide dark" data-transition="zoom" data-title="Pricing cards">
+    <p class="eyebrow rise" style="--d:0">Pricing cards</p>
+    <h2 class="h2 mt-16 rise" style="--d:1">Pick a planner</h2>
+    <div class="pricing mt-48">
+      <div class="plan" data-step="1"><div class="pname">Random</div><div class="price"><sup>$</sup>0</div><div class="per">no modelling</div><ul><li>Any member</li><li class="off">Budget aware</li><li class="off">Explainable</li></ul></div>
+      <div class="plan featured" data-step="2"><div class="badge">Recommended</div><div class="pname">Genetic algorithm</div><div class="price"><sup>$</sup>1,500</div><div class="per">weekly budget</div><ul><li>Budget and hours</li><li>Uplift aware</li><li>Explainable</li></ul></div>
+      <div class="plan" data-step="3"><div class="pname">Greedy</div><div class="price"><sup>$</sup>1,500</div><div class="per">weekly budget</div><ul><li>Fast</li><li>Budget aware</li><li class="off">Global optimum</li></ul></div>
+    </div>
+    <aside class="notes" data-beat="P13.1">Options.</aside>
+    <aside class="notes" data-beat="P13.2">Random.</aside>
+    <aside class="notes" data-beat="P13.3">Recommended.</aside>
+    <aside class="notes" data-beat="P13.4">Greedy.</aside>
+  </section>
+
+  <!-- 14. Two column compare -->
+  <section class="slide deep" data-transition="fade" data-title="Compare">
+    <p class="eyebrow rise" style="--d:0">Two column compare</p>
+    <h2 class="h2 mt-16 rise" style="--d:1">Before and after</h2>
+    <div class="compare mt-48">
+      <div class="cc before" data-step="1"><div class="ch">Before</div><div class="ct">Gut feel</div><ul><li>Call whoever comes to mind</li><li>No budget view</li><li>No record of why</li></ul></div>
+      <div class="vs" data-step="2">VS</div>
+      <div class="cc after" data-step="2"><div class="ch">With AnchorAI</div><div class="ct">A reasoned plan</div><ul><li>Ranked by expected value</li><li>Budget and hours enforced</li><li>Every row has a reason</li></ul></div>
+    </div>
+    <aside class="notes" data-beat="P14.1">Frame.</aside>
+    <aside class="notes" data-beat="P14.2">Before.</aside>
+    <aside class="notes" data-beat="P14.3">After.</aside>
+  </section>
+
+  <!-- 15. Closing -->
+  <section class="slide light center" data-chrome="off" data-transition="fade" data-title="Closing">
+    <div class="logo-reveal" data-size="120"></div>
+    <p class="lead mt-48 rise" style="--d:6">Thank you</p>
+    <aside class="notes" data-beat="P15.1">Thank the audience.</aside>
+  </section>
+</div>
+<script src="engine/deck.js"></script>
+</body>
+</html>
