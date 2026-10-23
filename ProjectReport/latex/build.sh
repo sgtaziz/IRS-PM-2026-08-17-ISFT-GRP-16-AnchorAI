@@ -1,6 +1,6 @@
 #!/bin/sh
 # Full build: LuaLaTeX, biber, two more passes. Fails fast on a LaTeX error.
-# Usage: ./build.sh [main|main-short]
+# Usage: ./build.sh [main|main-full]
 set -e
 cd "$(dirname "$0")"
 job="${1:-main}"
