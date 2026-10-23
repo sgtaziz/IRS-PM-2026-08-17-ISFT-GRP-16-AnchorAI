@@ -23,8 +23,8 @@ Techniques: K-means segmentation, a calibrated churn ensemble, a forward-chainin
 
 ## SECTION 4 : VIDEO OF SYSTEM MODELLING & USE CASE DEMO
 
-- Promotion video: _link_
-- System design video: _link_
+- Promotion video: https://youtu.be/opfahkYKg6U
+- System design video: https://youtu.be/t8pL02oRPBU
 
 ---
 
@@ -35,7 +35,7 @@ Techniques: K-means segmentation, a calibrated churn ensemble, a forward-chainin
 ### Quick start
 
 ```sh
-git clone <repo-url> && cd AnchorAI
+git clone https://github.com/sgtaziz/IRS-PM-2026-08-17-ISFT-GRP-16-AnchorAI.git AnchorAI && cd AnchorAI
 cp .env.example .env            # set LLM_* (Ollama, OpenAI or compatible) and ANCHORAI_JWT_SECRET (openssl rand -hex 32)
 docker compose up -d neo4j
 # download gym_churn_us.csv from https://www.kaggle.com/datasets/adrianvinueza/gym-customers-features-and-churn

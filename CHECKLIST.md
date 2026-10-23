@@ -1,6 +1,6 @@
 # Submission checklist
 
-Due **Sun 25 Oct 2026, 23:59**. Requirements are from the practice module brief (v2.16). Videos are tracked separately.
+Due **Sun 25 Oct 2026, 23:59**. Requirements are from the practice module brief (v2.16).
 
 ## Group report
 
@@ -25,8 +25,14 @@ Due **Sun 25 Oct 2026, 23:59**. Requirements are from the practice module brief 
 - [ ] Make the GitHub repo public, or give the graders access (it is private now)
 - [x] README section 3, who did what
 - [x] README section 3, member emails
-- [ ] README section 4, the two video links
-- [ ] Replace `<repo-url>` with the real URL in the README quick start and `ProjectReport/installation-guide.md`
+- [x] README section 4, the two video links
+- [x] Replace `<repo-url>` with the real URL in the README quick start, `ProjectReport/installation-guide.md` and the report's install appendix
+
+## Videos
+
+- [x] Promotion video recorded, edited and uploaded (https://youtu.be/opfahkYKg6U), 4:59
+- [x] System design video recorded, edited and uploaded (https://youtu.be/t8pL02oRPBU), 5:13
+- [ ] Both MP4 files (`IRS-PM-2026-08-17-ISFT-GRP-16-AnchorAI-promotion.mp4`, `-system.mp4`, in `Video/editing/`) go into the final zip
 
 ## Peer reviews
 
