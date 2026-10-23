@@ -182,9 +182,21 @@ The data tables are the other contract (A → everyone). They are saved as parqu
 - `instructors`
 - `attendance`: member → class, visits
 - `offers`
-- `interventions`: member, offer, channel, treated, stayed
-- `true_uplift`: scenario-only ground truth
-- `events`: `instructor_left`, `class_cancelled`
+- `interventions`: `intervention_id`, `member_id`, `week_start`, `offer_id`, `channel` (both null for the control group), `treated`, `stayed`
+- `true_uplift`: scenario-only ground truth (`member_id`, `offer_id`, `uplift`)
+- `true_churn`: scenario-only ground truth for next-month churn with no contact (`member_id`, `base_churn`, `event_churn`, `lost_instructor_share`, `cancelled_share`, `churned_no_contact`). `event_churn` is `base_churn` shifted by the events; the evaluator scores plans against it
+- `events`: `event_id`, `event_type` (`instructor_left`, `class_cancelled`), `entity_id`, `week_start`
+
+Stream A's score outputs are also read by the other streams. They are written by `anchorai data build` (columns fixed in `discovery/scores.py`, `features/__init__.py` and `knowledge/signals.py`):
+- `features.parquet`: `member_id` + the model features, all float. Binary: `gender`, `near_location`, `partner`, `promo_friends`, `phone`, `group_visits`. Numeric: `contract_period`, `age`, `avg_additional_charges_total`, `lifetime`, `avg_class_frequency_total`, `charges_per_month`, `month_to_end_contract`, `contract_progress`, `avg_class_frequency_current_month`, `trend_ratio`, `visit_change`
+- `member_scores.parquet`: `member_id`, `segment_id`, `segment`, `churn_prob`, `risk_band` (`high` at 0.6 and above, `medium` at 0.3 and above, else `low`), `monthly_value`, `club_id`, `top_drivers`
+- `kg_facts.parquet`: written by `anchorai kg load`, one row per member with a knowledge-graph signal: `member_id`, `anchor_instructor_share`, `lost_anchor_instructor`, `class_cancelled`, `cohort_risk`
+
+`member_scores.parquet` is the contract for the score table. `MemberScore` is the API shape built from it plus `features.parquet`, and differs in four ways: it has no `segment_id`, `risk_band` or `club_id`; `top_drivers` is a list of `(feature, contribution)` pairs, stored as a JSON string in the parquet; `as_of` is a fixed scenario date; and `features` holds that member's row of `features.parquet`.
+
+Feature meanings that rules cite:
+- `visit_change`: this month's weekly visits minus lifetime weekly visits (`avg_class_frequency_current_month` minus `avg_class_frequency_total`). Negative means the member is visiting less than usual. `trend_ratio` is the same comparison as a ratio, capped at 3
+- `phone`: 1 if the member has a phone number on file, 0 if not. SMS and call contacts need it
 
 **Unblocking rule:** until scenario v0 lands, B and C build against a tiny hand-made fixture (`tests/fixtures/`) that has the same columns.
 
