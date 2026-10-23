@@ -1,25 +1,8 @@
-% Individual project report pages, shared by both reports: one page per member with their reflection and peer review.
-% Each member writes appendices/reflection-<key>.tex and, optionally, appendices/peer-review-<key>.tex (else a blank form prints).
-\newcommand{\peerreviewform}{{\small\sffamily
-  Rate each member's contribution, your own included; contributions add up to 100\%.\par\smallskip
-  \renewcommand{\arraystretch}{2.2}%
-  \begin{tabularx}{\linewidth}{@{}l c c L@{}}
-    \toprule
-    \hd{Member} & \hd{Contribution (\%)} & \hd{Rating (1--5)} & \hd{Comments} \\
-    \midrule
-    Abdulaziz Ali S Hasanain & & & \\
-    \arrayrulecolor{rule}\midrule\arrayrulecolor{nusBlue}
-    Asiri Mohammed Yahya A & & & \\
-    \arrayrulecolor{rule}\midrule\arrayrulecolor{nusBlue}
-    Binmaneea Khalid Waleed M & & & \\
-    \bottomrule
-  \end{tabularx}\par}}
+% Individual project report pages, shared by both reports: one page per member with their reflection.
+% Each member writes appendices/reflection-<key>.tex. Peer reviews are confidential and built separately (ProjectReport/peer-review/).
 % #1 sectioning level (section or subsection), #2 member's name, #3 file key
 \newcommand{\individualreport}[3]{%
   \csname #1\endcsname*{#2}\addcontentsline{toc}{#1}{#2}
   \minisec{\color{nusBlue}Individual reflection}
   \InputIfFileExists{appendices/reflection-#3}{}{\emph{To be written by #2.}}\par
-  \vfill
-  \minisec{\color{nusBlue}Peer review}
-  \InputIfFileExists{appendices/peer-review-#3}{}{\peerreviewform}
   \clearpage}

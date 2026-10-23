@@ -34,3 +34,8 @@ Video/*.mov
 # SQLite
 *.db
 *.db-journal
+
+# Confidential peer reviews: only the template and its build script are committed
+ProjectReport/peer-review/*
+!ProjectReport/peer-review/template.toml
+!ProjectReport/peer-review/build.py

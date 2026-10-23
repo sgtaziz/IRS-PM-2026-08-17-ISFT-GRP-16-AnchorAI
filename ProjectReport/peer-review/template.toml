@@ -1,0 +1,29 @@
+# Confidential peer review, one per member, submitted to Canvas: [Individual] Project Peer Evaluation.
+# Copy this file to <your-name>.toml (git-ignored), fill it in, then run:
+#   python3 ProjectReport/peer-review/build.py ProjectReport/peer-review/<your-name>.toml
+# Contributions add up to 100. Ratings are 1 (poor) to 5 (excellent). Rate yourself too.
+
+reviewer = ""
+student_id = ""
+
+[[members]]
+name = "Abdulaziz Ali S Hasanain"
+contribution = 0
+rating = 0
+comments = ""
+
+[[members]]
+name = "Asiri Mohammed Yahya A"
+contribution = 0
+rating = 0
+comments = ""
+
+[[members]]
+name = "Binmaneea Khalid Waleed M"
+contribution = 0
+rating = 0
+comments = ""
+
+# Optional, for the lecturer only.
+notes = """
+"""
