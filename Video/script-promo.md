@@ -4,14 +4,14 @@
 
 Promotion video for AnchorAI. Covers business pain and value, a use case demo and pricing. Facts come only from the submitted report (`ProjectReport/latex/main.tex`, `chapters/pricing.tex`), `ProjectReport/user-guide.md`, `docs/PLAN.md` section 8.2 and `SystemCode/notebooks/results/`. Narration avoids semicolons, colons and dashes so it is easy to read aloud. The recurring thread is a generic gym manager's Monday, with no real people or brands in the story.
 
-**Total target time: 5:00.** Three sections of about 1:40 each. Narration totals 703 words, about 4:51 at 145 words per minute, and about 4:41 at 150 words per minute. Rehearse at a brisk, natural pace and, if the take runs over 5:00, drop a clause from the longest beat rather than speeding up.
+**Total target time: 5:00.** Three sections of about 1:40 each. Narration totals 699 words, about 4:49 at 145 words per minute, and about 4:40 at 150 words per minute. Rehearse at a brisk, natural pace and, if the take runs over 5:00, drop a clause from the longest beat rather than speeding up.
 
 | Section | Speaker | Time range | Words | Estimated speaking time |
 |---|---|---|---|---|
 | 1 | Binmaneea Khalid Waleed M (member intelligence) | 0:00 to 1:40 | 233 | about 1:36 |
 | 2 | Asiri Mohammed Yahya A (decision and optimisation) | 1:40 to 3:20 | 238 | about 1:38 |
-| 3 | Abdulaziz Ali S Hasanain (knowledge and interaction) | 3:20 to 5:00 | 232 | about 1:36 |
-| Total | | 0:00 to 5:00 | 703 | about 4:51 |
+| 3 | Abdulaziz Ali S Hasanain (knowledge and interaction) | 3:20 to 5:00 | 228 | about 1:34 |
+| Total | | 0:00 to 5:00 | 699 | about 4:49 |
 
 
 ## Section 1. Binmaneea Khalid Waleed M, member intelligence (0:00 to 1:40)
@@ -146,13 +146,13 @@ Promotion video for AnchorAI. Covers business pain and value, a use case demo an
 
 **Say:** One club breaks even when AnchorAI keeps 0.6 members a month who would have left. Three clubs need 1.8. A retention layer for chains was quoted at about 750 dollars a month for one site.
 
-### P3.7  (about 4:41, 16 s, 38 words)
+### P3.7  (about 4:41, 14 s, 34 words)
 
-**On screen:** Slow pull back to the full dashboard screenshot ProjectReport/latex/figures/screens/dashboard.png in a laptop frame, with the AnchorAI logo and the three names in the lower third. Final card text, "Next step, a real pilot with a control group". The call to action pulses, "Talk to us about a pilot". Fade to black.
+**On screen:** Slow pull back to the full dashboard screenshot ProjectReport/latex/figures/screens/dashboard.png in a laptop frame, with the AnchorAI logo and the three names in the lower third. Final card text, "Explainable, budget aware retention", then "Thanks for watching." Fade to black.
 
-**Say:** Our results come from a simulated gym, so we claim the method, not the size of the win. Next is a real pilot with a control group. Running one to five clubs? Talk to us. Thanks for watching.
+**Say:** Our results come from a simulated gym, so we claim the method, not the size of the win. AnchorAI helps a manager decide who to call, with the reason in hand. Thanks for watching.
 
-*Section 3 word count: 232, about 1:36 at 145 words per minute.*
+*Section 3 word count: 228, about 1:34 at 145 words per minute.*
 
 
 ## Fact sheet
@@ -186,7 +186,7 @@ Every number spoken or shown in this video, with where it comes from. Paths are 
 | US$199 a month first club, US$149 each further club up to 5; 3 clubs = US$497; runs on operator's own machine incl. local LLM, no fee per question | ProjectReport/latex/chapters/pricing.tex |
 | Break even 0.6 members a month for one club, 1.8 for three clubs | ProjectReport/latex/chapters/pricing.tex |
 | Keepme quoted US$9,000 a year for one site in 2020, about US$750 a month; PushPress membership system 159 to 229; Gymdesk 75 to 240 | ProjectReport/latex/chapters/pricing.tex, Table pricing |
-| Results are on a simulated scenario, so the method is shown, not the real size; next step is hold-out random control group | ProjectReport/latex/main.tex Findings, Limitations, Recommendations |
+| Results are on a simulated scenario, so the method is shown, not the real size | ProjectReport/latex/main.tex Findings, Limitations, Recommendations |
 | Mid-market positioning: one to five club operators underserved | ProjectReport/latex/main.tex section 1, Market and positioning |
 | Why drawer for M0106: 99% churn risk, drivers (change in weekly visits, months as a member, age, visit trend, extra spend per month), rules D05, D02, P01, P06, P05, 10 similar past members with 3 of 4 staying with the offer and 4 of 6 with no offer | SystemCode/data/app.db, plan_items row for M0106 (explanation JSON) |
 | Staff assignment: Sam Staff 20 h, trainer and calls, 98 contacts; Jordan Staff 16 h, calls, 84 contacts; 182 in all | SystemCode/data/app.db, staff_profiles and assignments |

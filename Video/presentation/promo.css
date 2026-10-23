@@ -257,8 +257,6 @@
 /* S21 */
 .s21 .black { position: absolute; inset: 0; background: #000; z-index: 30; opacity: 0; animation: blackin 1.6s ease-in both; animation-delay: calc(var(--b) + 14s); }
 @keyframes blackin { to { opacity: 1; } }
-.s21 .cta { height: 92px; padding: 0 44px; border-radius: 46px; font-size: 36px; font-weight: 750; letter-spacing: -.02em; color: #04193a; background: linear-gradient(90deg, #8ec3ff, #7fe3c4); display: inline-flex; align-items: center; gap: 16px; animation: trIn .85s var(--ease) both, ctap 1.8s ease-in-out infinite; animation-delay: calc(var(--b) + 7.5s), calc(var(--b) + 8.5s); }
-@keyframes ctap { 0%, 100% { box-shadow: 0 0 0 0 rgba(127,227,196,.6); } 50% { box-shadow: 0 0 0 26px rgba(127,227,196,0); } }
 .s21 .lower-third.three { flex-direction: row; align-items: center; gap: 28px; }
 .s21 .lower-third .nm3 { font-size: 30px; font-weight: 700; letter-spacing: -.02em; line-height: 1.5; }
 .s21 .lower-third .nm3 span { color: var(--brand-300); font-weight: 500; font-size: 24px; margin-left: 10px; }
