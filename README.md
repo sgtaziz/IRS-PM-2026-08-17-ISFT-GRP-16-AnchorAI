@@ -15,9 +15,9 @@ Techniques: K-means segmentation, a calibrated churn ensemble, a forward-chainin
 
 | Official Full Name | Student ID | Work Items (Who Did What) | Email |
 | :-- | :--: | :-- | :-- |
-| Abdulaziz Ali S Hasanain | A0350856X | | |
-| Asiri Mohammed Yahya A | A0351967N | | |
-| Binmaneea Khalid Waleed M | A0355712E | | |
+| Abdulaziz Ali S Hasanain | A0350856X | Project plan, work split and repo scaffold. Led knowledge and interaction, covering the rule engine with validator, guardrails and rule versioning, Neo4j knowledge graph, grounded staff assistant, app database with migrations, seeds and login by role, experiments E6 to E8, UI/UX work | |
+| Asiri Mohammed Yahya A | A0351967N | Led decision and optimisation, covering the case-based reasoner for offer effects, genetic algorithm with an exact CP-SAT benchmark, plan, approval and call-sheet pages, demo week, experiments E3 to E5 | |
+| Binmaneea Khalid Waleed M | A0355712E | Led member intelligence, covering data cleaning, features and segmentation, churn ensemble, synthetic scenario layer, T-learner uplift benchmark, member and dashboard pages, experiments E1 and E2, LaTeX group report | |
 
 ---
 
