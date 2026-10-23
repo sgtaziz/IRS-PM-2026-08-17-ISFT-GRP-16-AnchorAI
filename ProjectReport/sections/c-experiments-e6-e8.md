@@ -1,6 +1,6 @@
 # Experiments E6 to E8 (rules, knowledge graph, assistant)
 
-*Stream C. Reproduce them with `uv run anchorai data build` (seed 42), `uv run anchorai kg load`, then `notebooks/c_e6_rules.ipynb`, `notebooks/c_e7_kg.ipynb` and `notebooks/c_e8_assistant.ipynb`. Figures are in `notebooks/figures/`, tables in `notebooks/results/`. All three notebooks import from `anchorai` and were run on 2026-10-20.*
+*Reproduce them with `uv run anchorai data build` (seed 42), `uv run anchorai kg load`, then `notebooks/c_e6_rules.ipynb`, `notebooks/c_e7_kg.ipynb` and `notebooks/c_e8_assistant.ipynb`. Figures are in `notebooks/figures/`, tables in `notebooks/results/`. All three notebooks import from `anchorai` and were run on 2026-10-20.*
 
 **Which results use real data and which use the scenario layer.**
 
@@ -19,11 +19,11 @@ E6 and E7 therefore test that the rules and the graph do what we designed, and r
 - the conflict check (`validate`: duplicate ids, unknown facts, offers or channels, unreachable conditions, contradicting derive rules)
 - 29 hand-built scenario cases with the expected firings, allowed offers and blocked offers (`tests/fixtures/rule_cases.yaml`, also a regression test)
 - coverage on the 4,000 members, with facts built exactly as the API builds them
-- plan value with and without guardrails, using Stream B's candidate builder, planners and evaluator
+- plan value with and without guardrails, using the decision and optimisation team's candidate builder, planners and evaluator
 
 **Baseline.** The same playbooks with the guardrails switched off.
 
-**Setup for plan value.** The planners are `greedy-uplift`, `exact` (CP-SAT) and the GA (3 seeds), at weekly budgets of $500, $1,500 and $4,000 and at 36 h (the seeded roster) and 120 h of staff time. The score is Stream B's `evaluate(plan, load_truth())`: extra members retained by the scenario's true uplift, which no planner sees. 60 plans were run.
+**Setup for plan value.** The planners are `greedy-uplift`, `exact` (CP-SAT) and the GA (3 seeds), at weekly budgets of $500, $1,500 and $4,000 and at 36 h (the seeded roster) and 120 h of staff time. The score is the decision and optimisation `evaluate(plan, load_truth())`: extra members retained by the scenario's true uplift, which no planner sees. 60 plans were run.
 
 **Conflict check and cases** (`results/e6_validation_issues.csv`, `results/e6_scenario_cases.csv`). 0 validator issues, and 29 of 29 scenario cases match. No rule is dead: every rule fires for at least one member (`results/e6_rule_coverage.csv`, `e6_rule_coverage.png`).
 
@@ -58,7 +58,7 @@ The 882 offers the guardrails remove are 845 contacts inside the 30-day cap (G01
 - At 36 h staff time binds, so budgets above about $1,000 change nothing and removing the guardrails gains about one member at most. Every guardrail-free plan contacts 75-148 members a second time within 30 days.
 - At 120 h the gap is large (13-14 members at $500-$1,500, 6-8 at $4,000), because the guardrail-free plans spend the extra hours on members inside the 30-day cap, including the demo week's 182.
 - All violations are G01. No planner picks a repeat free PT session or a paid offer to a low-risk member.
-- `greedy-uplift` matches or beats `exact` and the GA on true value in most cells, consistent with Stream B's finding that the CBR estimates are noisy. Which planner wins is E4's question, not this one.
+- `greedy-uplift` matches or beats `exact` and the GA on true value in most cells, consistent with the decision and optimisation finding that the CBR estimates are noisy. Which planner wins is E4's question, not this one.
 
 **Other findings.**
 - **G02 fires but removes nothing.** With the demo week's logged contacts counted, 45 members have 2 offers in 90 days, so `at_offer_cap` is reachable on real data. All 45 were contacted in the demo week, so G01 already blocks them and the trace names G01.
@@ -75,7 +75,7 @@ The 882 offers the guardrails remove are 845 contacts inside the 30-day cap (G01
 - **Synthetic facts.** `lost_anchor_instructor`, `class_cancelled` and `days_since_last_contact` come from the scenario layer, so how often they fire reflects our simulator, not real gyms.
 - **No fatigue effect in the scenario.** The scenario's true uplift has no contact-fatigue effect, so re-contacting a member reached last week is worth as much as a first contact. The gap in the plan-value table is therefore the cost of G01 under a simulator that cannot see what G01 protects against. It is an upper bound, and the benefit of the guardrails is not measurable here. A negative gap at 36 h means the guardrails removed contacts the noisy CBR estimates over-valued, not that guardrails add value.
 - **Opt-out.** There is no opt-out fact, so "never contact opted-out members" cannot be expressed or tested. Decided out of scope: consent handling is assumed to happen in the gym's messaging tool.
-- **Demo-week dependence.** The counts include Stream B's demo week (an approved plan for the week of 2026-10-12 with 182 logged outcomes) after `anchorai db reset`.
+- **Demo-week dependence.** The counts include the decision and optimisation team's demo week (an approved plan for the week of 2026-10-12 with 182 logged outcomes) after `anchorai db reset`.
 
 **Verdict.** The rule base is internally consistent (0 validator issues, 29 of 29 cases, no dead rule) and the guardrails do real work: they remove 31.3% of proposals, almost all of them G01 contacts inside the 30-day cap. Their cost in retained members is zero to small at the seeded 36 h and up to about 14 members at 120 h, but the scenario cannot price the fatigue they prevent, so we claim safety and auditability, not a retention gain. Two of the five guardrails (G02, G03) remove nothing on today's data and are kept as safety nets.
 
@@ -86,7 +86,7 @@ The 882 offers the guardrails remove are 845 contacts inside the 30-day cap (G01
 1. **Signal check:** the churn hazard of KG-flagged members, before and after the scenario's gym events.
 2. **Ranking (main result):** on the 800 held-out test members (66 KG-flagged: 37 lost instructor, 29 cancelled class), does adding the KG flags to the churn model's ranking surface members with a higher true post-event hazard?
 3. **Rule layer:** the shipped rule base over all 4,000 members with and without the KG facts.
-4. **Plan value:** Stream B's planners on the two candidate sets, scored by the true uplift.
+4. **Plan value:** The decision and optimisation planners on the two candidate sets, scored by the true uplift.
 
 **Baseline.** No KG: rank by `churn_prob`, and for the rule layer and plan value, facts built with `kg=None`.
 
@@ -99,7 +99,7 @@ The 882 offers the guardrails remove are 845 contacts inside the 30-day cap (G01
 | lost anchor instructor | 186 | 1.80 | 1.41 |
 | class cancelled | 170 | 1.32 | 1.00 |
 
-Within-member lift is hazard after the event divided by hazard before it for the same people, and matches Stream A's `results/a5_event_lift.csv` exactly. Raw lift is lower because class-goers are lower-risk to begin with.
+Within-member lift is hazard after the event divided by hazard before it for the same people, and matches the member intelligence `results/a5_event_lift.csv` exactly. Raw lift is lower because class-goers are lower-risk to begin with.
 
 **Ranking** (`results/e7_ranking.csv`, `e7_ranking.png`):
 
@@ -133,7 +133,7 @@ All 243 gainers are low-risk by the model. The KG reaches them through D07 and D
 | 36 h | 17.5-19.4 | 17.6-19.6 | −0.1 to −0.4 | 10-21 of 243 | 0.3-0.4 |
 | 120 h | 48.8-50.1 | 41.6-43.1 | +7.0 to +7.2 (+17%) | 243 of 243 | 5.0 |
 
-- At 36 h the plan is full at 182 contacts, and the planner's CBR estimates give the KG-only check-ins no reason to beat the contacts it already has (Stream B's E3: CBR cannot tell members apart for the check-in). The KG adds nothing and costs a fraction of a member.
+- At 36 h the plan is full at 182 contacts, and the planner's CBR estimates give the KG-only check-ins no reason to beat the contacts it already has (the decision and optimisation team's E3: CBR cannot tell members apart for the check-in). The KG adds nothing and costs a fraction of a member.
 - At 120 h every KG-only member is contacted. They account for 5.0 of the 7.0-7.2 gain, the rest coming from the 55 other members whose offer list the KG facts change.
 - So the KG's reach turns into plan value only when there is staff time to spare. At the seeded roster it is a list of extra candidates, not extra retention.
 
@@ -143,7 +143,7 @@ All 243 gainers are low-risk by the model. The KG reaches them through D07 and D
 - **Kaggle label.** On the Kaggle label the flags show lift below 1 (`results/c3_signal_churn.csv`), which is why that label cannot be used here.
 - **Facts without logged contacts.** Part 4 builds facts without the app's logged contacts (as parts 1-3 do), so its plans are not the app's next-week plan. E6 part 4 has that.
 
-**Verdict.** The KG flags identify the members the events hurt (lift 1.80 and 1.32, exact match to Stream A). They do not improve who ranks highest: no ranking difference has an interval that excludes 0, whatever the bonus. They do change who gets contacted: 243 low-risk members whose routine was just disrupted, a group the churn score misses, are routed to a free check-in, and those check-ins are worth about 7 extra members when staff time allows (120 h) and nothing at the seeded 36 h.
+**Verdict.** The KG flags identify the members the events hurt (lift 1.80 and 1.32, exact match to the member intelligence results). They do not improve who ranks highest: no ranking difference has an interval that excludes 0, whatever the bonus. They do change who gets contacted: 243 low-risk members whose routine was just disrupted, a group the churn score misses, are routed to a free check-in, and those check-ins are worth about 7 extra members when staff time allows (120 h) and nothing at the seeded 36 h.
 
 ## E8: Is the assistant accurate and grounded?
 
@@ -152,21 +152,23 @@ All 243 gainers are low-risk by the model. The KG reaches them through D07 and D
 **Baseline.** A keyword router with the same slot extraction (member ids, amounts), so the comparison is about the intent decision.
 
 **Setup.**
-- **Questions:** 71 labelled questions (`data/e8_questions.yaml`) over 7 intents plus `unknown` (13 questions): 62 written by an AI (Claude) from the intent descriptions, and 9 held out, written by Stream B.
+- **Questions:** 86 labelled questions (`data/e8_questions.yaml`) over 7 intents plus `unknown` (19 questions): 62 written by an AI (Claude) from the intent descriptions, and 24 held out, written by the member intelligence team (15) and the decision and optimisation team (9).
 - **Classifier:** sentence-embedding similarity to each intent's example centroid, a threshold of 0.35 for `unknown`, and a member-slot rule.
 - **Grounded answers:** a stratified sample of 20 questions goes through the real pipeline (classifier, slots, deterministic tool, grounded prompt, LLM) as the manager role, keeping the evidence lines for the judge.
 - **Hosted model:** `claude-haiku-5-5`, also the judge by default.
 
-**Intent accuracy** (`results/e8_intent_predictions.csv`, `results/e8_intent_report.csv`, `e8_intent_confusion.png`). Overall: classifier 87.3%, keyword baseline 77.5% (macro F1 0.89 vs 0.79).
+**Intent accuracy** (`results/e8_intent_predictions.csv`, `results/e8_intent_report.csv`, `e8_intent_confusion.png`). Overall: classifier 80.2%, keyword baseline 70.9% (macro F1 0.84 vs 0.75).
 
 | Questions | n | Classifier | Keyword baseline |
 |---|---|---|---|
 | AI-written | 62 | 91.9% | 77.4% |
-| Stream B, held out | 9 | 55.6% | 77.8% |
+| Member intelligence, held out | 15 | 46.7% | 40.0% |
+| Decision and optimisation, held out | 9 | 55.6% | 77.8% |
+| Both held-out sets | 24 | 50.0% | 54.2% |
 
-- On the held-out questions the classifier is worse than the keyword router (5 of 9 vs 7 of 9). Three of its four misses are out-of-scope questions it answers instead of refusing ("does this member attend PT sessions?", "what is the offer that most members like?", "which club has the highest impact if closed?"). The fourth reads "what is the type of this member?" as a request for actions.
+- On the 24 held-out questions the classifier is no better than the keyword router (12 of 24 vs 13 of 24), and 50.0% is the number to trust. The 15 questions from the member intelligence team are long, chatty and indirect ("is that bad enough to reach out yet?"). The classifier refuses three in-scope ones, answers two off-topic ones it should refuse and mixes up the rest between neighbouring intents.
+- On the 9 questions from the decision and optimisation team, most misses are out-of-scope questions it answers instead of refusing ("does this member attend PT sessions?", "what is the offer that most members like?", "which club has the highest impact if closed?"). It also reads "what is the type of this member?" as a request for actions.
 - The 5 AI-set misses are boundary and bare-number cases ("how worried should we be about 1288?", "Show the playbook for 1999", "anyone hurt by the recent staff departure?", "which members are we ringing this week?", an app how-to) (`results/e8_intent_errors.csv`).
-- Stream A's questions (HANDOFFS #14) were not delivered.
 - Adding 3 staff-hours examples to `what_if_budget` moved the AI-set score from 90.3% to 91.9%.
 - Classification takes about 2 ms (median and p95).
 
@@ -174,13 +176,13 @@ All 243 gainers are low-risk by the model. The KG reaches them through D07 and D
 
 | Threshold | 0.25 | 0.325 | **0.35** | 0.375 | 0.45 | 0.525 |
 |---|---|---|---|---|---|---|
-| accuracy | 0.859 | 0.873 | **0.873** | 0.873 | 0.845 | 0.803 |
-| in-scope refused | 0.017 | 0.034 | **0.034** | 0.052 | 0.103 | 0.190 |
-| off-topic answered | 0.385 | 0.308 | **0.308** | 0.308 | 0.231 | 0.077 |
+| accuracy | 0.779 | 0.802 | **0.802** | 0.826 | 0.791 | 0.744 |
+| in-scope refused | 0.030 | 0.060 | **0.075** | 0.090 | 0.179 | 0.284 |
+| off-topic answered | 0.474 | 0.368 | **0.316** | 0.211 | 0.158 | 0.053 |
 
-At 0.35, 31% of off-topic questions are answered (62% below 0.25). Raising the threshold to 0.45 cuts that to 23% but refuses 10% of in-scope questions. Accuracy peaks at 0.325-0.375 (87.3%).
+At 0.35, 32% of off-topic questions are answered (74% below 0.25). Raising the threshold to 0.45 cuts that to 16% but refuses 18% of in-scope questions. Accuracy peaks at 0.375 (82.6%). Part 1 was rerun offline on 2026-10-23 with the 86 questions.
 
-**Grounding and programmatic faithfulness** (`results/e8_answers.csv`, `results/e8_static_checks.csv`). Of 20 sampled questions, 17 went to the LLM and the 3 off-topic ones got the fixed "I don't know based on the data I have". Plan and what-if questions answer from Stream B's approved demo plan and planner.
+**Grounding and programmatic faithfulness** (`results/e8_answers.csv`, `results/e8_static_checks.csv`). Of 20 sampled questions, 17 went to the LLM and the 3 off-topic ones got the fixed "I don't know based on the data I have". Plan and what-if questions answer from the approved demo plan and planner.
 - No answer used a number or member id missing from the evidence, and no citation pointed at a missing line.
 - 15 of 17 answers (88%) pass all three static checks (8 of 13 on 2026-10-17 with the old prompt). q40 has one uncited sentence and q25 three, each inside a bullet that ends with a citation.
 - 3 answers are "I don't know": rightly for b01 ("is a member sleeping dog?") and the misrouted b05, wrongly for q28, whose evidence answers it. q28 was refused in both of the last two runs but answered in both part 7 replays, so it is run-to-run variation, not a fixed failure.

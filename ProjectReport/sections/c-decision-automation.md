@@ -1,10 +1,10 @@
 # Decision automation: rules and knowledge acquisition
 
-*Stream C. Code in `SystemCode/backend/anchorai/reasoning/`, rules in `reasoning/rules/*.yaml`, thresholds in `SystemCode/notebooks/c_rules.ipynb`, checks in `c_e6_rules.ipynb` (results in `notebooks/results/`).*
+*Code in `SystemCode/backend/anchorai/reasoning/`, rules in `reasoning/rules/*.yaml`, thresholds in `SystemCode/notebooks/c_rules.ipynb`, checks in `c_e6_rules.ipynb` (results in `notebooks/results/`).*
 
 ## What the rule base does
 
-The churn model says who is at risk. The rule base says what staff may do about it. For each member it turns the facts we know (scores, attendance, contract, contacts, knowledge-graph signals) into the offers that are allowed, the channel for each, and the reason. The optimiser (Stream B) only sees offers that survive the rules.
+The churn model says who is at risk. The rule base says what staff may do about it. For each member it turns the facts we know (scores, attendance, contract, contacts, knowledge-graph signals) into the offers that are allowed, the channel for each, and the reason. The optimiser only sees offers that survive the rules.
 
 Rules are plain data, not code. They are YAML files that an admin can read, test and change in the app, and each one names where it came from.
 
@@ -29,7 +29,7 @@ Details that matter for correctness:
 
 - **Missing facts do not match.** A member who was never contacted has no `days_since_last_contact`; a rule on it simply does not fire. A fact of the wrong kind never matches either, and `true` is not treated as `1` (`Condition.holds`).
 - **First assertion wins.** If two derive rules assert the same fact, the first to fire sets it and later ones are kept out (`_fire`), so a fact never changes after other rules have read it.
-- **Output.** `run()` returns a `RuleOutcome`: facts, firings, proposals, blocked offers (with the guardrail that blocked each) and the allowed offers. This is the Stream C to Stream B contract (`models.py`).
+- **Output.** `run()` returns a `RuleOutcome`: facts, firings, proposals, blocked offers (with the guardrail that blocked each) and the allowed offers. This is the contract between the rule engine and the optimiser (`models.py`).
 
 ## The rule base
 
@@ -80,7 +80,7 @@ Every rule has a mandatory `source` field: "simulated interviews 2026-10-16" (se
 - **Contact facts:** `days_since_last_contact`, `contacts_last_30d`, `offers_last_90d`, `pt_last_90d`, `at_contact_cap`, `at_offer_cap`. They combine the synthetic intervention history with the contacts staff log in the app (`contact_facts`). A logged outcome is a contact; it counts as an offer unless it was `no_answer`, and as a PT session only if accepted. So next week's plan cannot contact last week's members again.
 - **Caps:** `at_contact_cap` and `at_offer_cap` compare those counts with the two caps on the Offers & constraints page (W41), so an admin changes the guardrail without touching a rule.
 - **Phone:** `phone` decides between a rule and its "b" twin.
-- **Knowledge-graph facts:** `lost_anchor_instructor`, `anchor_instructor_share`, `class_cancelled`, `cohort_risk` come from the graph (Stream C, cognitive section). If the graph is down, these facts are absent and the rules on them do not fire; the rest still runs.
+- **Knowledge-graph facts:** `lost_anchor_instructor`, `anchor_instructor_share`, `class_cancelled`, `cohort_risk` come from the graph (see the knowledge and interaction section). If the graph is down, these facts are absent and the rules on them do not fire; the rest still runs.
 
 ## Validation
 
@@ -99,7 +99,7 @@ The shipped rule base has 0 issues (`notebooks/results/e6_validation_issues.csv`
 
 ## Knowledge acquisition
 
-**Data first.** `c_rules.ipynb` runs draft rules on all 4,000 members. It shows churn rates by bin on the training split only, then how often each rule fires and whether each derived pattern separates churners from the base rate. Thresholds are not tuned against the scenario's `true_uplift`, because E4 and E6 are scored on that. The caveat from Stream A applies: `trend_ratio` and current-month visits are suspect features (`a-data-preparation.md`, leakage check), so lift for rules built on them is optimistic.
+**Data first.** `c_rules.ipynb` runs draft rules on all 4,000 members. It shows churn rates by bin on the training split only, then how often each rule fires and whether each derived pattern separates churners from the base rate. Thresholds are not tuned against the scenario's `true_uplift`, because E4 and E6 are scored on that. The caveat from member intelligence applies: `trend_ratio` and current-month visits are suspect features (`a-data-preparation.md`, leakage check), so lift for rules built on them is optimistic.
 
 **Simulated interviews.** We wrote a script (`Miscellaneous/interviews/interview_script.md`) and ran it as three interviews dated 2026-10-16: an independent owner-manager, an area manager, and a membership and community lead (`Miscellaneous/interviews/2026-10-16_*_simulated.md`).
 

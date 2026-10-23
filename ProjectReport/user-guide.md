@@ -1,6 +1,6 @@
 # User guide
 
-Source for the report appendix "User guide". Stream C wrote the sign-in, knowledge graph, message draft, assistant, rules, users and audit sections. Stream A wrote the dashboard, segments, members, Member 360, offers and data sections. Stream B fills in its pages.
+Source for the report appendix "User guide". It covers the sign-in, knowledge graph, message draft, assistant, rules, users and audit pages, then the dashboard, segments, members, Member 360, offers and data pages, and the planning pages.
 
 This guide assumes AnchorAI is installed and seeded (see the installation guide).
 
@@ -55,7 +55,7 @@ Select the sun or moon button at the top right and pick **Light**, **Dark** or *
 
 On every page except the Assistant page, a round button at the bottom right opens the assistant in a side panel. See section 6.
 
-## 2. Pages written by Stream A and Stream B
+## 2. Member intelligence and planning pages
 
 **How risk is shown everywhere.** Each member has a churn probability for next month, from a calibrated model (0.3 means about 3 in 10 such members leave). It is grouped into three risk bands, shown as text and colour, never colour alone:
 
@@ -689,7 +689,7 @@ What is recorded:
 | Offers and constraints, data | offer deleted, staff hours updated, constraints updated, data upload, data rebuild |
 | Assistant | thumbs-up or thumbs-down |
 
-Plan approval, overrides, assignments and outcomes are written by Stream B's pages and appear here too.
+Plan approval, overrides, assignments and outcomes are written by the planning pages and appear here too.
 
 To read the log:
 

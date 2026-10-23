@@ -1,6 +1,6 @@
 # Business problem and market research
 
-*Stream C. Sources: `Miscellaneous/Gate0_AnchorAI_Project_Proposal.docx` (11 Sep 2026), `Miscellaneous/AnchorAI — Project.pptx` (27 Sep 2026), `docs/PLAN.md` §4 (drift log), `Miscellaneous/interviews/`, `docs/AI_USE.md`.*
+*Sources: `Miscellaneous/Gate0_AnchorAI_Project_Proposal.docx` (11 Sep 2026), `Miscellaneous/AnchorAI — Project.pptx` (27 Sep 2026), `docs/PLAN.md` §4 (drift log), `Miscellaneous/interviews/`, `docs/AI_USE.md`.*
 
 ## Target user
 
@@ -39,7 +39,7 @@ The proposal's market analysis is desk research from vendor documentation and bu
 **Four gaps (from the proposal).**
 
 1. Competitors score risk but do not publicly expose constrained allocation: which flagged members to contact, with which offer, given a fixed budget and finite staff hours.
-2. Vendor messaging centres on targeting high-risk members, but the members most likely to leave are not always the ones a contact keeps. Ascarza showed on field data from a wireless provider and a membership organisation that targeting by expected response to the intervention (lift) reduces churn more than targeting by risk of leaving [4]. AnchorAI plans on estimated uplift for this reason (Stream B's planner, E3 and E4).
+2. Vendor messaging centres on targeting high-risk members, but the members most likely to leave are not always the ones a contact keeps. Ascarza showed on field data from a wireless provider and a membership organisation that targeting by expected response to the intervention (lift) reduces churn more than targeting by risk of leaving [4]. AnchorAI plans on estimated uplift for this reason (the decision and optimisation part, E3 and E4).
 3. Scores trained on very large member pools are powerful but unauditable, and the proposal says mid-market operators cite staff distrust of black-box flags.
 4. The intelligence layer is priced for larger chains. The proposal says Keepme is generally recommended from 5+ locations, which leaves the one-to-five-club operator underserved.
 

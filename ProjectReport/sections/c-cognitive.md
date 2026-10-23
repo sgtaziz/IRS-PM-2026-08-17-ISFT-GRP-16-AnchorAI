@@ -1,6 +1,6 @@
 # Cognitive: knowledge graph and staff assistant
 
-*Stream C. Code: `SystemCode/backend/anchorai/knowledge/` and `anchorai/assistant/`. Notebooks: `c_kg.ipynb`, `c_intent_classifier.ipynb`, `c_llm_smoke.ipynb`, `c_message_drafts.ipynb` (experiments E7 and E8 are in the experiments section).*
+*Code: `SystemCode/backend/anchorai/knowledge/` and `anchorai/assistant/`. Notebooks: `c_kg.ipynb`, `c_intent_classifier.ipynb`, `c_llm_smoke.ipynb`, `c_message_drafts.ipynb` (experiments E7 and E8 are in the experiments section).*
 
 The cognitive layer does two jobs. The knowledge graph (KG) finds who is hit by a gym event, such as a favourite instructor leaving, and feeds that to the rule base. The assistant lets staff ask why a member is flagged, in plain English, and answers only from evidence the system already computed. Both are built to keep working when Neo4j or the LLM is down (last section).
 
@@ -8,7 +8,7 @@ The cognitive layer does two jobs. The knowledge graph (KG) finds who is hit by 
 
 ### Schema
 
-The graph lives in Neo4j. `knowledge/loader.py` builds it from Stream A's data tables, in batches of 1,000 rows with parameterised `UNWIND ... MERGE` statements, so a reload is idempotent. A uniqueness constraint is created on each node's id.
+The graph lives in Neo4j. `knowledge/loader.py` builds it from the member-intelligence data tables, in batches of 1,000 rows with parameterised `UNWIND ... MERGE` statements, so a reload is idempotent. A uniqueness constraint is created on each node's id.
 
 | Node | Key | Notes |
 |---|---|---|
@@ -66,7 +66,7 @@ All queries are fixed templates in `knowledge/queries.py`. Values go in only as 
 | `class_cancelled` | the member attends a cancelled class |
 | `cohort_risk` | mean churn probability of class peers |
 
-The rule engine (Stream C's decision-automation section) reads these facts from the parquet file (`reasoning/service.py::all_facts`), not from Neo4j. So the rules fire the same with Neo4j stopped.
+The rule engine (see the decision-automation section) reads these facts from the parquet file (`reasoning/service.py::all_facts`), not from Neo4j. So the rules fire the same with Neo4j stopped.
 
 Decisions from `c_kg.ipynb`:
 - The 0.5 threshold flags 186 members. The sweep over 0.25 to 1.00 flags 256 down to 100 (section 1). 170 members attend the cancelled class (section 2).
@@ -84,7 +84,7 @@ Decisions from `c_kg.ipynb`:
 
 ### Class cohorts for the optimiser
 
-`entities.class_cohorts()` gives Stream B's genetic algorithm one row per member and class: `member_id`, `class_id`, `weight` and `instructor_id`. The weight is the member's share of their own class visits, and the instructor is whoever teaches the class now. It is computed from the effective tables, so a reassigned class counts for its new instructor. It does not need Neo4j.
+`entities.class_cohorts()` gives the genetic algorithm one row per member and class: `member_id`, `class_id`, `weight` and `instructor_id`. The weight is the member's share of their own class visits, and the instructor is whoever teaches the class now. It is computed from the effective tables, so a reassigned class counts for its new instructor. It does not need Neo4j.
 
 ### What-if event simulation
 
@@ -162,7 +162,7 @@ The order mattered: money is taken out before member ids, which stopped "budget 
 - `graph_impact`: counts of members behind an instructor or class, how many are high risk, and the five riskiest. With no name given, it uses the events that have happened. Out-of-date graph and unreachable graph are both reported.
 - `list_members`: the top members by churn probability, with optional filters, 10 by default and at most 25.
 - `plan_summary`: the latest plan's contacts, cost, staff minutes, expected extra members retained, and contacts per offer.
-- `what_if_budget`: runs Stream B's exact linear planner (`optimisation/exact.solve_linear`, 5-second limit) twice, on the current limits and on the asked limits, without saving anything. It reports contacts, expected extra members retained, cost, staff hours and which limits block further contacts, then the difference. With no amount or hours in the question it asks for one.
+- `what_if_budget`: runs the exact linear planner (`optimisation/exact.solve_linear`, 5-second limit) twice, on the current limits and on the asked limits, without saving anything. It reports contacts, expected extra members retained, cost, staff hours and which limits block further contacts, then the difference. With no amount or hours in the question it asks for one.
 
 The planner behind `what_if_budget` is the same code that produces the saved plan, and a test checks the two agree (`test_what_if_budget_plans_read_only_and_matches_saved_plan_summary`).
 
