@@ -1,8 +1,0 @@
-% Individual project report pages, shared by both reports: one page per member with their reflection.
-% Each member writes appendices/reflection-<key>.tex. Peer reviews are confidential and built separately (ProjectReport/peer-review/).
-% #1 sectioning level (section or subsection), #2 member's name, #3 file key
-\newcommand{\individualreport}[3]{%
-  \csname #1\endcsname*{#2}\addcontentsline{toc}{#1}{#2}
-  \minisec{\color{nusBlue}Individual reflection}
-  \InputIfFileExists{appendices/reflection-#3}{}{\emph{To be written by #2.}}\par
-  \clearpage}
