@@ -4,7 +4,7 @@
 
 ## Purpose
 
-The Kaggle snapshot has no clubs, classes, instructors, offers or contact history. The knowledge graph, the case-based reasoner, the uplift models and the optimiser all need them (PLAN.md drift item 2). The scenario layer attaches a small synthetic gym to the 4,000 real members, with a documented ground truth. Experiments that use it (the uplift baseline and E3–E7) test whether the system recovers known structure and decides well against a known truth. They are not claims about how real members respond.
+The Kaggle snapshot has no clubs, classes, instructors, offers or contact history. The knowledge graph, the case-based reasoner, the uplift models and the optimiser all need them. The scenario layer attaches a small synthetic gym to the 4,000 real members, with a documented ground truth. Experiments that use it (the uplift baseline and E3–E7) test whether the system recovers known structure and decides well against a known truth. They are not claims about how real members respond.
 
 | Table | Real (Kaggle) | Synthetic |
 |---|---|---|

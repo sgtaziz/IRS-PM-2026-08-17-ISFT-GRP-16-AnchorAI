@@ -1,10 +1,10 @@
 # Business problem and market research
 
-*Sources: `Miscellaneous/Gate0_AnchorAI_Project_Proposal.docx` (11 Sep 2026), `Miscellaneous/AnchorAI — Project.pptx` (27 Sep 2026), `docs/PLAN.md` §4 (drift log), `Miscellaneous/interviews/`, `docs/AI_USE.md`.*
+*Sources: `Miscellaneous/Gate0_AnchorAI_Project_Proposal.docx` (11 Sep 2026), `Miscellaneous/AnchorAI — Project.pptx` (27 Sep 2026), `Miscellaneous/interviews/`, `docs/AI_USE.md`.*
 
 ## Target user
 
-AnchorAI is framed for a **mid-market gym operator**, a business with one to five clubs. The users are club managers, front-desk staff and trainers. No real operator was involved: we had no operator's data, and the manager interviews described below were simulated. Aramco, named in the proposal, sponsors the team's studies; it is not a client or data provider for this project and has not reviewed the system (PLAN.md drift item 13).
+AnchorAI is framed for a **mid-market gym operator**, a business with one to five clubs. The users are club managers, front-desk staff and trainers. No real operator was involved: we had no operator's data, and the manager interviews described below were simulated. Aramco, named in the proposal, sponsors the team's studies; it is not a client or data provider for this project and has not reviewed the system.
 
 ## Business problem
 
@@ -57,7 +57,7 @@ The plan was to interview club managers or trainers to source the rule base (`Mi
 
 ## Changes from the proposal that affect the business case
 
-Full list in `docs/PLAN.md` §4. Those that a reader of the business case should know:
+Those that a reader of the business case should know:
 
 - **Optimiser is a genetic algorithm, not an ANN.** The deck says an ANN picks who to contact; the proposal says a GA. We built a GA benchmarked with an exact CP-SAT solver (drift item 1).
 - **No longitudinal simulator.** The proposal planned an agent-based simulator. We use the 4,000 real Kaggle members plus a thin synthetic scenario layer (clubs, classes, instructors, offers, past interventions with known effects). Churn and segmentation results are on real data; plan-quality results use the scenario layer and test decision quality against a known ground truth, not real member behaviour (drift item 2).

@@ -6,10 +6,10 @@ Two five minute videos for the module brief. Video files are not committed. Only
 |---|---|
 | [![Promotion video](https://img.youtube.com/vi/opfahkYKg6U/maxresdefault.jpg)](https://youtu.be/opfahkYKg6U) | [![System design video](https://img.youtube.com/vi/t8pL02oRPBU/maxresdefault.jpg)](https://youtu.be/t8pL02oRPBU) |
 
-| Video | Script | Brief | Final file name |
-|---|---|---|---|
-| Promotion | `script-promo.md` | Business pain and value, use case demo, pricing | `IRS-PM-2026-08-17-ISFT-GRP-16-AnchorAI-promotion.mp4` |
-| System design | `script-technical.md` | High level system design, technical explanation of the use cases | `IRS-PM-2026-08-17-ISFT-GRP-16-AnchorAI-system.mp4` |
+| Video | Brief | Final file name |
+|---|---|---|
+| Promotion | Business pain and value, use case demo, pricing | `IRS-PM-2026-08-17-ISFT-GRP-16-AnchorAI-promotion.mp4` |
+| System design | High level system design, technical explanation of the use cases | `IRS-PM-2026-08-17-ISFT-GRP-16-AnchorAI-system.mp4` |
 
 ## Structure
 

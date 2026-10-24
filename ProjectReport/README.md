@@ -25,7 +25,7 @@ python3 ProjectReport/latex/scripts/ai_use_table.py                             
 | Experiments E1–E8 and findings | A, B, C (own experiments) | `sections/a-experiments-e1-e2.md`, `sections/b-experiments-e3-e5.md`, `sections/c-experiments-e6-e8.md` |
 | Conclusions and future work | all | Stream A input: `sections/a-conclusions-input.md` |
 | Appendix: proposal | — | `Miscellaneous/Gate0_AnchorAI_Project_Proposal.docx` |
-| Appendix: mapping to MR / RS / CGS | C (from docs/PLAN.md §3) | `sections/c-appendix-technique-mapping.md` |
+| Appendix: mapping to MR / RS / CGS | C | `sections/c-appendix-technique-mapping.md` |
 | Appendix: installation guide | A | `installation-guide.md` |
 | Appendix: user guide | C | `user-guide.md` |
 | Appendix: scenario layer parameters | A | `sections/a-appendix-scenario-layer.md` |

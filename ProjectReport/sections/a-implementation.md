@@ -1,6 +1,6 @@
 # Implementation: data pipeline, member pages and testing
 
-*Backend code in `SystemCode/backend/anchorai/` (`pipeline.py`, `scenario/`, `features/`, `discovery/`, `catalog.py`, `api/routers/members.py`, `admin_data.py`, `admin_offers.py`); web pages in `SystemCode/frontend/src/`. Page IDs (W02, W10, …) are those in `docs/PLAN.md` §8.3. How to use each page is in the user guide.*
+*Backend code in `SystemCode/backend/anchorai/` (`pipeline.py`, `scenario/`, `features/`, `discovery/`, `catalog.py`, `api/routers/members.py`, `admin_data.py`, `admin_offers.py`); web pages in `SystemCode/frontend/src/`. How to use each page is in the user guide.*
 
 This section covers how the member-intelligence results reach the application: the build that produces them, the API that serves them, the pages that show them, and how they are tested.
 
@@ -82,4 +82,4 @@ Tests are fast and offline (AGENTS.md). These tests guard against the errors tha
 Beyond the unit tests:
 - **Experiments as checks.** The notebooks import from `anchorai` and do not copy its logic. The numbers in this report were re-measured against `notebooks/results/` and the model card. The regression tests added on 17 October were mutation-tested: each fails when the guard it tests is removed (`docs/AI_USE.md`).
 - **Installation.** A fresh clone was installed with the installation guide's commands, and the pages were checked in the browser in both themes for all three roles (2026-10-17, `docs/AI_USE.md`).
-- **Peer review across the team.** The member-intelligence developer reviewed the authentication, app database, rule engine, rule base and knowledge graph (`docs/reviews/c1-c5.md`). The review filed 32 findings (1 high, 8 medium, 23 low), each reproduced with a script or traced in the code. Three were fixed by the reviewer and the rest by the knowledge-and-interaction developer (`docs/HANDOFFS.md` #5, #21–#23).
+- **Peer review across the team.** The member-intelligence developer reviewed the authentication, app database, rule engine, rule base and knowledge graph (`docs/reviews/c1-c5.md`). The review filed 32 findings (1 high, 8 medium, 23 low), each reproduced with a script or traced in the code. Three were fixed by the reviewer and the rest by the knowledge-and-interaction developer.

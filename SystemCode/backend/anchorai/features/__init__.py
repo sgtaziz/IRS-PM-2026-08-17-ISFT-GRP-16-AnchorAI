@@ -23,7 +23,7 @@ NUMERIC = [
     "visit_change",
 ]
 FEATURES = CATEGORICAL + NUMERIC
-# Possibly measured in the same month as the churn label (PLAN.md drift item 5), plus
+# Possibly measured in the same month as the churn label, plus
 # everything derived from them. The leakage check trains with and without this set.
 SUSPECT = [
     "month_to_end_contract",

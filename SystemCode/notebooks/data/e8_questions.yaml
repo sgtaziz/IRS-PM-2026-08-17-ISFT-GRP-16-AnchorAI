@@ -1,5 +1,5 @@
 note: 'E8 labelled questions. `questions` were written by an AI (Claude) from the intent descriptions, and differ from the examples in anchorai/assistant/intents.yaml; the same author wrote the examples,
-  so accuracy here is still optimistic. Streams A and B owe ~10 each (docs/HANDOFFS.md #14, #15): append them to the matching list with author set to the writer. Fields: question, intent, optional context_member_id,
+  so accuracy here is still optimistic. Streams A and B owe ~10 each: append them to the matching list with author set to the writer. Fields: question, intent, optional context_member_id,
   notes.'
 questions:
 - id: q01

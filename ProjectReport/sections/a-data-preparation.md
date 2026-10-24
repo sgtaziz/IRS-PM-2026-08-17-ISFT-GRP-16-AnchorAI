@@ -50,7 +50,7 @@ AnchorAI is built on the public Kaggle dataset *Gym Customers Features and Churn
    - `club_id`: C1, C2 or C3, assigned at random
    - `monthly_value`: a list price by contract length, $72 a month for 1-month, $54 for 6-month and $46 for 12-month contracts. It is an assumption. It weights the planner's value of keeping a member and the dashboard's revenue at risk.
    - `split`: train or test
-4. **Contract.** The column names and types of every table are fixed in `anchorai/scenario/tables.py`, the contract every part of the system codes against (PLAN.md §6). Every build checks primary keys, foreign keys and value rules before it writes anything, for example that every attendance row has more than zero weekly visits, and fails rather than write a broken table. A small synthetic fixture with the same columns (`tests/fixtures/`) let the planner, rules and knowledge graph be built and tested before the real tables existed.
+4. **Contract.** The column names and types of every table are fixed in `anchorai/scenario/tables.py`, the contract every part of the system codes against. Every build checks primary keys, foreign keys and value rules before it writes anything, for example that every attendance row has more than zero weekly visits, and fails rather than write a broken table. A small synthetic fixture with the same columns (`tests/fixtures/`) let the planner, rules and knowledge graph be built and tested before the real tables existed.
 
 ### The data tables
 
@@ -105,7 +105,7 @@ Age, gender and phone complete the set.
 
 ## Leakage check
 
-The proposal warned against features that the cancellation itself produces, such as freeze requests or a removed payment method. The Kaggle snapshot has no such fields, but it has a timing risk instead: `avg_class_frequency_current_month` and `month_to_end_contract` may be measured in the same month as the churn label (PLAN.md drift item 5). Together with the three features derived from them (`trend_ratio`, `visit_change`, `contract_progress`), they form the **suspect set** (`SUSPECT` in `anchorai/features`). The set includes the strongest single signals: the two features most correlated with churn, `visit_change` and `trend_ratio`, are both suspect (`a2_feature_correlation.png`).
+The proposal warned against features that the cancellation itself produces, such as freeze requests or a removed payment method. The Kaggle snapshot has no such fields, but it has a timing risk instead: `avg_class_frequency_current_month` and `month_to_end_contract` may be measured in the same month as the churn label. Together with the three features derived from them (`trend_ratio`, `visit_change`, `contract_progress`), they form the **suspect set** (`SUSPECT` in `anchorai/features`). The set includes the strongest single signals: the two features most correlated with churn, `visit_change` and `trend_ratio`, are both suspect (`a2_feature_correlation.png`).
 
 ![Correlation of each feature with churn. Red bars are the leakage-suspect features.](../../SystemCode/notebooks/figures/a2_feature_correlation.png)
 
@@ -165,7 +165,7 @@ Segmentation and the churn model (E1, E2) use only real columns. Results that de
 
 ## Changes from the proposal
 
-The full list is in `docs/PLAN.md` §4 and the course-mapping appendix. These are the ones that concern data.
+The full list is in the course-mapping appendix. These are the ones that concern data.
 
 | Proposal or deck | Built | Why |
 |---|---|---|

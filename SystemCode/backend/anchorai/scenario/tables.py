@@ -1,4 +1,4 @@
-"""Data-table contract shared by all streams (docs/PLAN.md §6).
+"""Data-table contract shared by all streams.
 
 Each table is a parquet file in `<data_dir>/generated/` (or a CSV in `tests/fixtures/`) whose
 columns and dtypes are fixed here. Change a schema only with agreement from all three streams.

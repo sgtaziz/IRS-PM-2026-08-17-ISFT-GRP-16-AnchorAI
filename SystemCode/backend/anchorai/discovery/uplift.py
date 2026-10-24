@@ -1,4 +1,4 @@
-"""T-learner uplift baseline (PLAN.md A6, input to experiment E3).
+"""T-learner uplift baseline (input to experiment E3).
 
 One outcome model per arm (each offer, plus untreated controls); uplift is the difference
 in predicted stay probability. Each arm model is a mean of LR and a small LightGBM.

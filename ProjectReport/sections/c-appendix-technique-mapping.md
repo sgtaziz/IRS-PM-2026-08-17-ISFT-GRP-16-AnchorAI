@@ -1,6 +1,6 @@
 # Appendix: mapping to MR / RS / CGS
 
-*Draft table from `docs/PLAN.md` §3, checked against the code in `SystemCode/backend/anchorai/` and the notebooks in `SystemCode/notebooks/`. MR = Machine Reasoning, RS = Reasoning Systems, CGS = Cognitive Systems; D = course day.*
+*Draft table, checked against the code in `SystemCode/backend/anchorai/` and the notebooks in `SystemCode/notebooks/`. MR = Machine Reasoning, RS = Reasoning Systems, CGS = Cognitive Systems; D = course day.*
 
 All four technique groups required by the module are covered: decision automation, resource optimisation, knowledge discovery and cognitive. "Built" means the code exists and a notebook result or test supports it.
 
@@ -29,7 +29,7 @@ All four technique groups required by the module are covered: decision automatio
 
 ## Deviations from the proposal
 
-The proposal and deck differ from what was built in these ways (`docs/PLAN.md` §4):
+The proposal and deck differ from what was built in these ways:
 
 | Proposal or deck | Built | Reason |
 |---|---|---|

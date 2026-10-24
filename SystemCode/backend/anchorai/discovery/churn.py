@@ -1,4 +1,4 @@
-"""Calibrated churn ensemble (PLAN.md A4, experiment E2).
+"""Calibrated churn ensemble (experiment E2).
 
 Test labels are used only for the reported metrics. Resampling happens inside each training
 fold (imblearn Pipeline), calibration uses a held-out slice of the training split, and every

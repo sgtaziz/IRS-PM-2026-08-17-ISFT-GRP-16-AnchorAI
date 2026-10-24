@@ -33,7 +33,7 @@ The churn label is not used: each segment's churn rate is computed only after th
 - Each k from 2 to 10 is fitted with 10 initialisations and scored by silhouette (Rousseeuw, 1987) on the training split.
 - Stability is the adjusted Rand index (Hubert and Arabie, 1985) between the chosen clustering and five refits with other seeds.
 
-**Choosing k.** Silhouette is low and almost flat on this data (0.155 to 0.178), so it cannot pick k alone. The rule in `choose_k` is to take the most detailed k between 3 and 8 whose silhouette is within 5% of the best. This gives **k = 4** (silhouette 0.174, against the best of 0.178 at k = 3). k = 4 adds a distinct annual-contract segment that k = 3 merges away. The proposal also planned a Gaussian mixture model. It was dropped so that segmentation matches the deck and MR D4 (PLAN.md drift item 7).
+**Choosing k.** Silhouette is low and almost flat on this data (0.155 to 0.178), so it cannot pick k alone. The rule in `choose_k` is to take the most detailed k between 3 and 8 whose silhouette is within 5% of the best. This gives **k = 4** (silhouette 0.174, against the best of 0.178 at k = 3). k = 4 adds a distinct annual-contract segment that k = 3 merges away. The proposal also planned a Gaussian mixture model. It was dropped so that segmentation matches the deck and MR D4.
 
 **Naming.** Segments are ordered by churn rate and named by fixed rules on their centres (`name_segment`), so the names survive a rebuild with another seed or a new data file:
 
@@ -119,7 +119,7 @@ The logistic regression is stable and easy to read. LightGBM can model non-linea
 - Each arm model is a mean of a logistic regression and a small LightGBM (150 trees, 7 leaves).
 - A member's uplift for an offer is the predicted stay probability under that offer minus the prediction under no contact.
 
-The courses do not teach uplift modelling; the T-learner is self-researched (MR D4 extension). It is the baseline that the case-based estimator is compared with in E3 (PLAN.md drift item 8).
+The courses do not teach uplift modelling; the T-learner is self-researched (MR D4 extension). It is the baseline that the case-based estimator is compared with in E3.
 
 **Result.** Against the scenario's ground truth, over all 16,000 member and offer pairs (`results/a6_tlearner_recovery.csv`):
 

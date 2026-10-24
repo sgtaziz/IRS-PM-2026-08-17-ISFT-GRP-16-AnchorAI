@@ -10,7 +10,7 @@ The source for the report appendix "Scenario layer parameters" (Stream A). The c
 | `instructors`, `classes`, `attendance`, `offers` | none | all |
 | `interventions`, `true_uplift`, `true_churn`, `events` | none | all |
 
-Segmentation and the churn model (experiments E1 and E2) use only the real columns. The synthetic tables exist because the Kaggle data has no clubs, classes, instructors, offers or intervention history, which the knowledge graph, CBR, uplift models and optimiser need (PLAN.md drift item 2). Results that depend on them (E3–E7) test whether the system *recovers known structure* and makes *better decisions against a known ground truth*. They are not claims about real members' responses.
+Segmentation and the churn model (experiments E1 and E2) use only the real columns. The synthetic tables exist because the Kaggle data has no clubs, classes, instructors, offers or intervention history, which the knowledge graph, CBR, uplift models and optimiser need. Results that depend on them (E3–E7) test whether the system *recovers known structure* and makes *better decisions against a known ground truth*. They are not claims about real members' responses.
 
 ## Members
 
@@ -124,4 +124,4 @@ From `SystemCode/notebooks/a_scenario_uplift.ipynb` with the default seed:
 
 - **The effects are assumptions.** They encode plausible retention playbook knowledge but are not measured on real members.
 - **The circularity risk is deliberate and stated.** A model that recovers these effects shows that it *can* recover heterogeneous effects, not that the real effects are these.
-- **Sensitivity:** rerun the scenario with different effect sizes by scaling `raw_offer_effects` or `EVENT_EFFECTS` (`build_tables(..., event_effects=...)`; see PLAN.md §11). With `EVENT_EFFECTS` at 0 the event signals carry no information, matching the real-data result.
+- **Sensitivity:** rerun the scenario with different effect sizes by scaling `raw_offer_effects` or `EVENT_EFFECTS` (`build_tables(..., event_effects=...)`). With `EVENT_EFFECTS` at 0 the event signals carry no information, matching the real-data result.

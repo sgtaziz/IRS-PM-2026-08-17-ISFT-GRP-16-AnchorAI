@@ -1,4 +1,4 @@
-"""K-means behavioural segmentation (PLAN.md A3, experiment E1)."""
+"""K-means behavioural segmentation (experiment E1)."""
 
 from dataclasses import dataclass
 
