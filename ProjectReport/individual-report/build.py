@@ -1,4 +1,4 @@
-"""Build one member's individual project report PDF from their filled-in copy of template.toml."""
+"""Build one member's individual project report PDF, and the AI declaration as text to submit beside it."""
 
 import os
 import re
@@ -73,8 +73,6 @@ def document(form: dict) -> str:
 {tex(form["contributions"])}
 \minisec{{\color{{nusBlue}}Self-reflections}}
 {tex(form["reflections"])}
-\minisec{{\color{{nusBlue}}Use of AI tools}}
-{tex(form["ai_declaration"])}
 \end{{document}}
 """
 
@@ -102,6 +100,7 @@ def main() -> None:
         if run.returncode:
             sys.exit(f"LaTeX failed; see {build / job}.log")
     shutil.copy(build / f"{job}.pdf", HERE / f"{job}.pdf")
+    (HERE / f"{job}-AI-Declaration.txt").write_text(form["ai_declaration"].strip() + "\n")
     print(f"{HERE / job}.pdf  (contributions {words(form['contributions'])}, reflections {words(form['reflections'])} words)")
 
 

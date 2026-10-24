@@ -1,6 +1,7 @@
 # Copy to <YourName>.toml (git-ignored), fill in, then run:
 #   python3 ProjectReport/individual-report/build.py ProjectReport/individual-report/<YourName>.toml
 # Group number and project title are filled in for you. Each of the two parts is at most 150 words.
+# The AI declaration is not in the PDF. It is written to a .txt file beside it, to submit separately.
 
 name = ""            # as on your student ID
 student_id = ""      # e.g. A1234567B
