@@ -40,3 +40,7 @@ Video/editing/
 ProjectReport/peer-review/*
 !ProjectReport/peer-review/template.toml
 !ProjectReport/peer-review/build.py
+# Individual project reports are submitted by each member: only the template and its build script are committed
+ProjectReport/individual-report/*
+!ProjectReport/individual-report/template.toml
+!ProjectReport/individual-report/build.py

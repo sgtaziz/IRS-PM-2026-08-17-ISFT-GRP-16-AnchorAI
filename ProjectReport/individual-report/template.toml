@@ -1,0 +1,17 @@
+# Copy to <YourName>.toml (git-ignored), fill in, then run:
+#   python3 ProjectReport/individual-report/build.py ProjectReport/individual-report/<YourName>.toml
+# Group number and project title are filled in for you. Each of the two parts is at most 150 words.
+
+name = ""            # as on your student ID
+student_id = ""      # e.g. A1234567B
+email = ""           # NUS email
+
+contributions = """
+"""
+
+reflections = """
+"""
+
+ai_declaration = """
+I used [AI tool] to [uses]. I am responsible for the content and quality of the submitted work.
+"""
