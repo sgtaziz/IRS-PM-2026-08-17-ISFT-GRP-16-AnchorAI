@@ -11,11 +11,11 @@ Due **Sun 25 Oct 2026, 23:59**. Requirements are from the practice module brief 
 - [x] Appendix mapping system functions to MR, RS and CGS
 - [x] Appendix with the installation and user guide
 - [x] Appendix on AI use
-- [ ] One page of individual reflection per member
+- [x] One page of individual reflection per member
   - [x] Abdulaziz (`ProjectReport/latex/appendices/reflection-abdulaziz.tex`)
-  - [ ] Asiri writes `ProjectReport/latex/appendices/reflection-asiri.tex`
+  - [x] Asiri writes `ProjectReport/latex/appendices/reflection-asiri.tex`
   - [x] Binmaneea writes `ProjectReport/latex/appendices/reflection-khalid.tex`
-  - [ ] Rebuild both reports once all three are in (`ProjectReport/latex/build.sh main` and `main-full`) and copy the PDFs to `ProjectReport/`
+  - [x] Rebuild both reports once all three are in (`ProjectReport/latex/build.sh main` and `main-full`) and copy the PDFs to `ProjectReport/`
 - [x] Report named `IRS-PM-2026-08-17-ISFT-GRP-16-AnchorAI-Group-Report.pdf`
 
 ## Repository
